@@ -37,6 +37,9 @@ To keep in mind:
 - scoping (globals?)
 - module importing...reload...sys.modules...
 
+Pythonic Functions
+==================
+
 Here's a bit from the top of the functions.js, which allows for pythonic function in javascript!
 
 (pjs provides the function $m for creating pythonic functions)
