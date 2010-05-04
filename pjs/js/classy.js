@@ -18,87 +18,72 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 
 **/
 
+/** python-style classes in javascript!! **/
+
 var to_array = function(a){return Array.prototype.slice.call(a,0);};
 
-function new_class(bases){
-    bases = typeof(bases)=='undfined'?[]:bases;
-    var instance_method = function(cls, self, func){
-        self[func] = function(){
-            var args = [self].concat(to_array(arguments));
-            return cls[func].apply(this,args);
-        }
-        /**
-        self[func].prefill = function(){
-            var preargs = Array.prototype.slice.call(arguments,0);
-            preargs.unshift(self);
-            return function(){
-                return cls[func].apply(this,preargs.concat(Array.prototype.slice.call(arguments,0)));
-            };
-        };
-        self[func].noargs = function(){
-            return cls[func].apply(this,[self]);
-        };
-        **/
-    }
-
-    var cls = function(){
-        var self = {};self.__init__ = function(){};
-        self.__class__ = cls;
-        var args = to_array(arguments);
-
-        for (attr in cls){
-            if (typeof(cls[attr])!="function" || cls[attr].__cls_classmethod || cls[attr].__cls_staticmethod){
-                self[attr] = cls[attr];
-            }else{
-                instance_method(cls,self,attr);
-            }
-        }
-
-        self.__init__.apply(self,args);
-        return self;
+function __instancemethod(self, val) {
+    var fn = function() {
+        return val.apply(this, [self].concat(to_array(arguments)));
     };
-
-    for (var i=0;i<bases.length;i++){
-        var base = bases[i];
-        for (attr in base){
-            if (attr=='prototype')continue;
-            cls[attr] = base[attr];
-        }
-    }
-
-    return cls
+    fn.__type__ = 'instancemethod';
+    fn.__wraps__ = val;
 }
 
-function _make_classmethod(cls, method) {
-    function meta() {
-        args = [cls].concat(to_array(arguments));
-        return method.apply(null, args);
+var type = $m(function type(name, bases, namespace) {
+    var cls = function() {
+        var self = {};
+        self.__init__ = function(){};
+        self.__class__ = cls;
+        self.__type__ = 'instance';
+
+        for (var attr in cls) {
+            var val = cls[attr];
+            if (typeof(val) !== 'function' || (defined(val.__type__) && val.__type__ !== 'method')) {
+                self[attr] = val;
+            } else {
+                self[attr] = __instancemethod(self, val);
+            }
+        }
+        self.__init__.apply(null, arguments);
+        return self;
+    };
+    cls.__type__ = 'type';
+    cls.__bases__ = bases;
+    for (var i=0;i<bases.length;i++) {
+        for (var key in bases[i]) {
+            if (key === 'prototype') continue;
+            var val = bases[i][key];
+            if (val.__cls_classmethod)
+                val = __classmethod(cls, val);
+            cls[key] = val;
+        }
     }
-    meta.__cls_classmethod = true;
-    meta.__cls_wrapped = method;
-    return meta;
+    for (var key in namespace) {
+        cls[key] = namespace[key];
+    }
+    return cls;
+});
+
+function __classmethod(cls, val)
+    var fn = function() {
+        return val.apply(this, [cls].concat(to_array(arguments)));
+    };
+    fn.__type__ = 'classmethod';
+    fn.__wraps__ = val;
+    return fn;
 }
 
 // decorators
 function classmethod(method){
-    method.__todo_classmethod = true;
+    method.__cls_classmethod = true;
     return method;
 }
 
 function staticmethod(method){
-    method.__cls_staticmethod = true;
+    method.__type__ = 'staticmethod'; // as the type is no longer "method", it won't be wrapped.
     return method;
 }
 
-function Class(inherits,def){
-    var that = new_class.apply(null,inherits || []);
-    for (item in def){
-        if (typeof(def[item]) == 'function') {
-            if (def[item].__todo_classmethod) {
-                def[item] = _make_classmethod(that, def[item]);
-            }
-        }
-        that[item] = def[item];
-    }
-    return that;
-}
+var class = type;
+
