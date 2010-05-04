@@ -162,7 +162,11 @@ function $m() {
         if (fkwargs) args.push(catchdct);
         return fn.apply(null, args);
     };
-    meta.__cls_wraps = fn;
+    if (fn.__type__)
+        meta.__type__ = fn.__type__;
+    else
+        meta.__type__ = 'method';
+    meta.__wraps__ = fn;
     return meta;
 }
 
