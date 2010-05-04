@@ -43,28 +43,21 @@ Here's a bit from the top of the functions.js, which allows for pythonic functio
 
 How to use:
 
+- $m([defaults], [aflag], [kflag], fn);
+- defaults, aflag, and kflag are all optional, but required to be in that
+  order to avoid ambiguity.
+- defaults = an associative array of key, value pairs; the key is the arg
+  name, anf the vaule is default value.
+- aflag signals that the last (or second-to-last, if kflag is true) is to be
+  populated with excess positional arguments. (in python, this is the \*args
+  syntax).
+- kflag is like aflag, but for dictionary arguments, e.g. \**kwargs.
+- there's also checks happening the whole way, so you won't be stuck debugging
+  another annoying undefined error.
+
+Here's an example that uses all of these:
+
 ::
-
-    /**
-    $m([defaults], [aflag], [kflag], fn);
-
-    defaults, aflag, and kflag are all optional, but required to be in that
-        order to avoid ambiguity.
-
-    defaults = an associative array of key, value pairs; the key is the arg
-        name, anf the vaule is default value.
-
-    aflag signals that the last (or second-to-last, if kflag is true) is to be
-        populated with excess positional arguments. (in python, this is the *args
-        syntax).
-
-    kflag is like aflag, but for positional arguments, e.g. **kwargs.
-
-    there's also checks happening the whole way, so you won't be stuck debugging
-    another annoying undefined error.
-
-    Here's an example that uses all of these:
-    **/
 
     var foo = $m({c:null, d:10}, true, true, function foo(a, b, c, d, args, kwargs) {
         // only a and b are required, and excess positional and dictionary
