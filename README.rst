@@ -43,7 +43,7 @@ Here's a bit from the top of the functions.js, which allows for pythonic functio
 
 How to use:
 
-.. sourcecode:: javascript
+::
 
     /**
     $m([defaults], [aflag], [kflag], fn);
