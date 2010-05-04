@@ -7,6 +7,9 @@ but shorter. quicker. cleaner. more convenient. Oh, and, *easier*. Takes care
 of error handling, so you don't get cryptic error messages that originate from
 javascript's lazyness regarding undefined variables.
 
+PJs has the goal of generating readable, usable *robust* javascript code from
+python code, and of providing some libraries to make web development easier.
+
 Things you can't do *(yet)*:
 
 - python magic:
