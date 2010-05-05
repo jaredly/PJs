@@ -2,19 +2,23 @@
 import sys
 import optparse
 
+import pjs
+import pjs.convert
+
 def options():
-    p = optparse.OptParser('usage: build.py [options] main_script.py')
+    p = optparse.OptionParser('usage: build.py [options] main_script.py')
     p.add_option('-d','--debug', help='set the debug level', type='int', default=0,
             dest='debug')
-    pos, opts = p.parse_opts()
+    opts, pos = p.parse_args()
     if len(pos) != 1:
         p.print_help()
         sys.exit(1)
     return pos, opts
 
-
 if __name__ == '__main__':
     pos, opts = options()
+    print pjs.convert.do_compile(pos[0])
+    
 
 
 

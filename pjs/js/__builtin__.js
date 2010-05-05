@@ -220,7 +220,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.__debug__ = __not_implemented__("__debug__");
 });
 
-__module_cache.sys.load(); // must be loaded for importing to work.
-var __builtins__ = __module_cache.__builtin__.load();
+__module_cache['<builtin>/sys.py'].load('sys'); // must be loaded for importing to work.
+var __builtins__ = __module_cache['<builtin>/__builtin__.py'].load('__builtin__');
 var __import__ = __builtins__.__import__; // should I make this global?
 
