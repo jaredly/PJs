@@ -23,18 +23,19 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
  **/
 
 var __module_cache = {};
-function module(fn) {
+function module(filename, fn) {
     var that = {};
-    that.__name__ = fn.name;
+    that.__file__ = filename;
     that.__init__ = fn;
-    that.load = function() {
+    that.load = function(name) {
         var mod = {};
-        mod.__name__ = fn.name;
+        mod.__name__ = name;
+        mod.__file__ = that.__file__;
         mod.__dict__ = mod;
         fn(mod);
         that._module = mod;
         return mod;
     };
-    __module_cache[that.__name__] = that;
+    __module_cache[that.__file__] = that;
 }
 
