@@ -32,13 +32,16 @@ class Bar(A):
     def bar(self, **baz):
         print baz
 
+[3,4,5]
 if __name__ == '__main__':
-    Bar(3,4,**b).bar(a=5,c='hoo')
+    Bar(3,4,**b).bar(d+5, a=5,c='hoo', *a, **b)
     Bar.static(5,6,7,'i');
 elif fail:
     pass
 else:
     a=2
+    tester
+    multiple
 
 
 # vim: et sw=4 sts=4

@@ -7,7 +7,7 @@ class PJsException(Exception):pass
 TEMPLATES = {
     'module':'''\
 module('%(filename)s, function (%(scope)s) {
-    %(scope)s.__doc__ = %(docs);
+    %(scope)s.__doc__ = %(doc)s;
 %(contents)s
 });
 ''',
@@ -42,6 +42,8 @@ def convert_modules(filename):
     toimport = [filename]
     while len(toimport):
         fname = toimport.pop()
+        if fname in modules:
+            continue
         text = open(filename).read()
         tree = ast.parse(text, fname)
         js, imports = convert_module(tree, fname)
@@ -65,7 +67,6 @@ def convert_module(mod, filename):
     contents, imports = convert_block(mod.body, scope)
     dct['contents'] = contents
     text = TEMPLATES['module'] % dct
-    print text
     return text, imports
 
 def convert_block(nodes, scope):
@@ -75,7 +76,6 @@ def convert_block(nodes, scope):
         js, imp = convert_node(child, scope)
         imports += imp
         text += js
-        #print js
     text = text.strip()
     text = '\n'.join('    '+line for line in text.split('\n'))
     return text, imports
@@ -83,14 +83,16 @@ def convert_block(nodes, scope):
 def convert_node(node, scope):
     try:
         return globals()['_'+node.__class__.__name__.lower()](node, scope)
-    except:
-        print vars(node)
+    except KeyError, e:
+        if not e.args[0].startswith('Node type'):
+            print vars(node)
+            e.args = ('Node type %s hasn\'t been implemented yet' % node, )
         raise
 
 def _expr(node, scope):
     v = node.value
     js, imp = convert_node(v, scope)
-    return js+';', imp
+    return js+';\n', imp
 '''
     if isinstance(v, ast.Str):
         js, imp = _str(v, scope)
@@ -104,7 +106,6 @@ def _str(node, scope):
     return multiline(node.s), []
 
 def _import(node, scope):
-    print vars(node)
     tpl = '%s = __builtins__.__import__(%s, __globals__.__name__, __globals__.__file__);\n'
     text = ''
     imports = []
@@ -161,7 +162,6 @@ def resolve(name, scope):
         return '__globals__.%s' % name
 
 def _assign(node, scope):
-    print vars(node)
     rest = ''
     imports = []
     if len(node.targets) == 1:
@@ -191,7 +191,6 @@ def do_op(node):
     return op
 
 def _binop(node, scope):
-    print vars(node)
     op = do_op(node.op)
     imports = []
     ljs, imp = convert_node(node.left, scope)
@@ -240,7 +239,6 @@ def _functiondef(node, scope):
     dct['contents'], imp = convert_block(node.body, scope)
     imports += imp
     text = TEMPLATES['function'] % dct
-    print text
     return text, imports
 
 def _return(node, scope):
@@ -263,7 +261,6 @@ def _classdef(node, scope):
     imports += imp
 
     text = TEMPLATES['class'] % dct
-    print text
     return text, imports
 
 def _if(node, scope):
@@ -272,14 +269,17 @@ def _if(node, scope):
     dct['contents'], imp = convert_block(node.body, scope)
     imports += imp
     if node.orelse:
-        print node.orelse
-        js, imp = convert_node(node.orelse[0], scope)
-        dct['more'] = ' else ' + js
-        imports += imp
+        if len(node.orelse) == 1:
+            js, imp = convert_node(node.orelse[0], scope)
+            dct['more'] = ' else ' + js
+            imports += imp
+        else:
+            js, imp = convert_block(node.orelse, scope)
+            imports += imp
+            dct['more'] = ' else {\n%s\n}' % js
     else:
         dct['more'] = ''
     text = TEMPLATES['if'] % dct
-    print text
     return text, imports
 
 def _compare(node, scope):
@@ -291,11 +291,78 @@ def _compare(node, scope):
     return text, imports
 
 def _call(node, scope):
-    print vars(node)
-    print node
+    imports = []
+    dct = {}
+    if node.starargs or node.kwargs or node.keywords:
+        ## use .args()
+        if node.args:
+            args = []
+            for n in node.args:
+                js, imp = convert_node(n, scope)
+                imports += imp
+                args.append(js)
+            dct['args'] = '[%s]' % ', '.join(args)
+            if node.starargs:
+                js, imp = convert_node(node.starargs, scope)
+                imports += imp
+                dct['args'] += '.concat(%s)' % js
+        elif node.starargs:
+            js, imp = convert_node(node.starargs, scope)
+            imports += imp
+            dct['args'] = js
+        else:
+            dct['args'] = '[]'
+        if node.keywords:
+            kargs = []
+            for kw in node.keywords:
+                js, imp = convert_node(kw.value, scope)
+                imports += imp
+                kargs.append("'%s': %s" % (kw.arg, js))
+            dct['kargs'] = '{%s}' % ', '.join(kargs)
+            if node.kwargs:
+                ## duplicates get overridden by kwargs
+                js, imp = convert_node(node.kwargs, scope)
+                imports += imp
+                dct['kargs'] += '.extend(%s)' % js
+        elif node.kwargs:
+            js, imp = convert_node(node.kwargs, scope)
+            imports += imp
+            dct['kargs'] = js
+        else:
+            dct['kargs'] = '{}'
+        dct['right'] = '.args(%s, %s)' % (dct['args'], dct['kargs'])
+    else:
+        args = []
+        for n in node.args:
+            js, imp = convert_node(n, scope)
+            imports += imp
+            args.append(js)
+        dct['right'] = '(%s)' % ', '.join(args)
+    dct['left'], imp = convert_node(node.func, scope)
+    imports += imp
+    text = dct['left'] + dct['right']
+    return text, imports
+
+def _pass(node, scope):
+    return '//pass\n', []
+
+def _list(node, scope):
+    imports = []
+    elems = []
+    for e in node.elts:
+        js, imp = convert_node(e, scope)
+        elems.append(js)
+        imports += imp
+    text = '[%s]' % ', '.join(elems)
+    return text, imports
 
 def do_compile(filename):
-    print convert_modules(filename)
+    mods = convert_modules(filename)
+    text = ''
+    for fn in sorted(mods.keys()):
+        text += mods[fn]+'\n\n'
+    text += '__module_cache["%s"].load("__main__")' % filename
+    return text
 
 
 # vim: et sw=4 sts=4
