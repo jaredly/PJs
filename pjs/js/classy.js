@@ -43,6 +43,8 @@ var type = $m(function type(name, bases, namespace) {
                 self[attr] = val;
             } else {
                 self[attr] = __instancemethod(self, val);
+                self[attr].name = attr;
+                self[attr].__name__ = attr;
             }
         }
         self.__init__.apply(null, arguments);
