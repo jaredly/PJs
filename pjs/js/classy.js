@@ -33,6 +33,13 @@ function __instancemethod(self, val) {
             return val.args([self].concat(pos), kwd);
         };
     }
+    for (var k in val) {
+        if (!defined(fn[k])) {
+            fn[k] = val[k];
+        }
+    }
+    fn.__name__ = val.name;
+    fn.name = val.name;
     return fn;
 }
 
@@ -58,6 +65,10 @@ var type = $m(function type(name, bases, namespace) {
     };
     cls.__type__ = 'type';
     cls.__bases__ = bases;
+    cls.__name__ = name;
+    cls.__str__ = $m(function(self){
+        return '<' + self.__module__ + '.' + self.__name__ + ' instance at 0x10beef01>';
+    });
     for (var i=0;i<bases.length;i++) {
         for (var key in bases[i]) {
             if (key === 'prototype') continue;

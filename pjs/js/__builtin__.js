@@ -184,11 +184,35 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.bin = __not_implemented__("bin");
     __globals__.SystemExit = __not_implemented__("SystemExit");
     __globals__.format = __not_implemented__("format");
-    __globals__.repr = __not_implemented__("repr");
     __globals__.sorted = __not_implemented__("sorted");
     __globals__.False = __not_implemented__("False");
-    __globals__.list = __not_implemented__("list");
-    __globals__.iter = __not_implemented__("iter");
+    __globals__.list = $m(function(ible) {
+        if (defined(ible.__iter__)) {
+            var t = [];
+            var i = ible.__iter__();
+            while (true) {
+                try {
+                    t.push(i.next());
+                } catch (e) {
+                    if (__globals__.isinstance(e, __globals__.StopIteration)) {
+                        break;
+                    }
+                    throw e;
+                }
+            }
+        } else if (ible instanceof Array) {
+            var t = [];
+            for (var i=0;i<ible.length;i++) {
+                t.push(ible[i]);
+            }
+        }
+        return t;
+    });
+    __globals__.iter = $m(function(ible) {
+        if (!defined(ible.__iter__))
+            throw 'item not iterable';
+        return ible.__iter__();
+    });
     __globals__.__package__ = __not_implemented__("__package__");
     __globals__.round = __not_implemented__("round");
     __globals__.dir = __not_implemented__("dir");
@@ -205,7 +229,11 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.abs = __not_implemented__("abs");
     __globals__.exit = __not_implemented__("exit");
     __globals__.print = $m({}, true, function(args) {
-        print.apply(null, args.slice(0,-1));
+        var strs = [];
+        for (var i=0;i<args.length-1;i++) {
+            strs.push(__globals__.str(args[i]));
+        }
+        print(strs.join(' '));
     });
     __globals__.assert = $m(function(bool, text) {
         if (!bool) {
@@ -247,14 +275,76 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.classmethod = classmethod;
     __globals__.staticmethod = staticmethod;
 
-    __globals__.tuple = __not_implemented__("tuple");
+    __globals__.tuple = Class('tuple', [], {
+        __init__: $m(function(self, ible) {
+              var ible = ible.slice();
+              self.__len__ = function(){return ible.length;};
+              for (var i=0;i<len;i++){
+                  (function(i){
+                  self.__defineGetter__(i, function(){return ible[i];})
+                  }(i));
+              }
+        }),
+        count: $m(function(self, item) {
+              var num = 0;
+              for (var i=0;i<__globals__.len(self);i++) {
+                  if (self[i] == item)
+                      num ++;
+              }
+              return num;
+        }),
+        index: $m(function(self, index) {
+              for (var i=0;i<__globals__.len(self);i++) {
+                  if (self[i] == item)
+                      return i;
+              }
+              return -1;
+        }),
+    });
     __globals__.reversed = __not_implemented__("reversed");
     __globals__.hasattr = __not_implemented__("hasattr");
     __globals__.delattr = __not_implemented__("delattr");
     __globals__.setattr = __not_implemented__("setattr");
     __globals__.raw_input = __not_implemented__("raw_input");
     __globals__.compile = __not_implemented__("compile");
-    __globals__.str = __not_implemented__("str");
+    __globals__.str = $m(function(item) {
+        if (defined(item.__str__)) {
+            return item.__str__();
+        } else if (item instanceof Array) {
+            var m = [];
+            for (var i=0;i<item.length;i++) {
+                m.push(__globals__.repr(item[i]));
+            }
+            return '['+m.join(', ')+']';
+        } else if (item instanceof Function) {
+            if (!item.__name__) {
+                if (!item.__module__)
+                    return '<anonymous function...>';
+                else
+                    return '<anonymous function in module "' + item.__module__ + '">';
+            } else {
+                if (!item.__module__)
+                    return '<function '+item.__name__+'>';
+                else
+                    return '<function '+item.__name__+' from module '+item.__module__+'>';
+            }
+        } else if (typeof(item) === 'object') {
+            var m = [];
+            for (var a in item) {
+                m.push("'"+a+"': "+__globals__.repr(item[a]));
+            }
+            return '{'+m.join(', ')+'}';
+        } else {
+            return ''+item;
+        }
+    });
+    __globals__.repr = $m(function(item) {
+        if (typeof(item) === 'string') {
+            return "'" + item + "'";
+        } else if (defined(item.__repr__)) {
+            return item.__repr__();
+        } else return __globals__.str(item);
+    });
     __globals__.property = __not_implemented__("property");
     __globals__.GeneratorExit = __not_implemented__("GeneratorExit");
     // __globals__.int = __not_implemented__("int");

@@ -181,6 +181,8 @@ function $m() {
     else
         meta.__type__ = 'method';
     meta.__wraps__ = fn;
+    meta.name = fn.name;
+    meta.__name__ = fn.name;
     return meta;
 }
 
