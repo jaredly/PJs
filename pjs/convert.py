@@ -6,22 +6,22 @@ class PJsException(Exception):pass
 
 TEMPLATES = {
     'module':'''\
-module('%(filename)s, function (%(scope)s) {
+module('%(filename)s', function (%(scope)s) {
     %(scope)s.__doc__ = %(doc)s;
 %(contents)s
 });
 ''',
     'class':'''\
-%(left)s = class(%(name)s, [%(bases)s], (function(){
+%(left)s = %(dec_front)sClass(%(name)s, [%(bases)s], (function(){
     var __locals__ = {};
 %(contents)s
     return __locals__;
-}()));
+}()))%(dec_back)s;
 ''',
     'function':'''\
-%(left)s = $m(%(special)sfunction %(name)s(%(args)s) {
+%(left)s = %(dec_front)s$m(%(special)sfunction %(name)s(%(args)s) {
 %(contents)s
-});
+})%(dec_back)s;
 ''',
     'if':'''\
 if (%(test)s) {
@@ -106,7 +106,7 @@ def _str(node, scope):
     return multiline(node.s), []
 
 def _import(node, scope):
-    tpl = '%s = __builtins__.__import__(%s, __globals__.__name__, __globals__.__file__);\n'
+    tpl = '%s = __builtins__.__import__("%s", __globals__.__name__, __globals__.__file__);\n'
     text = ''
     imports = []
     for name in node.names:
@@ -126,7 +126,7 @@ def _print(node, scope):
         js, imp = convert_node(child, scope)
         values.append(js)
         imports += imp
-    text = '__builtins__.print(%s, %s);\n' % (', '.join(values), node.nl)
+    text = '__builtins__._print(%s, %s);\n' % (', '.join(values), node.nl)
     return text, imports
 
 def do_left(node, scope):
@@ -153,11 +153,19 @@ def do_left(node, scope):
 def _name(node, scope):
     return resolve(node.id, scope), []
 
+import os
+localfile = lambda x:os.path.join(os.path.dirname(__file__), x)
+reserved_words = open(localfile('js_reserved.txt')).read().split()
+
 def resolve(name, scope):
+    if name in reserved_words:
+        raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
     if name in scope[1]:
         if scope[2]:
             return '__locals__.%s' % name
         return name
+    elif name not in scope[0] and name in __builtins__:
+        return '__builtins__.%s' % name
     else:
         return '__globals__.%s' % name
 
@@ -177,11 +185,19 @@ def _assign(node, scope):
 
     js, imp = convert_node(node.value, scope)
     imports += imp
-    line = '%s = %s\n' % (left, js)
+    line = '%s = %s;\n' % (left, js)
     return line + rest, imports
 
 def do_op(node):
-    ops = {ast.Eq:'===', ast.Add:'+', ast.Sub:'-', ast.Mult:'*', ast.Div:'/'}
+    ops = {
+        ast.Eq:'===',
+        ast.Add:'+',
+        ast.Sub:'-',
+        ast.Mult:'*',
+        ast.Div:'/',
+        ast.And:'&&',
+        ast.Or:'||',
+        }
     op = None
     for t,j in ops.iteritems():
         if isinstance(node, t):
@@ -204,6 +220,8 @@ def _num(node, scope):
 
 def _attribute(node, scope):
     js, imp = convert_node(node.value, scope)
+    if node.attr in reserved_words:
+        raise PJsException("Sorry, '%s' is a reserved word in javascript." % node.attr)
     return "%s.%s" % (js, node.attr), imp
 
 def _functiondef(node, scope):
@@ -232,8 +250,13 @@ def _functiondef(node, scope):
         args.append(node.args.kwarg)
     dct['args'] = ', '.join(args)
 
-    if node.decorator_list:
-        raise PJsException("decorators not implemented yet. they will be though")
+    dct['dec_front'] = ''
+    dct['dec_back'] = ''
+    for dec in node.decorator_list:
+        js, imp = convert_node(dec, scope)
+        imports += imp
+        dct['dec_front'] += js+'('
+        dct['dec_back'] += ')'
 
     scope = scope[0], args[:], False
     dct['contents'], imp = convert_block(node.body, scope)
@@ -243,7 +266,7 @@ def _functiondef(node, scope):
 
 def _return(node, scope):
     js, imp = convert_node(node.value, scope)
-    return 'return %s' % js, imp
+    return 'return %s;\n' % js, imp
 
 def _classdef(node, scope):
     imports = []
@@ -252,8 +275,13 @@ def _classdef(node, scope):
     dct['name'] = node.name;
     dct['bases'] = ', '.join(resolve(name.id, scope) for name in node.bases)
 
-    if len(node.decorator_list):
-        raise PJsException('sorry, decorators not yet supported')
+    dct['dec_front'] = ''
+    dct['dec_back'] = ''
+    for dec in node.decorator_list:
+        js, imp = convert_node(dec, scope)
+        imports += imp
+        dct['dec_front'] += js+'('
+        dct['dec_back'] += ')'
 
     scope = scope[0], [], True
 
@@ -356,9 +384,27 @@ def _list(node, scope):
     text = '[%s]' % ', '.join(elems)
     return text, imports
 
+def _yield(node, scope):
+    raise PJsException('Sorry, PJs doesn\'t work with generators, and probably won\'t for the forseeable future...generators are hard.')
+
+def _assert(node, scope):
+    js, imports = convert_node(node.test, scope)
+    if node.msg:
+        msg, imp = convert_node(node.msg, scope)
+        imports += imp
+    else:
+        msg = "'%s'" % js.encode('string_escape')
+    text = '__builtins__.assert(%s, %s);\n' % (js, msg)
+    return text, imports
+
+for_rhino = '''
+load("%(dir)s/functions.js", "%(dir)s/classy.js", "%(dir)s/modules.js",
+     "%(dir)s/__builtin__.js");
+'''
+
 def do_compile(filename):
     mods = convert_modules(filename)
-    text = ''
+    text = for_rhino % {'dir':'pjs/js'}
     for fn in sorted(mods.keys()):
         text += mods[fn]+'\n\n'
     text += '__module_cache["%s"].load("__main__")' % filename

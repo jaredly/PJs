@@ -25,17 +25,17 @@ class Bar(A):
     def __init__(self, a, b):
         print 'args', a, b
 
-    #@staticmethod
-    def static(one, *alls):
+    @staticmethod
+    def staticm(one, *alls):
         print 'from static', one, alls
 
     def bar(self, **baz):
         print baz
-
+assert True, 'something' + 'other thing'
 [3,4,5]
 if __name__ == '__main__':
     Bar(3,4,**b).bar(d+5, a=5,c='hoo', *a, **b)
-    Bar.static(5,6,7,'i');
+    Bar.staticm(5,6,7,'i');
 elif fail:
     pass
 else:
