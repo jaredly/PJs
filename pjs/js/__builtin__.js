@@ -39,15 +39,51 @@ module('<builtin>/sys.py', function (__globals__) {
     });
 });
 
-function pathjoin(one, two) {
-    if (!two) return one;
-    if (!one) return two;
-    if (two[0] == '/') return two;
-    if (one.slice(-1) != '/')
-        one += '/';
-    return one+two;
-}
+module('<builtin>/os/path.py', function(__globals__) {
+    __globals__.__doc__ = "a module for dealing with paths";
+    __globals__.join = $m({}, true, function(first, args) {
+        var path = first;
+        for (int i=0;i<args.length;i++) {
+            if (__globals__.isabs(args[i])) {
+                path = args[i];
+            } else if (path === '' || '/\\:'.find(path.slice(-1)) !== -1) {
+                path += args[i];
+            } else
+                path += '/' + args[i];
+        }
+        return path;
+    });
+    __globals__.isabs = $m(function(path) {
+        return path && path[0] == '/';
+    });
+    __globals__.abspath = $m(function(path) {
+        if (!__globals__.isabs(path))
+            throw "not implementing this atm";
+        return __globals__.normpath(path);
+    });
+    __globals__.normpath = $m(function(path) {
+        var prefix = path.match(/^\/+/);
+        var comps = path.slice(prefix.length).split('/');
+        var i = 0;
+        while (i < len(comps)) {
+            if (comps[i] == '.')
+                delete comps[i];
+            else if (comps[i] == '..' && i > 0 && comps[i-1] && comps[i-1] != '..') {
+                delete comps[i-1];
+                delete comps[i-1];
+                i -= 1;
+            } else if (comps[i] == '' && i > 0 && comps[i-1] != '') {
+                delete comps[i];
+            } else
+                i += 1
+        }
+        if (!prefix && !comps)
+            comps.push('.');
+        return prefix + comps.join('/');
+    });
+});
 
+/**
 function pathresolve(path) {
     if (path[-1] !== '/') path += '/';
     if (path.find('/./') !== -1)
@@ -60,6 +96,7 @@ function pathresolve(path) {
 function dirname(path) {
     return path.split('/').slice(0, -1).join('/');
 }
+**/
 
 module('<builtin>/__builtin__.py', function (__globals__) {
 
@@ -72,13 +109,13 @@ module('<builtin>/__builtin__.py', function (__globals__) {
         
         if (defined(sys.modules[name]))
             return sys.modules[name];
-
+        var path = __module_cache['<builtin>/os/path.py']._module;
         var relflag = false;
         var foundat = null;
         for (var i=0;i<sys.path.length;i++) {
             relflag = sys.path[i][0] !== '/';
-            var dname = pathresolve(pathjoin(dirname(file), sys.path[i]));
-            var fname = pathjoin(dname, name.replace('.', '/'));
+            var dname = path.normpath(path(path.dirname(file), sys.path[i]));
+            var fname = path.join(dname, name.replace('.', '/'));
             if (defined(__module_cache[fname])) {
                 foundat = fname;
                 break;
@@ -225,6 +262,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
 });
 
 __module_cache['<builtin>/sys.py'].load('sys'); // must be loaded for importing to work.
+__module_cache['<builtin>/os/path.py'].load('os.path');
 var __builtins__ = __module_cache['<builtin>/__builtin__.py'].load('__builtin__');
 var __import__ = __builtins__.__import__; // should I make this global?
 
