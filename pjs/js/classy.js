@@ -28,6 +28,12 @@ function __instancemethod(self, val) {
     };
     fn.__type__ = 'instancemethod';
     fn.__wraps__ = val;
+    if (val.args) {
+        fn.args = function(pos, kwd) {
+            return val.args([self].concat(pos), kwd);
+        };
+    }
+    return fn;
 }
 
 var type = $m(function type(name, bases, namespace) {
@@ -71,6 +77,11 @@ function __classmethod(cls, val){
     var fn = function() {
         return val.apply(this, [cls].concat(to_array(arguments)));
     };
+    if (val.args) {
+        fn.args = function(pos, kwd) {
+            return val.args([cls].concat(pos), kwd);
+        };
+    }
     fn.__type__ = 'classmethod';
     fn.__wraps__ = val;
     return fn;

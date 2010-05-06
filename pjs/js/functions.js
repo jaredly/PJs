@@ -68,11 +68,15 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 **/
 
 var to_array = function(a){return Array.prototype.slice.call(a,0);};
-var fnrx = /function\s+\w*\s*\(([\w,\s]+)\)/;
+var fnrx = /function\s+\w*\s*\(([\w,\s]*)\)/;
 
 function defined(x){
     return typeof(x) != 'undefined';
 }
+
+String.prototype.strip = function(){
+    return this.replace(/^\s+/,'').replace(/\s+$/,'');
+};
 
 function $m() {
     var args = to_array(arguments);
@@ -87,8 +91,13 @@ function $m() {
     if (!match)
         throw "ParseError: sorry, something went wrong on my end; are you sure you're passing me a valid function?" + (fn+'');
     fn.__args__ = match[1].split(',');
+    if (fn.__args__.length == 1 && !fn.__args__[0].strip())
+        fn.__args__ = [];
+    for (var i=0;i<fn.__args__.length;i++){
+        fn.__args__[i] = fn.__args__[i].strip();
+    }
     if (fn.__args__.length != fn.length)
-        throw "ParseError: sorry, something went wrong on my end; are you sure you're passing me a valid function?";
+        throw "ParseError: sorry, something went wrong on my end; are you sure you're passing me a valid function? (arg nums didn't line up "+fn.__args__+' '+fn.length+")" + fn;
 
     var defaults = args.length?args.shift():{};
     if (defaults === false) { // no args checking...? what?
@@ -100,8 +109,12 @@ function $m() {
     if (args.length)
         throw "$m takes a max of 4 arguments";
 
+    var argnum = fn.__args__.length;
+    if (fargs) argnum-=1;
+    if (fkwargs) argnum-=1;
+
     var dflag = false;
-    for (var i=0;i<fn.__args__.length;i++) {
+    for (var i=0;i<argnum;i++) {
         if (defined(defaults[fn.__args__[i]])) dflag = true;
         else if (dflag) {
             throw "SyntaxError in function " + fn.name + ": non-default argument follows default argument";
@@ -109,10 +122,6 @@ function $m() {
     }
     var ndefaults = 0;
     for (var x in defaults) ndefaults++;
-
-    var argnum = fn.__args__.length;
-    if (fargs) argnum-=1;
-    if (fkwargs) argnum-=1;
 
     var meta = function() {
         var args = to_array(arguments);
@@ -127,7 +136,7 @@ function $m() {
         } else {
             for (var i=args.length;i<argnum; i++){
                 if (!defined(defaults[fn.__args__[i]])) {
-                    throw "TypeError: " + fn.name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.lenght + " given)";
+                    throw "TypeError: " + fn.name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)";
                 }
                 args.push(defaults[fn.__args__[i]]);
             }
@@ -139,6 +148,7 @@ function $m() {
     meta.args = function(pos, dict) {
         var full = {};
         for (var i=0;i<pos.length && i<argnum;i++) {
+            var name = fn.__args__[i];
             full[name] = pos[i];
         }
         var catchall = pos.slice(i);
@@ -158,8 +168,12 @@ function $m() {
             for (var a in dict)
                 throw "TypeError: " + fn.name + "() got an unexpected keyword argument '" + a + "'";
         }
+        var args = [];
+        for (var i=0;i<argnum;i++) {
+            args.push(full[fn.__args__[i]]);
+        }
         if (fargs) args.push(catchall);
-        if (fkwargs) args.push(catchdct);
+        if (fkwargs) args.push(dict);
         return fn.apply(null, args);
     };
     if (fn.__type__)

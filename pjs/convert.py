@@ -12,7 +12,7 @@ module('%(filename)s', function (%(scope)s) {
 });
 ''',
     'class':'''\
-%(left)s = %(dec_front)sClass(%(name)s, [%(bases)s], (function(){
+%(left)s = %(dec_front)sClass('%(name)s', [%(bases)s], (function(){
     var __locals__ = {};
 %(contents)s
     return __locals__;
@@ -30,6 +30,8 @@ if (%(test)s) {
 ''',
 }
 
+import sys
+
 def convert_modules(filename):
     '''
     a function to cunvert python to javascript. uses python's ``ast`` module.
@@ -39,18 +41,39 @@ def convert_modules(filename):
     - js is text of the converted javascript code
     '''
     modules = {}
+    filename = os.path.abspath(filename)
     toimport = [filename]
     while len(toimport):
         fname = toimport.pop()
         if fname in modules:
             continue
-        text = open(filename).read()
+        text = open(fname).read()
         tree = ast.parse(text, fname)
         js, imports = convert_module(tree, fname)
-        toimport += imports
+        for imp in imports:
+            toimport.append(find_import(imp, fname))
         modules[fname] = js
 
     return modules
+
+def find_import(iname, fname):
+    base = os.path.dirname(fname)
+    cd = os.getcwd()
+    for dr in sys.path:
+        if dr == cd:
+            dr = base
+        fn = os.path.join(base, dr)
+        bad = False
+        for part in iname.split('.')[:-1]:
+            if not os.path.exists(os.path.join(fn, part, '__init__.py')):
+                bad = True
+                break
+            fn = os.path.join(fn, part)
+        if not bad:
+            fn = os.path.join(fn, iname.split('.')[-1]+'.py')
+            if os.path.exists(fn):
+                return fn
+    raise PJsException('module not found: %s' % iname)
 
 def multiline(text):
     lines = text.split('\n')
@@ -59,10 +82,10 @@ def multiline(text):
 
 def convert_module(mod, filename):
     scope = '__globals__'
-    dct = {'scope':scope, 'filename':filename}
+    dct = {'scope':scope, 'filename':os.path.abspath(filename)}
     dct['doc'] = multiline(ast.get_docstring(mod))
 
-    _globs = []
+    _globs = ['__name__','__doc__','__file__']
     scope = (_globs, _globs, False)
     contents, imports = convert_block(mod.body, scope)
     dct['contents'] = contents
@@ -126,7 +149,7 @@ def _print(node, scope):
         js, imp = convert_node(child, scope)
         values.append(js)
         imports += imp
-    text = '__builtins__._print(%s, %s);\n' % (', '.join(values), node.nl)
+    text = '__builtins__.print(%s, %s);\n' % (', '.join(values), str(node.nl).lower())
     return text, imports
 
 def do_left(node, scope):
@@ -160,7 +183,9 @@ reserved_words = open(localfile('js_reserved.txt')).read().split()
 def resolve(name, scope):
     if name in reserved_words:
         raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
-    if name in scope[1]:
+    if scope[0] is scope[1] and name in scope[0]:
+        return '__globals__.%s' % name
+    elif name in scope[1]:
         if scope[2]:
             return '__locals__.%s' % name
         return name
@@ -402,12 +427,20 @@ load("%(dir)s/functions.js", "%(dir)s/classy.js", "%(dir)s/modules.js",
      "%(dir)s/__builtin__.js");
 '''
 
+do_run = '''
+try {
+    __module_cache['%s'].load('__main__');
+} catch (e) {
+    print(e);
+}
+'''
+
 def do_compile(filename):
     mods = convert_modules(filename)
     text = for_rhino % {'dir':'pjs/js'}
     for fn in sorted(mods.keys()):
         text += mods[fn]+'\n\n'
-    text += '__module_cache["%s"].load("__main__")' % filename
+    text += do_run % os.path.abspath(filename)
     return text
 
 

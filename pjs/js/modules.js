@@ -27,15 +27,15 @@ function module(filename, fn) {
     var that = {};
     that.__file__ = filename;
     that.__init__ = fn;
-    that.load = function(name) {
-        var mod = {};
+    that.load = $m({'mod':null}, function(name, mod) {
+        if (mod === null) mod = {};
         mod.__name__ = name;
         mod.__file__ = that.__file__;
         mod.__dict__ = mod;
-        fn(mod);
         that._module = mod;
+        fn(mod);
         return mod;
-    };
+    });
     __module_cache[that.__file__] = that;
 }
 

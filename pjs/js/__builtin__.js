@@ -43,10 +43,10 @@ module('<builtin>/os/path.py', function(__globals__) {
     __globals__.__doc__ = "a module for dealing with paths";
     __globals__.join = $m({}, true, function(first, args) {
         var path = first;
-        for (int i=0;i<args.length;i++) {
+        for (var i=0;i<args.length;i++) {
             if (__globals__.isabs(args[i])) {
                 path = args[i];
-            } else if (path === '' || '/\\:'.find(path.slice(-1)) !== -1) {
+            } else if (path === '' || '/\\:'.indexOf(path.slice(-1)) !== -1) {
                 path += args[i];
             } else
                 path += '/' + args[i];
@@ -61,19 +61,24 @@ module('<builtin>/os/path.py', function(__globals__) {
             throw "not implementing this atm";
         return __globals__.normpath(path);
     });
+    __globals__.dirname = $m(function(path) {
+        return path.split('/').slice(0,-1).join('/');
+    });
+    __globals__.basename = $m(function(path) {
+        return path.split('/').slice(-1)[0];
+    });
     __globals__.normpath = $m(function(path) {
-        var prefix = path.match(/^\/+/);
+        var prefix = path.match(/^\/+/) || '';
         var comps = path.slice(prefix.length).split('/');
         var i = 0;
-        while (i < len(comps)) {
+        while (i < comps.length) {
             if (comps[i] == '.')
-                delete comps[i];
+                comps = comps.slice(0, i).concat(comps.slice(i+1));
             else if (comps[i] == '..' && i > 0 && comps[i-1] && comps[i-1] != '..') {
-                delete comps[i-1];
-                delete comps[i-1];
+                comps = comps.slice(0, i-1).concat(comps.slice(i+1));
                 i -= 1;
             } else if (comps[i] == '' && i > 0 && comps[i-1] != '') {
-                delete comps[i];
+                comps = comps.slice(0, i).concat(comps.slice(i+1));
             } else
                 i += 1
         }
@@ -105,17 +110,17 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.__doc__ = 'Javascript corrospondences to python builtin functions';
 
     /** importing modules **/
-    __globals__.__import__ = $m({'file':''}, function __import__(name, from, file) {
-        
+    __globals__.__import__ = $m({'file':'','from':''},
+      function __import__(name, from, file) {
         if (defined(sys.modules[name]))
             return sys.modules[name];
         var path = __module_cache['<builtin>/os/path.py']._module;
         var relflag = false;
         var foundat = null;
         for (var i=0;i<sys.path.length;i++) {
-            relflag = sys.path[i][0] !== '/';
-            var dname = path.normpath(path(path.dirname(file), sys.path[i]));
-            var fname = path.join(dname, name.replace('.', '/'));
+            relflag = sys.path[i][0] !== '/' && sys.path[i].indexOf('<builtin>') !== 0;
+            var dname = path.normpath(path.join(path.dirname(file), sys.path[i]));
+            var fname = path.join(dname, name.replace('.', '/')+'.py');
             if (defined(__module_cache[fname])) {
                 foundat = fname;
                 break;
@@ -123,13 +128,16 @@ module('<builtin>/__builtin__.py', function (__globals__) {
         }
         if (!foundat)
             throw "ImportError: no module named "+name;
-        if (relflag)
+        if (relflag) {
             mname = [from.split('.').slice(0,-1)].concat([name]).join('.');
-        else
+            if (mname[0] == '.')mname = mname.slice(1);
+        } else
             mname = name;
 
-        if (!defined(sys.modules[mname]))
-            sys.modules[mname] = __module_cache[foundat].load(mname);
+        if (!defined(sys.modules[mname])) {
+            sys.modules[mname] = {}
+            __module_cache[foundat].load(mname, sys.modules[mname]);
+        }
         return sys.modules[mname];
     });
     __globals__.reload = $m(function(module) {
@@ -196,7 +204,15 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.getattr = __not_implemented__("getattr");
     __globals__.abs = __not_implemented__("abs");
     __globals__.exit = __not_implemented__("exit");
-    __globals__.print = __not_implemented__("print");
+    __globals__.print = $m({}, true, function(args) {
+        print.apply(null, args.slice(0,-1));
+    });
+    __globals__.assert = $m(function(bool, text) {
+        if (!bool) {
+            throw Error(text);
+        }
+    });
+    // __globals__.raise = $m(
     __globals__.True = __not_implemented__("True");
     __globals__.None = __not_implemented__("None");
     __globals__.hash = __not_implemented__("hash");

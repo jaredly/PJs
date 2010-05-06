@@ -4,6 +4,7 @@
 and it's multi-line'''
 
 import toimp
+import toimp
 print 'example'
 a='hi'
 b='ho'
@@ -11,16 +12,20 @@ a='hp'
 h=4
 man = 1+2
 man = 1+2
-man.moon = 3
 def foo(a,b,c=3,*rest):
     print a+b, c, h
     c=5
     def sub():
         print 'just to test'
     d=3
+    sub()
     return 17
 
-class Bar(A):
+def bar(r, **man):
+    print man
+    print r
+
+class Bar:
     cattr = 'something'
     def __init__(self, a, b):
         print 'args', a, b
@@ -33,15 +38,16 @@ class Bar(A):
         print baz
 assert True, 'something' + 'other thing'
 [3,4,5]
+print 'loaded stuff'
+print __name__
 if __name__ == '__main__':
-    Bar(3,4,**b).bar(d+5, a=5,c='hoo', *a, **b)
+    Bar(3,4).bar(a=5,c='hoo')
     Bar.staticm(5,6,7,'i');
-elif fail:
-    pass
 else:
     a=2
-    tester
-    multiple
+    foo(1,2,3,4,5,6)
+    bar(r=5,t='man')
+    print 'notmain'
 
 
 # vim: et sw=4 sts=4
