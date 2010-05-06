@@ -68,7 +68,7 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 **/
 
 var to_array = function(a){return Array.prototype.slice.call(a,0);};
-var fnrx = /^function\s+\w+\s*\(([\w,\s]+)\)/;
+var fnrx = /function\s+\w*\s*\(([\w,\s]+)\)/;
 
 function defined(x){
     return typeof(x) != 'undefined';
@@ -85,7 +85,7 @@ function $m() {
 
     var match = (fn+'').match(fnrx);
     if (!match)
-        throw "ParseError: sorry, something went wrong on my end; are you sure you're passing me a valid function?";
+        throw "ParseError: sorry, something went wrong on my end; are you sure you're passing me a valid function?" + (fn+'');
     fn.__args__ = match[1].split(',');
     if (fn.__args__.length != fn.length)
         throw "ParseError: sorry, something went wrong on my end; are you sure you're passing me a valid function?";
@@ -125,7 +125,7 @@ function $m() {
             } else
                 throw "TypeError: " + fn.name + "() takes "+argnum+" arguments (" + args.length + " given)";
         } else {
-            for (int i=args.length;i<argnum; i++){
+            for (var i=args.length;i<argnum; i++){
                 if (!defined(defaults[fn.__args__[i]])) {
                     throw "TypeError: " + fn.name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.lenght + " given)";
                 }

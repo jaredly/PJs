@@ -57,6 +57,10 @@ function pathresolve(path) {
     return path;
 }
 
+function dirname(path) {
+    return path.split('/').slice(0, -1).join('/');
+}
+
 module('<builtin>/__builtin__.py', function (__globals__) {
 
     var sys = __module_cache['<builtin>/sys.py']._module;
@@ -71,9 +75,9 @@ module('<builtin>/__builtin__.py', function (__globals__) {
 
         var relflag = false;
         var foundat = null;
-        for (int i=0;i<path.length;i++) {
-            relflag = path[i][0] !== '/';
-            var dname = pathresolve(pathjoin(cfile, path[i]));
+        for (var i=0;i<sys.path.length;i++) {
+            relflag = sys.path[i][0] !== '/';
+            var dname = pathresolve(pathjoin(dirname(file), sys.path[i]));
             var fname = pathjoin(dname, name.replace('.', '/'));
             if (defined(__module_cache[fname])) {
                 foundat = fname;
@@ -93,8 +97,8 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     });
     __globals__.reload = $m(function(module) {
         delete sys.modules[module.__name__];
-        return __globals__.__import__(module)l
-    };
+        return __globals__.__import__(module);
+    });
     
     __globals__.unicode = __not_implemented__("unicode");
     __globals__.bytearray = __not_implemented__("bytearray");
@@ -163,14 +167,14 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.credits = __not_implemented__("credits");
     __globals__.frozenset = __not_implemented__("frozenset");
     __globals__.ord = __not_implemented__("ord");
-    __globals__.super = __not_implemented__("super");
+    // __globals__.super = __not_implemented__("super");
     __globals__.license = __not_implemented__("license");
     __globals__.KeyboardInterrupt = __not_implemented__("KeyboardInterrupt");
     __globals__.filter = __not_implemented__("filter");
     __globals__.range = __not_implemented__("range");
     __globals__.BaseException = __not_implemented__("BaseException");
     __globals__.pow = __not_implemented__("pow");
-    __globals__.float = __not_implemented__("float");
+    // __globals__.float = __not_implemented__("float");
     __globals__.globals = __not_implemented__("globals");
     __globals__.divmod = __not_implemented__("divmod");
     __globals__.enumerate = __not_implemented__("enumerate");
@@ -180,7 +184,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.basestring = __not_implemented__("basestring");
     __globals__.zip = __not_implemented__("zip");
     __globals__.hex = __not_implemented__("hex");
-    __globals__.long = __not_implemented__("long");
+    // __globals__.long = __not_implemented__("long");
     __globals__.next = __not_implemented__("next");
     __globals__.chr = __not_implemented__("chr");
     __globals__.xrange = __not_implemented__("xrange");
@@ -200,7 +204,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.str = __not_implemented__("str");
     __globals__.property = __not_implemented__("property");
     __globals__.GeneratorExit = __not_implemented__("GeneratorExit");
-    __globals__.int = __not_implemented__("int");
+    // __globals__.int = __not_implemented__("int");
     __globals__.coerce = __not_implemented__("coerce");
     __globals__.file = __not_implemented__("file");
     __globals__.unichr = __not_implemented__("unichr");

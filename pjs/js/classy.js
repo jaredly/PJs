@@ -67,7 +67,7 @@ var type = $m(function type(name, bases, namespace) {
     return cls;
 });
 
-function __classmethod(cls, val)
+function __classmethod(cls, val){
     var fn = function() {
         return val.apply(this, [cls].concat(to_array(arguments)));
     };
@@ -87,5 +87,5 @@ function staticmethod(method){
     return method;
 }
 
-var class = type;
+var Class = type;
 
