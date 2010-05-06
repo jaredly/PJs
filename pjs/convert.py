@@ -3,6 +3,7 @@
 import ast
 
 class PJsException(Exception):pass
+class PJsNameError(PJsException):pass
 
 TEMPLATES = {
     'module':'''\
@@ -17,11 +18,13 @@ module('%(filename)s', function (%(scope)s) {
 %(contents)s
     return __locals__;
 }()))%(dec_back)s;
+%(rname)s.__module__ = __globals__.__name__;
 ''',
     'function':'''\
 %(left)s = %(dec_front)s$m(%(special)sfunction %(name)s(%(args)s) {
 %(contents)s
 })%(dec_back)s;
+%(rname)s.__module__ = __globals__.__name__;
 ''',
     'if':'''\
 if (%(test)s) {
@@ -157,11 +160,15 @@ def do_left(node, scope):
         raise PJsException("unsupported left %s" % node)
     if scope[0] is scope[1]:
         if isinstance(node, ast.Name):
+            if node.id not in scope[0]:
+                scope[0].append(node.id)
             return '__globals__.%s' % node.id, []
         js, imp = convert_node(node, scope)
         return '__globals__.%s' % js, imp
     elif isinstance(node, ast.Name):
         if scope[2]:
+            if node.id not in scope[1]:
+                scope[1].append(node.id)
             return '__locals__.%s' % node.id, []
         if node.id not in scope[1]:
             scope[1].append(node.id)
@@ -174,7 +181,11 @@ def do_left(node, scope):
         return convert_node(node, scope)
 
 def _name(node, scope):
-    return resolve(node.id, scope), []
+    try:
+        return resolve(node.id, scope), []
+    except PJsNameError, e:
+        print scope
+        raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
 
 import os
 localfile = lambda x:os.path.join(os.path.dirname(__file__), x)
@@ -189,10 +200,18 @@ def resolve(name, scope):
         if scope[2]:
             return '__locals__.%s' % name
         return name
+    elif name in scope[0]:
+        return '__globals__.%s' % name
     elif name not in scope[0] and name in __builtins__:
         return '__builtins__.%s' % name
     else:
-        return '__globals__.%s' % name
+        raise PJsNameError('undefined vbl %s' % name)
+        if scope[0] is scope[1]:
+            return '__globals__.%s' % name
+        elif scope[2]:
+            return '__locals__.%s' % name
+        else:
+            return name
 
 def _assign(node, scope):
     rest = ''
@@ -253,6 +272,11 @@ def _functiondef(node, scope):
     dct = {}
     dct['left'], imports = do_left(ast.Name(node.name, []), scope)
     dct['name'] = node.name
+    try:
+        dct['rname'] = resolve(node.name, scope);
+    except PJsNameError, e:
+        print scope
+        raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
     args = list(n.id for n in node.args.args)
     defaults = []
     for d,k in zip(reversed(node.args.defaults), reversed(args)):
@@ -283,7 +307,7 @@ def _functiondef(node, scope):
         dct['dec_front'] += js+'('
         dct['dec_back'] += ')'
 
-    scope = scope[0], args[:], False
+    scope = scope[0], scope[1]+args[:], False
     dct['contents'], imp = convert_block(node.body, scope)
     imports += imp
     text = TEMPLATES['function'] % dct
@@ -298,6 +322,7 @@ def _classdef(node, scope):
     dct = {}
     dct['left'], imports = do_left(ast.Name(node.name, {}), scope)
     dct['name'] = node.name;
+    dct['rname'] = resolve(node.name, scope);
     dct['bases'] = ', '.join(resolve(name.id, scope) for name in node.bases)
 
     dct['dec_front'] = ''

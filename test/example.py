@@ -13,7 +13,7 @@ h=4
 man = 1+2
 man = 1+2
 def foo(a,b,c=3,*rest):
-    print a+b, c, h
+    print a+b, c
     c=5
     def sub():
         print 'just to test'
@@ -24,6 +24,13 @@ def foo(a,b,c=3,*rest):
 def bar(r, **man):
     print man
     print r
+
+def decorate_me(func):
+    print 'decorating',func
+    def meta(*a, **b):
+        print a,b
+        func(*a, **b)
+    return meta
 
 class Bar:
     cattr = 'something'
@@ -36,6 +43,7 @@ class Bar:
 
     def bar(self, **baz):
         print baz
+    bar = decorate_me(bar)
 assert True, 'something' + 'other thing'
 [3,4,5]
 print 'loaded stuff'
