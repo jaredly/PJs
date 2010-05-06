@@ -379,17 +379,17 @@ def _call(node, scope):
                 js, imp = convert_node(n, scope)
                 imports += imp
                 args.append(js)
-            dct['args'] = '[%s]' % ', '.join(args)
+            dct['args'] = '__builtins__.tuple([%s])' % ', '.join(args)
             if node.starargs:
                 js, imp = convert_node(node.starargs, scope)
                 imports += imp
-                dct['args'] += '.concat(%s)' % js
+                dct['args'] += '.__add__(%s)' % js
         elif node.starargs:
             js, imp = convert_node(node.starargs, scope)
             imports += imp
             dct['args'] = js
         else:
-            dct['args'] = '[]'
+            dct['args'] = '__builtins__.tuple([])'
         if node.keywords:
             kargs = []
             for kw in node.keywords:

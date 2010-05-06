@@ -277,28 +277,42 @@ module('<builtin>/__builtin__.py', function (__globals__) {
 
     __globals__.tuple = Class('tuple', [], {
         __init__: $m(function(self, ible) {
-              var ible = ible.slice();
-              self.__len__ = function(){return ible.length;};
-              for (var i=0;i<len;i++){
-                  (function(i){
-                  self.__defineGetter__(i, function(){return ible[i];})
-                  }(i));
-              }
+            var ible = ible.slice();
+            self.__len__ = function(){return ible.length;};
+            self.length = ible.length; // TODO remove this when possible
+            for (var i=0;i<self.length;i++){
+                (function(i){
+                self.__defineGetter__(i, function(){return ible[i];})
+                }(i));
+            }
+        }),
+        __str__: $m(function(self) {
+            var a = [];
+          for (var i=0;i<__globals__.len(self);i++) {
+                a.push(__globals__.repr(self[i]));
+            }
+            if (a.length == 1) {
+                return '('+a[0]+',)';
+            }
+            return '('+a.join(', ')+')';
+        }),
+        __add__: $m(function(self, other) {
+            return __globals__.tuple(__globals__.list(self).concat(__globals__.list(other)));
         }),
         count: $m(function(self, item) {
-              var num = 0;
-              for (var i=0;i<__globals__.len(self);i++) {
-                  if (self[i] == item)
-                      num ++;
-              }
-              return num;
+            var num = 0;
+            for (var i=0;i<__globals__.len(self);i++) {
+                if (self[i] == item)
+                    num ++;
+            }
+            return num;
         }),
         index: $m(function(self, index) {
-              for (var i=0;i<__globals__.len(self);i++) {
-                  if (self[i] == item)
-                      return i;
-              }
-              return -1;
+            for (var i=0;i<__globals__.len(self);i++) {
+                if (self[i] == item)
+                    return i;
+            }
+            return -1;
         }),
     });
     __globals__.reversed = __not_implemented__("reversed");
