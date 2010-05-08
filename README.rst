@@ -10,6 +10,14 @@ javascript's lazyness regarding undefined variables.
 PJs has the goal of generating readable, usable *robust* javascript code from
 python code, and of providing some libraries to make web development easier.
 
+Independent Branch
+====================
+
+**this branch is for maintaining the functions.js and classes.js files in such a
+way that they would be usable independent of the main PJs project. This branch
+was created in anticipation of the changes being introduced to these two
+libraries that will make them inextricable from the main PJs library.**
+
 Things you can't do *(yet)*:
 
 - python magic:
