@@ -84,6 +84,157 @@ String.prototype.strip = function(){
     return this.replace(/^\s+/,'').replace(/\s+$/,'');
 };
 
+function get_fn_args(func) {
+    var match = (func + '').match(fnrx);
+    if (!match)
+        throw "ParseError: sorry, something went wrong on my end; are you sure you're passing me a valid function?" + (fn+'');
+    var args = match[1].split(',');
+    for (var i=0;i<args.length;i++) {
+        args[i] = args[i].replace(/^\s+/,'').replace(/\s+$/,'');
+    }
+    if (args.length !== func.length)
+        throw "ParseError: didn't parse the right number of arguments";
+    return args;
+}
+    
+
+function check_defaults(func_args, defaults) {
+    var dflag = false;
+    for (var i=0;i<argnum;i++) {
+        if (defined(defaults[func_args[i]]))
+            dflag = true;
+        else if (dflag)
+            return false;
+    }
+    return true;
+}
+
+function $m() {
+    var args = Array.prototype.slice.call(arguments);
+    if (!args.length)
+        throw new Error("JS Error: $m requires at least one argument.");
+    var func = args.pop();
+    if (typeof(func) !== 'function')
+        throw new Error("JS Error: $m requires a function as the last argument");
+    var func_args = get_fn_args(func);
+    func.__args__ = func_args;
+    var defaults = args.length?args.shift():{};
+    var aflag = args.length?args.shift();false;
+    var kflag = args.length?args.shift();false;
+    if (args.length) throw new Error("JS Error: $m takes at most 4 arguments. (" + (4+args.length) + " given)");
+
+    var argnum = func_args.length;
+    if (aflag) argnum--;
+    if (kflag) argnum--;
+
+    if (!check_defaults(func_args, defaults))
+        throw new Error("SyntaxError in function " + fn.name + ": non-default argument follows default argument");
+
+    var ndefaults = 0;
+    for (var x in defaults) ndefaults++;
+
+    var meta = [];
+    // can probably condense these
+    if (aflag) {
+        meta = function() {
+            var args = to_array(arguments);
+            var therest = [];
+            if (args.length > argnum) {
+                // TODO: probably use __builtins__.list here
+                therest = args.slice(argnum);
+                args = args.slice(0, argnum);
+                args.push(therest);
+            } else {
+                for (var i=args.length; i<argnum; i++) {
+                    if (!defined(defaults[func_args[i]]))
+                        // TODO: use __builtin__.Exception
+                        throw new Error("TypeError: " + func.name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)");
+                    args.push(defaults[func_args[i]]);
+                }
+                // TODO: list here again
+                args.push([]);
+            }
+            if (kflag)
+                // TODO: use _$$_.dict()
+                args.push({});
+            return func.apply(null, args);
+        };
+    } else {
+        meta = function() {
+            var args = to_array(arguments);
+            if (args.length > argnum)
+                throw new Error("TypeError: " + func.name + "() takes at most " + (argnum) + " arguments (" + args.length + " given)');
+            for (var i=args.length; i<argnum; i++) {
+                if (!defined(defaults[func_args[i]]))
+                    // TODO: use __builtin__.Exception
+                    throw new Error("TypeError: " + func.name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)");
+                args.push(defaults[func_args[i]]);
+            }
+            if (kflag)
+                // TODO: use _$$_.dict()
+                args.push({});
+            return func.apply(null, args);
+        };
+    }
+
+    meta.args = function(args, dict) {
+        // convert args, dict to types
+        if (args.length > argnum) {
+            if (!aflag)
+                throw new Error("TypeError: " + func.name + "() takes at most " + argnum + ' arnuments (' + args.length + ' given)');
+            therest = args.slice(argnum);
+            args = args.slice(0, argnum);
+            args.push(therest);
+        } else {
+            for (var i=args.length;i<argnum;i++) {
+                var aname = func_args[i];
+                if (defined(dict[aname])) {
+                    // TODO: treat as actual dictionary
+                    args.push(dict[aname]);
+                    delete dict[aname];
+                } else if (defined(defaults[aname]))
+                    args.push(defaults[aname]);
+                else
+                    throw new Error('TypeError: ' + func.name + '() takes at least ' + argnum-ndefaults + ' non-keyword arguments');
+            }
+            if (aflag)
+                // TODO: use list here
+                args.push([]);
+        }
+        if (kargs)
+            args.push(dict);
+        else if (dict)
+            throw new Error("TypeError: " + func.name + '() got unexpected keyword arguments');
+        return func.apply(null, args);
+    };
+    meta.__wraps__ = func;
+    meta.name = func.name;
+    meta.__name__ = func.name;
+    meta.args.__wraps__ = func;
+    meta.args.name = func.name;
+    meta.args.__name__ = func.name;
+    return meta;
+}
+
+/**
+    if (fn.__type__)
+        meta.__type__ = fn.__type__;
+    else
+        meta.__type__ = 'method';
+    meta.__wraps__ = fn;
+    meta.name = fn.name;
+    meta.__name__ = fn.name;
+    return meta;
+}
+**/
+
+/** end python function madness **/
+// vim: sw=4 sts=4
+//
+//
+/** deleted stuff
+ *
+
 function $m() {
     var args = to_array(arguments);
     if (!args.length) {
@@ -126,8 +277,6 @@ function $m() {
             throw "SyntaxError in function " + fn.name + ": non-default argument follows default argument";
         }
     }
-    var ndefaults = 0;
-    for (var x in defaults) ndefaults++;
 
     var meta = function() {
         var args = to_array(arguments);
@@ -151,45 +300,4 @@ function $m() {
         if (fkwargs) args.push(catchdct);
         return fn.apply(null, args);
     };
-    meta.args = function(pos, dict) {
-        var full = {};
-        for (var i=0;i<pos.length && i<argnum;i++) {
-            var name = fn.__args__[i];
-            full[name] = pos[i];
-        }
-        var catchall = pos.slice(i);
-        for (;i<argnum;i++) {
-            var name = fn.__args__[i];
-            if (defined(dict[name])) {
-                full[name] = dict[name];
-                delete dict[name];
-            } else if (defined(defaults[name])) {
-                full[name] = defaults[name];
-            } else
-                throw "TypeError: " + fn.name + " argument " + name + " was not satisfied.";
-        }
-        if (!fargs && catchall.length)
-            throw "TypeError: " + fn.name + "() takes "+argnum+" arguments (" + args.length + " given)";
-        if (!fkwargs && dict) {
-            for (var a in dict)
-                throw "TypeError: " + fn.name + "() got an unexpected keyword argument '" + a + "'";
-        }
-        var args = [];
-        for (var i=0;i<argnum;i++) {
-            args.push(full[fn.__args__[i]]);
-        }
-        if (fargs) args.push(catchall);
-        if (fkwargs) args.push(dict);
-        return fn.apply(null, args);
-    };
-    if (fn.__type__)
-        meta.__type__ = fn.__type__;
-    else
-        meta.__type__ = 'method';
-    meta.__wraps__ = fn;
-    meta.name = fn.name;
-    meta.__name__ = fn.name;
-    return meta;
-}
-
-/** end python function madness **/
+**/
