@@ -221,6 +221,15 @@ describe('pjs-classes.js', function(){
         expect(Abc.man(3)).toEqual(17);
         expect(Abc.a).toEqual(17);
     });
+    it('staticmethod', function(){
+        var Abc = Class('Abc', [], {
+            foo:staticmethod($m(function(a,b,c){
+                return [a+b, c];
+            })),
+        });
+        expect(Abc.foo(1,2,5)).toEqual([3,5]);
+        expect(Abc().foo(4,2,3)).toEqual([6,3]);
+    });
 });
 
 
