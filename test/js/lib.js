@@ -232,4 +232,15 @@ describe('pjs-classes.js', function(){
     });
 });
 
+describe('pjs-modules.js', function() {
+    it('',function(){
+        expect(true).toEqual(false, 'need to add tests for modules...');
+    });
+});
+
+describe('pjs-builtins.js', function() {
+    it('', function(){
+        expect(true).toEqual('need to add tests');
+    });
+});
 
