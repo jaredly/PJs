@@ -448,7 +448,7 @@ def _assert(node, scope):
     return text, imports
 
 for_rhino = '''
-load("%(dir)s/functions.js", "%(dir)s/classy.js", "%(dir)s/modules.js",
+load("%(dir)s/functions.js", "%(dir)s/classes.js", "%(dir)s/modules.js",
      "%(dir)s/__builtin__.js");
 '''
 
