@@ -172,24 +172,34 @@ describe('pjs-classes.js', function(){
     });
     it('inheritence', function(){
         var Parent = Class('Parent', [], {
-            __init__:$m(function(self){
+            __init__:$m(function __init__(self){
                 self.x = 3;
             }),
-            bar:$m(function(self, inc){
+            bar:$m(function bar(self, inc){
                 self.x += inc;
                 return self.x;
             }),
         });
+        expect(Parent.__type__).toEqual('type');
+        expect(Parent.__init__.__type__).toEqual(instancemethod);
+        expect(Parent.__init__.im_class).toEqual(Parent);
         var Child = Class('Child', [Parent], {
-            __init__:$m(function(self){
+            __init__:$m(function __init__(self){
                 Parent.__init__(self);
                 self.y = 5;
             }),
-            baz:$m(function(self){
+            baz:$m(function baz(self){
                 return self.x+self.y;
             }),
         });
-        var b = Parent(), c = Child();
+        expect(Child.__name__).toEqual('Child');
+        expect(Child.__init__.im_class).toEqual(Child);
+        expect(Child.__init__.__name__).toEqual('__init__');
+        expect(Parent.__type__).toEqual('type');
+        expect(Parent.__init__.__type__).toEqual(instancemethod);
+        expect(Parent.__init__.im_class).toEqual(Parent);
+        var b = Parent();
+        var c = Child();
         expect(b.x).toEqual(3);
         expect(c.x).toEqual(3);
         expect(b.bar(12)).toEqual(15);

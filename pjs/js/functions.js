@@ -209,11 +209,11 @@ function $m() {
         return func.apply(null, args);
     };
     meta.__wraps__ = func;
-    meta.name = func.name;
-    meta.__name__ = func.name;
+    meta.__type__ = func.__type__?func.__type__:'function';
+    meta.__name__ = func.__name__?func.__name__:func.name;
     meta.args.__wraps__ = func;
-    meta.args.name = func.name;
-    meta.args.__name__ = func.name;
+    meta.args.__type__ = meta.__type__;
+    meta.args.__name__ = meta.__name__;
     return meta;
 }
 

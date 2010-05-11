@@ -49,47 +49,115 @@ function __instancemethod(self, val) {
     return fn;
 }
 
+function instancemethod(cls, fn) {
+    var meta = function() {
+        /*
+        if (!__builtins__.isinstance(arguments[0], cls))
+            throw new Error('TypeError: unbound method '+fn.__name__+'() must be called with '+cls.__name__+' instance as the first argument');
+        */
+        return fn.apply(null, arguments);
+    }
+    meta.__name__ = fn.__name__?fn.__name__:fn.name;
+    meta.__type__ = instancemethod;
+    meta.__wraps__ = fn;
+    meta.__str__ = function(){
+        return '<unbound method '+cls.__name__+'.'+meta.__name__+'>';
+    };
+    meta.im_class = cls;
+    meta.im_func = fn;
+    meta.im_self = null;
+    meta.__get__ = function(self, cls) {
+        cls = cls||self.__class__;
+        /*
+        if (!__builtins__.isinstance(self, cls))
+            throw new Error('idk what just happened... invalid self while binding instancemethod');
+        */
+        var m2 = function() {
+            return fn.apply(this, [self].concat(to_array(arguments)));
+        };
+        m2.__name__ = meta.__name__;
+        m2.__type__ = instancemethod;
+        m2.__wraps__ = fn;
+        m2.__str__ = function(){
+            return '<bound method '+cls.__name__+'.'+meta.__name__+' of '+self.__str__()+'>';
+        };
+        m2.im_class = cls;
+        m2.im_func = fn;
+        m2.im_self = self;
+        m2.args = function(pos, kwd) {
+            return fn.args([self].concat(pos), kwd);
+        };
+        return m2;
+    };
+    return meta;
+}
+
+function _set_name(fn, name) {
+    fn.__name__ = name;
+    while(fn = fn.__wraps__)
+        fn.__name__ = name;
+}
+
 var type = $m(function type(name, bases, namespace) {
     var cls = function() {
         var self = {};
-        self.__init__ = function(){};
+        self.__init__ = instancemethod(cls, function(){}).__get__(self);
         self.__class__ = cls;
         self.__type__ = 'instance';
 
         for (var attr in cls) {
             var val = cls[attr];
-            if (typeof(val) !== 'function' || (defined(val.__type__) && val.__type__ !== 'method')) {
+            if (val.__type__ == instancemethod && !val.im_self) {
+                self[attr] = val.__get__(self, cls);
+                _set_name(self[attr], attr);
+            } else
                 self[attr] = val;
-            } else {
-                self[attr] = __instancemethod(self, val);
-                self[attr].name = attr;
-                self[attr].__name__ = attr;
-            }
         }
         self.__init__.apply(null, arguments);
         return self;
     };
+    var __setattr__ = $m(function(key, val) {
+        if (val.__type__ === 'function' ||
+                (!val.__type__ && typeof(val)==='function')) {
+            cls[key] = instancemethod(cls, val);
+        } else if (val.__type__ === classmethod) {
+            cls[key] = val.__get__(cls);
+        } else if (val.__type__ === staticmethod) {
+            cls[key] = val.__get__(cls);
+        } else if (val.__type__ === instancemethod) {
+            cls[key] = instancemethod(cls, val.im_func);
+        } else
+            cls[key] = val;
+    });
+    for (var i=0;i<bases.length;i++) {
+        for (var key in bases[i]) {
+            if (key === 'prototype') continue;
+            var val = bases[i][key];
+            __setattr__(key, val);
+        }
+    }
     cls.__type__ = 'type';
     cls.__bases__ = bases;
     cls.__name__ = name;
     cls.__str__ = $m(function(self){
         return '<' + self.__module__ + '.' + self.__name__ + ' instance at 0x10beef01>';
     });
-    for (var i=0;i<bases.length;i++) {
-        for (var key in bases[i]) {
-            if (key === 'prototype') continue;
-            var val = bases[i][key];
-            if (val.__cls_classmethod)
-                val = __classmethod(cls, val);
-            cls[key] = val;
-        }
-    }
     for (var key in namespace) {
-        cls[key] = namespace[key];
+        __setattr__(key, namespace[key]);
     }
     return cls;
 });
 
+function classmethod(val) {
+    var clsm = {};
+    clsm.__get__ = function(cls) {
+        return instancemethod(cls, val).__get__(cls);
+    };
+    clsm.__type__ = classmethod;
+    clsm.__str__ = function(){return '<classmethod object at 0x10beef01>';};
+    return clsm;
+}
+/*
 function __classmethod(cls, val){
     var fn = function() {
         return val.apply(this, [cls].concat(to_array(arguments)));
@@ -109,10 +177,13 @@ function classmethod(method){
     method.__cls_classmethod = true;
     return method;
 }
-
+*/
 function staticmethod(method){
-    method.__type__ = 'staticmethod'; // as the type is no longer "method", it won't be wrapped.
-    return method;
+    var obj = {};
+    obj.__type__ = staticmethod;
+    obj.__get__ = function(){return method;}
+    obj.__str__ = function(){return '<staticmethod object at 0x10beef01>';};
+    return obj;
 }
 
 var Class = type;
