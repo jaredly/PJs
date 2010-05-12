@@ -47,6 +47,17 @@ beforeEach(function(){
                 return true;
             }
         },
+        toReturnGiven: function(all) {
+            for (var i=0;i<all.length;i++) {
+                if (!(all[i][0] instanceof Array))
+                    all[i][0] = [all[i][0]];
+                var res = this.actual.apply(null, all[i][0]);
+                if (!this.env.equals_(res, all[i][1])) {
+                    return false;
+                }
+            }
+            return true;
+        },
     });
 });
 
@@ -233,14 +244,150 @@ describe('pjs-classes.js', function(){
 });
 
 describe('pjs-modules.js', function() {
-    it('',function(){
-        expect(true).toEqual(false, 'need to add tests for modules...');
+    it('general module test',function(){
+        expect(true).toEqual(true, 'I don\'t think there\'s much I can test here in isolation');
     });
 });
 
 describe('pjs-builtins.js', function() {
-    it('', function(){
-        expect(true).toEqual('need to add tests');
+    describe('module-imports', function(){
+        var sys = __builtins__.__import__('sys');
+        var numimports = 0;
+        it('import sys',function(){
+            expect(sys).toBe(__module_cache['<builtin>/sys.py']._module);
+        });
+        module('/one.py', function($) {
+            $.__doc__ = 'a simple module';
+            $.a = 4;
+            $.b = $m(function(r){
+                return r + $.a;
+            });
+            numimports += 1;
+        });
+        module('/two.py', function($) {
+            $.one = __builtins__.__import__('one', $.__name__, $.__file__)
+            $.c = 5;
+        });
+        it('multiple imports', function(){
+            expect(numimports).toEqual(0);
+            var one = __builtins__.__import__('one', '__main__', '/main.py');
+            expect(numimports).toEqual(1);
+            __builtins__.__import__('one', '__main__', '/main.py');
+            expect(numimports).toEqual(1);
+            expect(one.a).toEqual(4);
+            expect(one.b(5)).toEqual(9);
+        });
+        it('manual reload', function(){
+            delete sys.modules['one'];
+            expect(defined(sys.modules['one'])).toEqual(false);
+            __builtins__.__import__('one', '__main__', '/main.py');
+            expect(numimports).toEqual(2);
+        });
+        it('auto reload', function(){
+            var one = __builtins__.__import__('one', '__main__', '/main.py');
+            expect(numimports).toEqual(2);
+            __builtins__.reload(one);
+            expect(numimports).toEqual(3);
+        });
+        it('nested import', function(){
+            var one = __builtins__.__import__('one', '__main__', '/main.py');
+            delete sys.modules['one'];
+            var two = __builtins__.__import__('two', '__main__', '/main.py');
+            expect(two).toBe(sys.modules['two']);
+            expect(numimports).toEqual(4);
+            expect(two.c).toEqual(5);
+            one.a = 6;
+            expect(two.one).not.toEqual(one);
+            var one2 = __builtins__.__import__('one', '__main__', '/main.py');
+            expect(two.one).toEqual(one2);
+        });
     });
+
+    describe('sys.py', function() {
+        var sys = __builtins__.__import__('sys');
+        //expect(sys.modules['/one.py']._module.a).toEqual(4);
+    });
+
+    describe('os/path.py', function() {
+        var path = __builtins__.__import__('os.path');
+        it('join', function(){
+            expect(path.join).toReturnGiven([
+                [['a','b'],'a/b'],
+                [['a','/b'],'/b'],
+                [['a/','b'],'a/b'],
+                [['/a/b/../c','d'],'/a/b/../c/d']
+            ]);
+        });
+        it('isabs', function(){
+            expect(path.isabs).toReturnGiven([
+                [['/a'], true],
+                [['b'], false],
+                [['one/two/'], false],
+            ]);
+        });
+        it('abspath', function(){
+            expect(path.abspath).toThrowWith(['not/absolute']);
+            expect(path.abspath('/a/b/./../c/')).toEqual('/a/c');
+            expect(path.abspath('/first/second/../../third/./fourth/../')).toEqual('/third');
+        });
+        it('dirname', function(){
+            expect(path.dirname).toReturnGiven([
+                ['/one/two','/one'],
+                ['/many/layers/../of/stuff.txt','/many/layers/../of'],
+                ['relative/path','relative'],
+                ['ends/in/slash/','ends/in/slash']
+            ]);
+        });
+        it('basename', function(){
+            expect(path.basename).toReturnGiven([
+                ['/one/two.txt','two.txt'],
+                ['rela/tive/yes','yes'],
+                ['ends/../in/slash/','']
+            ]);
+        });
+        // normpath is covered by abspath
+    });
+
+    describe('misc builtins', function(){
+        it('isinstance', function() {
+            var $ = __builtins__;
+            var a=Class('a',[],{});
+            var b=Class('b',[],{});
+            var c=Class('c',[a],{});
+            expect($.isinstance(a(),a)).toBe(true);
+            expect($.isinstance(b(),a)).toBe(false);
+            expect($.isinstance).toThrowWith([a,a]);
+            expect($.isinstance(c(),a)).toBe(true);
+        });
+        it('issubclass', function() {
+            var $ = __builtins__;
+            var a=Class('a',[],{});
+            var b=Class('b',[],{});
+            var c=Class('c',[a],{});
+            expect($.issubclass).toReturnGiven([
+                [[a,a],true],
+                [[a,b],false],
+                [[a,c],false],
+                [[c,a],true]
+            ]);
+        });
+        /** complain about unimplemented stuff...
+        it('list', function(){
+            expect(false).toBe('need to *really* implement lists...');
+        });
+        it('iter', function(){
+            expect(false).toBe('iterators to');
+        });
+        it('print', function(){
+            // TODO: implement file streams? sys.stdout?
+            // mk --> get StringIO, convert it w/ pjs, and make it work =)
+            expect(false).toBe('havent quite gotten sys.stdout working...or >>');
+        });
+        it('tuple', function(){
+            expect('tuples', 'almost done');
+        });
+        **/
+    });
+
 });
 
