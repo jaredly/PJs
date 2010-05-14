@@ -386,6 +386,9 @@ describe('pjs-builtins.js', function() {
         it('tuple', function(){
             expect('tuples', 'almost done');
         });
+        it('dict', function(){
+            expect(false).toBe('should do this too');
+        });
         **/
     });
 
