@@ -336,22 +336,71 @@ __len__: $m(function(self){
         return false;
     });
 
-    __globals__._int = __not_implemented__("int");
+    __globals__._int = $m(function _int(what) {
+        if (typeof(what) === 'string')
+            return parseInt(what);
+        else if (typeof(what) === 'number') return what;
+        else
+            throw __globals__.TypeError('can\'t coerce to int');
+    });
 
     __globals__.tuple = Class('tuple', [], {
-        __init__: $m(function(self, ible) {
-            var ible = ible.slice();
-            self.__len__ = function(){return ible.length;};
-            self.length = ible.length; // TODO remove this when possible
-            for (var i=0;i<self.length;i++){
-                (function(i){
-                self.__defineGetter__(i, function(){return ible[i];})
-                }(i));
+        __init__: $m({'ible':[]}, function(self, ible) {
+            var __ = __globals__.iter(ible);
+            self._list = [];
+            self._len = 0;
+            while (__.trynext() && self._list.push(__.next())){self._len++}
+        }),
+        __contains__: $m(function(self, one){
+            return self._list.indexOf(one) !== -1;
+        }),
+        __doc__: 'javascript equivalent of the python builtin tuble class',
+        __eq__: $m(function(self, other){
+            if (!__globals__.isinstance(other, __globals__.tuple))
+                return false;
+            if (self.__len__() !== other.__len__()) return false;
+            var ln = self.__len__();
+            for (var i=0;i<ln;i++) {
+                if (!__globals__.eq(self._list[i], other._list[i]))
+                    return false;
             }
+            return true;
+        }),
+        __format__: $m(function(self, spec) {
+            throw __globals__.NotImplemented('formatting hasn\'t been done yet');
+        }),
+        __ge__: __not_implemented__('nope'),
+        __getitem__: $m(function(self, index) {
+            if (index < 0) index += self._len;
+            return self._list[index];
+        }),
+        __getnewargs__: __not_implemented__('sorry'),
+        __getslice__: $m(function(self, a, b) {
+            return __globals__.tuple(self._list.slice(a,b));
+        },
+        __gt__: __not_implemented__(''),
+        __hash__: __not_implemented__(''),
+        __iter__: $m(function(self) {
+            return __globals__.tupleiterator(self);
+        }),
+        __le__: __not_implemented__(''),
+        __len__: $m(function(self) { return self._len; }),
+        __lt__: __not_implemented__(''),
+        __mul__: $m(function(self, other) {
+            if (__globals__.isinstance(other, __globals__._int))
+                other = other.as_js();
+            if (type(other) == 'number') {
+                var res = []
+                for (var i=0;i<other;i++) {
+                    res = res.concat(self.as_js());
+                }
+                return res;
+            }
+            throw __globals__.TypeError('only can multiply by a number');
         }),
         __str__: $m(function(self) {
             var a = [];
-          for (var i=0;i<__globals__.len(self);i++) {
+            for (var i=0;i<__globals__.len(self);i++) {
                 a.push(__globals__.repr(self[i]));
             }
             if (a.length == 1) {
@@ -381,8 +430,8 @@ __len__: $m(function(self){
 
     __globals__.frozenset = __not_implemented__("frozenset");
     __globals__.hash = __not_implemented__("hash");
-    // __globals__.float = __not_implemented__("float");
-    // __globals__.long = __not_implemented__("long");
+    __globals__._float = __not_implemented__("float");
+    __globals__._long = __not_implemented__("long");
     __globals__.basestring = __not_implemented__("basestring");
 
     __globals__.str = $m(function(item) {
