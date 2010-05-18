@@ -351,6 +351,9 @@ __len__: $m(function(self){
             self._len = 0;
             while (__.trynext() && self._list.push(__.next())){self._len++}
         }),
+        __add__: $m(function(self, other) {
+            return __globals__.tuple(__globals__.list(self).concat(__globals__.list(other)));
+        }),
         __contains__: $m(function(self, one){
             return self._list.indexOf(one) !== -1;
         }),
@@ -365,9 +368,6 @@ __len__: $m(function(self){
                     return false;
             }
             return true;
-        }),
-        __format__: $m(function(self, spec) {
-            throw __globals__.NotImplemented('formatting hasn\'t been done yet');
         }),
         __ge__: __not_implemented__('nope'),
         __getitem__: $m(function(self, index) {
@@ -398,6 +398,26 @@ __len__: $m(function(self){
             }
             throw __globals__.TypeError('only can multiply by a number');
         }),
+        __ne__: __not_implemented__(''),
+        __repr__: $m(function(self) { return self.__str__(); }),
+        __rmul__: $m(function(self, other) {
+            return self.__mul__(other);
+        }),
+        count: $m(function(self, value) {
+            var c = 0;
+            for (var i=0;i<self._len;i++) {
+                if (__globals__.eq(self._list[i], value))
+                    c++;
+            }
+            return c;
+        }),
+        index: $m(function(self, value) {
+            for (var i=0;i<self._len;i++) {
+                if (__globals__.eq(self._list[i], value))
+                    return i;
+            }
+            throw __globals__.ValueError('x not in list');
+        }),
         __str__: $m(function(self) {
             var a = [];
             for (var i=0;i<__globals__.len(self);i++) {
@@ -407,24 +427,6 @@ __len__: $m(function(self){
                 return '('+a[0]+',)';
             }
             return '('+a.join(', ')+')';
-        }),
-        __add__: $m(function(self, other) {
-            return __globals__.tuple(__globals__.list(self).concat(__globals__.list(other)));
-        }),
-        count: $m(function(self, item) {
-            var num = 0;
-            for (var i=0;i<__globals__.len(self);i++) {
-                if (self[i] == item)
-                    num ++;
-            }
-            return num;
-        }),
-        index: $m(function(self, index) {
-            for (var i=0;i<__globals__.len(self);i++) {
-                if (self[i] == item)
-                    return i;
-            }
-            return -1;
         }),
     });
 
