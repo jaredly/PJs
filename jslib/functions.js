@@ -122,6 +122,8 @@ function $m() {
     var func_args = get_fn_args(func);
     // func.__args__ = func_args;
     var defaults = args.length?args.shift():{};
+    if (!(defaults instanceof Object))
+        throw new Error("the defaults argument must be an object");
     var aflag = args.length?args.shift():false;
     var kflag = args.length?args.shift():false;
     if (args.length) throw new Error("JS Error: $m takes at most 4 arguments. (" + (4+args.length) + " given)");
@@ -166,9 +168,11 @@ function $m() {
             args.push(therest);
         } else {
             for (var i=args.length; i<argnum; i++) {
-                if (!defined(defaults[func_args[i]]))
+                if (!defined(defaults[func_args[i]])) {
                     // TODO: use __builtin__.Exception
+                    // print(func);
                     throw new Error("TypeError: " + name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)");
+                }
                 args.push(defaults[func_args[i]]);
             }
             // TODO: list here again

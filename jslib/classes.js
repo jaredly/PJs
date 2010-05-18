@@ -106,6 +106,8 @@ var type = $m(function type(name, bases, namespace) {
         self.__type__ = 'instance';
 
         for (var attr in cls) {
+            if (['__type__','__class__'].indexOf(attr)!==-1)
+              continue;
             var val = cls[attr];
             if (val && val.__type__ == instancemethod && !val.im_self) {
                 self[attr] = val.__get__(self, cls);
@@ -114,8 +116,10 @@ var type = $m(function type(name, bases, namespace) {
                 self[attr] = val;
         }
         self.__init__.apply(null, arguments);
+        self.toString = self.__str__;
         return self;
     };
+    var ts = cls.toString;
     var __setattr__ = $m(function(key, val) {
         if (val && val.__type__ === 'function' ||
                 (val && !val.__type__ && typeof(val)==='function')) {
@@ -139,12 +143,11 @@ var type = $m(function type(name, bases, namespace) {
     cls.__type__ = 'type';
     cls.__bases__ = bases;
     cls.__name__ = name;
-    cls.__str__ = $m(function(self){
-        return '<' + self.__module__ + '.' + self.__name__ + ' instance at 0x10beef01>';
-    });
     for (var key in namespace) {
         __setattr__(key, namespace[key]);
     }
+    //if (cls.toString === ts)
+    //  cls.toString = cls.__str__;
     return cls;
 });
 

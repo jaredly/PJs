@@ -30,7 +30,9 @@ Now you can import stuff...just like in python.
 
 var __not_implemented__ = function __not_implemented__(name) {
     return function() {
-        throw "NotImplemented: the builtin function "+name+" is not implemented yet. You should help out and add it =)";
+        if (arguments.callee.__name__)
+            name = arguments.callee.__name__;
+        throw __builtins__.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)");
     };
 };
 
@@ -469,6 +471,8 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     });
 
     __globals__.str = $m(function str(item) {
+        if (item.__type__ === 'type')
+            return item.__module__ + '.' + item.__name__;
         if (defined(item.__str__)) {
             return item.__str__();
         } else if (item instanceof Array) {
@@ -613,6 +617,8 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.True = true;
     __globals__.None = null;
     __globals__.len = $m(function(obj) {
+        if (obj instanceof Array) return obj.length;
+        if (obj instanceof String) return obj.length;
         if (obj.__len__) return obj.__len__();
         throw __globals__.TypeError('no function __len__');
     });
@@ -669,6 +675,22 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.callable = __not_implemented__("callable");
     __globals__.eval = __not_implemented__("eval");
     __globals__.__debug__ = __not_implemented__("__debug__");
+
+    __globals__.Exception = Class('Exception', [], {
+        __init__: $m({}, true, function __init__(self, args) {
+            self.args = args;
+        }),
+        __str__: $m(function __str__(self) {
+            if (__globals__.len(self.args) == 1)
+                return self.__class__.__name__+': '+__globals__.str(self.args[0]);
+            return self.__class__.__name__+': '+__globals__.str(self.args);
+        }),
+    });
+
+    __globals__.TypeError = Class('TypeError', [__globals__.Exception], {});
+    __globals__.ValueError = Class('ValueError', [__globals__.Exception], {});
+    __globals__.IndexError = Class('IndexError', [__globals__.Exception], {});
+    __globals__.NotImplemented = Class('NotImplemented', [__globals__.Exception], {});
 });
 
 __module_cache['<builtin>/sys.py'].load('sys'); // must be loaded for importing to work.

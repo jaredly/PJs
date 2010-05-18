@@ -1,4 +1,5 @@
 function dump(a) {
+    if (a.__name__) return __builtins__.str(a);
     if (a instanceof Array) {
         var r = [];
         for (var i=0;i<a.length;i++) {
@@ -21,7 +22,6 @@ function dump(a) {
     else return ''+a;
 }
 
-
 beforeEach(function(){
     this.addMatchers({
         toThrowWith: function(args, errorlike) {
@@ -34,15 +34,30 @@ beforeEach(function(){
                 }
                 return false;
             } catch (e) {
-                var err = e.message?e.message:e.msg?e.msg:e+'';
-                if (!(err).match(errorlike)) {
-                    this.message = function(){
-                        return this.actual.name + " got an unexpected error: " + e + "... looked for "+errorlike;
+                var name = this.actual.__name__ || this.actual.name;
+                if (errorlike instanceof RegExp) {
+                    var err = e.message?e.message:e.msg?e.msg:e+'';
+                    var good = (err).match(errorlike);
+                    if (!(err).match(errorlike)) {
+                        this.message = function(){
+                            return name + " got an unexpected error: " + e
+                                + "... looked for "+errorlike;
+                        }
+                        return false;
                     }
-                    return false;
+                } else {
+                    if (!e.__class__ || !__builtins__.isinstance(e, errorlike)) {
+                        this.message = function(){
+                            return name + ' got an unexpected error: ' +
+                                __builtins__.str(e) + ' ... looked for ' + __builtins__.str(errorlike);
+                        }
+                        return false;
+                    }
                 }
+
                 this.message = function(){
-                    return this.actual.name + " wasn't supposed to fail with args " + dump(args) + ". Exception: " + e;
+                    return this.actual.name +
+                        " wasn't supposed to fail with args " + dump(args) + ". Exception: " + e;
                 };
                 return true;
             }
@@ -108,7 +123,7 @@ describe('pjs-functions.js', function () {
             var cargs = $m({}, true, function(all){});
             expect(cargs).not.toThrowWith([]);
             expect(cargs).not.toThrowWith([1,2,3,4]);
-            expect(cargs.args).toThrowWith([], {'some':'kwarg'});
+            expect(cargs.args).toThrowWith([[], {'some':'kwarg'}]);
         });
         it('catches kwargs', function(){
             var kargs = $m({}, false, true, function(all){});
@@ -398,8 +413,8 @@ describe('pjs-builtins.js', function() {
             it('simple', function() {
                 var t = _.tuple();
                 expect(_.len(t)).toBe(0);
-                expect(t.__getitem__).toThrowWith([0], /IndexError/);
-                expect(t.index).toThrowWith([0], /IndexError/);
+                expect(t.__getitem__).toThrowWith([0], _.IndexError);
+                expect(t.index).toThrowWith([0], _.ValueError);
             });
             it('small', function(){
                 var e = _.tuple([1,2,'3',1]);
