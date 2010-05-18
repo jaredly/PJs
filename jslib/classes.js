@@ -107,7 +107,7 @@ var type = $m(function type(name, bases, namespace) {
 
         for (var attr in cls) {
             var val = cls[attr];
-            if (val.__type__ == instancemethod && !val.im_self) {
+            if (val && val.__type__ == instancemethod && !val.im_self) {
                 self[attr] = val.__get__(self, cls);
                 _set_name(self[attr], attr);
             } else
@@ -117,14 +117,14 @@ var type = $m(function type(name, bases, namespace) {
         return self;
     };
     var __setattr__ = $m(function(key, val) {
-        if (val.__type__ === 'function' ||
-                (!val.__type__ && typeof(val)==='function')) {
+        if (val && val.__type__ === 'function' ||
+                (val && !val.__type__ && typeof(val)==='function')) {
             cls[key] = instancemethod(cls, val);
-        } else if (val.__type__ === classmethod) {
+        } else if (val && val.__type__ === classmethod) {
             cls[key] = val.__get__(cls);
-        } else if (val.__type__ === staticmethod) {
+        } else if (val && val.__type__ === staticmethod) {
             cls[key] = val.__get__(cls);
-        } else if (val.__type__ === instancemethod) {
+        } else if (val && val.__type__ === instancemethod) {
             cls[key] = instancemethod(cls, val.im_func);
         } else
             cls[key] = val;

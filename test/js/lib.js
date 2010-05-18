@@ -392,5 +392,39 @@ describe('pjs-builtins.js', function() {
         **/
     });
 
+    describe('builtin types', function(){
+        describe('tuple', function() {
+            var _ = __builtins__;
+            it('simple', function() {
+                var t = _.tuple();
+                expect(_.len(t)).toBe(0);
+                expect(t.__getitem__).toThrowWith([0], /IndexError/);
+            });
+            it('small', function(){
+                var e = _.tuple([1,2,'3',1]);
+                expect(_.len(e)).toBe(4);
+                expect(e.__getitem__(0)).toBe(1);
+                expect(e.__getitem__(2)).toBe('3');
+                expect(e.count(1)).toBe(2);
+                expect(e.count(4)).toBe(0);
+                expect(e.index(1)).toBe(0);
+            });
+            it('equal', function(){
+                var a = _.tuple([3,4]);
+                var b = _.tuple([3,4]);
+                var c = _.tuple([1,2,3]);
+                var d = _.tuple(c);
+                expect(_.eq(a,b)).toBe(true);
+                expect(_.eq(c,d)).toBe(true);
+                expect(_.eq(a,c)).toBe(false);
+            });
+            it('ops', function(){
+                var a = _.tuple([3,4]);
+                var c = _.tuple([1,2,3]);
+                expect(_.str(a)).toBe('(3, 4)');
+                expect(a.__add__(c).as_js()).toEqual([3,4,1,2,3]);
+            });
+        });
+    });
 });
 

@@ -28,7 +28,7 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 Now you can import stuff...just like in python.
 **/
 
-var __not_implemented__ = function(name) {
+var __not_implemented__ = function __not_implemented__(name) {
     return function() {
         throw "NotImplemented: the builtin function "+name+" is not implemented yet. You should help out and add it =)";
     };
@@ -47,7 +47,7 @@ module('<builtin>/sys.py', function (__globals__) {
 
 module('<builtin>/os/path.py', function(__globals__) {
     __globals__.__doc__ = "a module for dealing with paths";
-    __globals__.join = $m({}, true, function(first, args) {
+    __globals__.join = $m({}, true, function join(first, args) {
         var path = first;
         for (var i=0;i<args.length;i++) {
             if (__globals__.isabs(args[i])) {
@@ -59,22 +59,22 @@ module('<builtin>/os/path.py', function(__globals__) {
         }
         return path;
     });
-    __globals__.isabs = $m(function(path) {
+    __globals__.isabs = $m(function isabs(path) {
         if (!path)return false;
         return path && path[0] == '/';
     });
-    __globals__.abspath = $m(function(path) {
+    __globals__.abspath = $m(function abspath(path) {
         if (!__globals__.isabs(path))
             throw "not implementing this atm";
         return __globals__.normpath(path);
     });
-    __globals__.dirname = $m(function(path) {
+    __globals__.dirname = $m(function dirname(path) {
         return path.split('/').slice(0,-1).join('/') || '/';
     });
-    __globals__.basename = $m(function(path) {
+    __globals__.basename = $m(function basename(path) {
         return path.split('/').slice(-1)[0];
     });
-    __globals__.normpath = $m(function(path) {
+    __globals__.normpath = $m(function normpath(path) {
         var prefix = path.match(/^\/+/) || '';
         var comps = path.slice(prefix.length).split('/');
         var i = 0;
@@ -150,7 +150,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
         return sys.modules[mname];
     });
 
-    __globals__.reload = $m(function(module) {
+    __globals__.reload = $m(function reload(module) {
         delete sys.modules[module.__name__];
         // TODO: this could cause problems, not providing a source file or
         // source name...import might not go through
@@ -161,7 +161,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
 
     __globals__.dict = Class('dict', [], {
         // **TODO** add a **kwargs to this
-        __init__: $m({'itable':[]}, function(self, itable){
+        __init__: $m({'itable':[]}, function __init__(self, itable){
             self._items = {};
             if (__globals__.isisntance(itable, __globals__.dict)) {
                 var keys = itable.keys();
@@ -182,23 +182,23 @@ module('<builtin>/__builtin__.py', function (__globals__) {
                 }
             }
         }),
-        __cmp__: $m(function(self, other){
+        __cmp__: $m(function __cmp__(self, other){
             throw __globals__.AttributeError('not yet implemented');
         }),
-        __contains__: $m(function(self, key){
+        __contains__: $m(function __contains__(self, key){
             return key in self._items;
         }),
-        __delattr__: $m(function(self, key){
+        __delattr__: $m(function __delattr__(self, key){
             if (key in self._items)
                 delete self._items[key];
             else
                 throw __globals__.KeyError(key+' not found');
         }),
-        __delitem__: $m(function(self, key){
+        __delitem__: $m(function __delitem__(self, key){
             throw __globals__.KeyError('doesnt make sense');
         }),
         __doc__: 'builtin dictionary type',
-        __eq__: $m(function(self, dct){
+        __eq__: $m(function __eq__(self, dct){
             var mk = self.keys();
             var ok = dct.keys();
             if (!mk.__eq__(ok))return false;
@@ -209,40 +209,40 @@ module('<builtin>/__builtin__.py', function (__globals__) {
             }
             return true;
         }),
-        __format__: $m(function(self, fmt) {
+        __format__: $m(function __format__(self, fmt) {
             throw __globals__.NotImplemented('not yet implemented');
         }),
-        __ge__: $m(function(self, other) {
+        __ge__: $m(function __ge__(self, other) {
             throw __globals__.NotImplemented('not yet implemented');
         }),
         __hash__: null,
-        __iter__: $m(function(self) {
+        __iter__: $m(function __iter__(self) {
             return self.keys().__iter__();
         }),
-__len__: $m(function(self){
+        __len__: $m(function __len__(self){
             return self.keys().__len__();
         }),
-        __repr__: $m(function(self){
+        __repr__: $m(function __repr__(self){
             return self.__str__();
         }),
-        __setitem__: $m(function(self, key, value){
+        __setitem__: $m(function __setitem__(self, key, value){
             self._items[key] = value;
         }),
-        __str__: $m(function(self){
+        __str__: $m(function __str__(self){
             var strs = [];
             for (var key in self._items) {
                 strs.push(__globals__.repr(key)+':'+__globals__.repr(self._items[key]));
             }
             return '{'+strs.join(', ')+'}';
         }),
-        clear: $m(function(self){
+        clear: $m(function clear(self){
             delete self._items;
             self._items = {};
-        });
-        copy: $m(function(self){
+        }),
+        copy: $m(function copy(self){
             return __globals__.dict(self);
         }),
-        fromkeys: classmethod($m({'v':null}, function(cls, keys, v){
+        fromkeys: classmethod($m({'v':null}, function fromkeys(cls, keys, v){
             var d = cls();
             var keys = __globals__.iter(keys);
             while (true) {
@@ -256,15 +256,15 @@ __len__: $m(function(self){
             }
             return d;
         })),
-        get: $m({'def':null}, function(self, key, def){
+        get: $m({'def':null}, function get(self, key, def){
             if (key in self._items)
                 return self._items[key];
             return def;
         }),
-        has_key: $m(function(self, key){
+        has_key: $m(function has_key(self, key){
             return key in self._items;
         }),
-        items: $m(function(self){
+        items: $m(function items(self){
             var items = [];
             var keys = self.keys().as_js();
             for (var i=0;i<keys.length;i++){
@@ -272,50 +272,50 @@ __len__: $m(function(self){
             }
             return __globals__.list(items);
         }),
-        iteritems: $m(function(self){
+        iteritems: $m(function iteritems(self){
             // TODO: nasty hack...doesn't actually get you any lazy benefits
             return self.items().__iter__();
         }),
-        iterkeys: $m(function(self){
+        iterkeys: $m(function iterkeys(self){
             return self.keys().__iter__();
         }),
-        itervalues: $m(function(self){
+        itervalues: $m(function itervalues(self){
             return self.values().__iter__();
         }),
-        keys: $m(function(self){
+        keys: $m(function keys(self){
             var ks = [];
             for (var k in self._items){
                 ks.push(k);
             }
             return __globals__.list(ks);
         }),
-        pop: $m({'default':null}, function(self, key, default){
+        pop: $m({'default_':null}, function pop(self, key, default_){
             if (key in self._items){
                 var v = self._items[key];
                 delete self._items[key];
                 return v;
             }
-            return default;
+            return default_;
         }),
-        popitem: $m(function(self){
+        popitem: $m(function popitem(self){
             if (self.__len__()==0)
                 throw __globals__.KeyError('dict is empty');
             for (var k in self._items) {
                 return self.pop(k);
             }
         }),
-        setdefault: $m(function(self, k, d){
+        setdefault: $m(function setdefault(self, k, d){
             if (!(k in self._items))
                 self._items[k] = d;
             return self._items[k];
         }),
-        update: $m(function(self, other){
+        update: $m(function update(self, other){
             var keys = __globals__.dict(other).keys().as_js();
             for (var i=0;i<keys.length;i++){
                 self._items[keys[i]] = other.__getitem__(keys[i]);
             }
         }),
-        values: $m(function(self){
+        values: $m(function values(self){
             var vs = [];
             for (var k in self._items)
                 vs.push(self._items[k]);
@@ -345,20 +345,33 @@ __len__: $m(function(self){
     });
 
     __globals__.tuple = Class('tuple', [], {
-        __init__: $m({'ible':[]}, function(self, ible) {
-            var __ = __globals__.iter(ible);
-            self._list = [];
-            self._len = 0;
-            while (__.trynext() && self._list.push(__.next())){self._len++}
+        __init__: $m({'ible':[]}, function __init__(self, ible) {
+            if (ible instanceof Array) {
+                self._len = ible.length;
+                self._list = ible.slice();
+            } else if (__globals__.isinstance(ible, [__globals__.tuple, __globals__.list])) {
+                self._list = ible.as_js().slice();
+                self._len = self._list.length;
+            } else {
+                var __ = __globals__.iter(ible);
+                self._list = [];
+                self._len = 0;
+                while (__.trynext() && self._list.push(__.next())){self._len++}
+            }
         }),
-        __add__: $m(function(self, other) {
-            return __globals__.tuple(__globals__.list(self).concat(__globals__.list(other)));
+        as_js: $m(function(self){
+           return self._list;
         }),
-        __contains__: $m(function(self, one){
+        __add__: $m(function __add__(self, other) {
+            if (!__globals__.isinstance(other, __globals__.tuple))
+                throw __globals__.TypeError('can only concatenate tuple to tuple');
+            return __globals__.tuple(self._list.concat(other._list));
+        }),
+        __contains__: $m(function __contains__(self, one){
             return self._list.indexOf(one) !== -1;
         }),
         __doc__: 'javascript equivalent of the python builtin tuble class',
-        __eq__: $m(function(self, other){
+        __eq__: $m(function __eq__(self, other){
             if (!__globals__.isinstance(other, __globals__.tuple))
                 return false;
             if (self.__len__() !== other.__len__()) return false;
@@ -370,23 +383,25 @@ __len__: $m(function(self){
             return true;
         }),
         __ge__: __not_implemented__('nope'),
-        __getitem__: $m(function(self, index) {
+        __getitem__: $m(function __getitem__(self, index) {
             if (index < 0) index += self._len;
+            if (index < 0 || index >= self._len)
+                throw __globals__.IndexError('index out of range');
             return self._list[index];
         }),
         __getnewargs__: __not_implemented__('sorry'),
-        __getslice__: $m(function(self, a, b) {
+        __getslice__: $m(function __getslice__(self, a, b) {
             return __globals__.tuple(self._list.slice(a,b));
-        },
+        }),
         __gt__: __not_implemented__(''),
         __hash__: __not_implemented__(''),
-        __iter__: $m(function(self) {
+        __iter__: $m(function __iter__(self) {
             return __globals__.tupleiterator(self);
         }),
         __le__: __not_implemented__(''),
-        __len__: $m(function(self) { return self._len; }),
+        __len__: $m(function __len__(self) { return self._len; }),
         __lt__: __not_implemented__(''),
-        __mul__: $m(function(self, other) {
+        __mul__: $m(function __mul__(self, other) {
             if (__globals__.isinstance(other, __globals__._int))
                 other = other.as_js();
             if (type(other) == 'number') {
@@ -399,11 +414,11 @@ __len__: $m(function(self){
             throw __globals__.TypeError('only can multiply by a number');
         }),
         __ne__: __not_implemented__(''),
-        __repr__: $m(function(self) { return self.__str__(); }),
-        __rmul__: $m(function(self, other) {
+        __repr__: $m(function __repr__(self) { return self.__str__(); }),
+        __rmul__: $m(function __rmul__(self, other) {
             return self.__mul__(other);
         }),
-        count: $m(function(self, value) {
+        count: $m(function count(self, value) {
             var c = 0;
             for (var i=0;i<self._len;i++) {
                 if (__globals__.eq(self._list[i], value))
@@ -411,17 +426,17 @@ __len__: $m(function(self){
             }
             return c;
         }),
-        index: $m(function(self, value) {
+        index: $m(function index(self, value) {
             for (var i=0;i<self._len;i++) {
                 if (__globals__.eq(self._list[i], value))
                     return i;
             }
             throw __globals__.ValueError('x not in list');
         }),
-        __str__: $m(function(self) {
+        __str__: $m(function __str__(self) {
             var a = [];
-            for (var i=0;i<__globals__.len(self);i++) {
-                a.push(__globals__.repr(self[i]));
+            for (var i=0;i<self._len;i++) {
+                a.push(__globals__.repr(self._list[i]));
             }
             if (a.length == 1) {
                 return '('+a[0]+',)';
@@ -435,8 +450,25 @@ __len__: $m(function(self){
     __globals__._float = __not_implemented__("float");
     __globals__._long = __not_implemented__("long");
     __globals__.basestring = __not_implemented__("basestring");
+    __globals__.eq = $m(function eq(a, b){
+        if (a.__eq__) {
+            try { return a.__eq__(b); }
+            catch(e) {
+                if (!__globals__.isinstance(e, __globals__.NotImplemented))
+                    throw e;
+            }
+        }
+        if (b.__eq__) {
+            try { return b.__eq__(a); }
+            catch(e) {
+                if (!__globals__.isinstance(e, __globals__.NotImplemented))
+                    throw e;
+            }
+        }
+        return a === b;
+    });
 
-    __globals__.str = $m(function(item) {
+    __globals__.str = $m(function str(item) {
         if (defined(item.__str__)) {
             return item.__str__();
         } else if (item instanceof Array) {
@@ -468,7 +500,7 @@ __len__: $m(function(self){
         }
     });
 
-    __globals__.list = $m(function(ible) {
+    __globals__.list = $m(function list(ible) {
         if (defined(ible.__iter__)) {
             var t = [];
             var i = ible.__iter__();
@@ -491,7 +523,11 @@ __len__: $m(function(self){
         return t;
     });
 
-    __globals__.iter = $m(function(ible) {
+    __globals__.iter = $m({'sentinel':null}, function iter(ible, sentinel) {
+        if (sentinel)
+            return callable_iterator(ible, sentinel);
+        if (ible instanceof Array) 
+            return __globals__.tuple(ible).__iter__();
         if (!defined(ible.__iter__))
             throw 'item not iterable';
         return ible.__iter__();
@@ -500,7 +536,7 @@ __len__: $m(function(self){
     /** function progging **/
 
     __globals__.all = __not_implemented__("all");
-    __globals__.vars = $m(function(obj) {
+    __globals__.vars = $m(function vars(obj) {
         var dct = {};
         for (var a in obj) {
             dct[a] = obj[a];
@@ -514,13 +550,13 @@ __len__: $m(function(self){
     __globals__.classmethod = classmethod;
     __globals__.staticmethod = staticmethod;
 
-    __globals__.isinstance = $m(function(inst, clsses) {
+    __globals__.isinstance = $m(function isinstance(inst, clsses) {
         if (!defined(inst.__class__))
             throw "PJs Error: isisntance only works on objects";
         return __globals__.issubclass(inst.__class__, clsses);
     });
 
-    __globals__.issubclass = $m(function(cls, clsses) {
+    __globals__.issubclass = $m(function issubclass(cls, clsses) {
         if (!defined(cls.__bases__))
             throw "PJs Error: issubclass only works on classes";
         if (!(clsses instanceof Array))
@@ -561,14 +597,14 @@ __len__: $m(function(self){
     __globals__.getattr = __not_implemented__("getattr");
     __globals__.abs = __not_implemented__("abs");
     __globals__.exit = __not_implemented__("exit");
-    __globals__.print = $m({}, true, function(args) {
+    __globals__.print = $m({}, true, function print(args) {
         var strs = [];
         for (var i=0;i<args.length-1;i++) {
             strs.push(__globals__.str(args[i]));
         }
         print(strs.join(' '));
     });
-    __globals__.assert = $m(function(bool, text) {
+    __globals__.assert = $m(function assert(bool, text) {
         if (!bool) {
             throw Error(text);
         }
@@ -576,7 +612,10 @@ __len__: $m(function(self){
     // __globals__.raise = $m(
     __globals__.True = true;
     __globals__.None = null;
-    __globals__.len = __not_implemented__("len");
+    __globals__.len = $m(function(obj) {
+        if (obj.__len__) return obj.__len__();
+        throw __globals__.TypeError('no function __len__');
+    });
     __globals__.credits = __not_implemented__("credits");
     __globals__.ord = __not_implemented__("ord");
     // __globals__.super = __not_implemented__("super");
@@ -606,7 +645,7 @@ __len__: $m(function(self){
     __globals__.raw_input = __not_implemented__("raw_input");
     __globals__.compile = __not_implemented__("compile");
 
-    __globals__.repr = $m(function(item) {
+    __globals__.repr = $m(function repr(item) {
         if (typeof(item) === 'string') {
             return "'" + item + "'";
         } else if (defined(item.__repr__)) {

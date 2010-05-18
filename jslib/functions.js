@@ -116,6 +116,7 @@ function $m() {
     if (!args.length)
         throw new Error("JS Error: $m requires at least one argument.");
     var func = args.pop();
+    var name = func.__name__ || func.name;
     if (typeof(func) !== 'function')
         throw new Error("JS Error: $m requires a function as the last argument");
     var func_args = get_fn_args(func);
@@ -132,7 +133,7 @@ function $m() {
         throw new Error('SyntaxError: not enough arguments specified');
 
     if (!check_defaults(func_args, defaults, argnum))
-        throw new Error("SyntaxError in function " + func.name + ": non-default argument follows default argument");
+        throw new Error("SyntaxError in function " + name + ": non-default argument follows default argument");
 
     var ndefaults = 0;
     var first_default = -1;
@@ -140,7 +141,7 @@ function $m() {
         ndefaults++;
         var at = func_args.slice(0,argnum).indexOf(x);
         if (at === -1) {
-            throw new Error('ArgumentError: unknown default key ' + x + ' for function ' + func.name);
+            throw new Error('ArgumentError: unknown default key ' + x + ' for function ' + name);
         }
         else if (first_default === -1 || at < first_default)
             first_default = at;
@@ -151,10 +152,14 @@ function $m() {
                 throw new Error('SyntaxError: non-default argument follows default argument');
 
     var meta = function() {
+        var name = func.__name__ || func.name;
         var args = to_array(arguments);
+        for (var i=0;i<args.length;i++)
+            if (!defined(args[i]))
+                throw new Error("TypeError: you passed in something that was undefined to " + name);
         if (args.length > argnum) {
             if (!aflag)
-                throw new Error("TypeError: " + func.name + "() takes at most " + (argnum) + " arguments (" + args.length + " given)");
+                throw new Error("TypeError: " + name + "() takes at most " + (argnum) + " arguments (" + args.length + " given)");
             // TODO: probably use __builtins__.list here
             var therest = args.slice(argnum);
             args = args.slice(0, argnum);
@@ -163,7 +168,7 @@ function $m() {
             for (var i=args.length; i<argnum; i++) {
                 if (!defined(defaults[func_args[i]]))
                     // TODO: use __builtin__.Exception
-                    throw new Error("TypeError: " + func.name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)");
+                    throw new Error("TypeError: " + name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)");
                 args.push(defaults[func_args[i]]);
             }
             // TODO: list here again
@@ -181,7 +186,7 @@ function $m() {
         // convert args, dict to types
         if (args.length > argnum) {
             if (!aflag)
-                throw new Error("TypeError: " + func.name + "() takes at most " + argnum + ' arnuments (' + args.length + ' given)');
+                throw new Error("TypeError: " + name + "() takes at most " + argnum + ' arnuments (' + args.length + ' given)');
             therest = args.slice(argnum);
             args = args.slice(0, argnum);
             args.push(therest);
@@ -195,7 +200,7 @@ function $m() {
                 } else if (defined(defaults[aname]))
                     args.push(defaults[aname]);
                 else
-                    throw new Error('TypeError: ' + func.name + '() takes at least ' + argnum-ndefaults + ' non-keyword arguments');
+                    throw new Error('TypeError: ' + name + '() takes at least ' + argnum-ndefaults + ' non-keyword arguments');
             }
             if (aflag)
                 // TODO: use list here
@@ -205,7 +210,7 @@ function $m() {
             args.push(dict);
         else
             for (var kname in dict)
-                throw new Error("TypeError: " + func.name + '() got unexpected keyword argument: ' + kname);
+                throw new Error("TypeError: " + name + '() got unexpected keyword argument: ' + kname);
         return func.apply(null, args);
     };
     meta.__wraps__ = func;
