@@ -399,6 +399,7 @@ describe('pjs-builtins.js', function() {
                 var t = _.tuple();
                 expect(_.len(t)).toBe(0);
                 expect(t.__getitem__).toThrowWith([0], /IndexError/);
+                expect(t.index).toThrowWith([0], /IndexError/);
             });
             it('small', function(){
                 var e = _.tuple([1,2,'3',1]);
