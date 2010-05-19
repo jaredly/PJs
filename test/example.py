@@ -26,7 +26,7 @@ def bar(r, **man):
     print r
 
 def decorate_me(func):
-    print 'decorating',func
+    print 'decorating',func.__name__
     def meta(*a, **b):
         print 'deca_args', a,b
         func(*a, **b)
