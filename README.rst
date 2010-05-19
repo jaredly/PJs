@@ -10,32 +10,31 @@ javascript's lazyness regarding undefined variables.
 PJs has the goal of generating readable, usable *robust* javascript code from
 python code, and of providing some libraries to make web development easier.
 
-Things you can't do *(yet)*:
+Things you can't do:
 
 - python magic:
 
-  - __add__
-  - __sub__
-  - __mul__
+  - __getattribute__
+  - __setattribute__
 
-These are planned, but currently descisions have to be made regarding the
-performance losses associated with these magic functions.
+These will have major performance implications; I imagine they might be
+enableable via a flag -- for most programs that level of control isn't
+absolutely nessecary.
 
 Things you can do:
 
 - just about everything else
+- classes
+- modules!
+- functions
+- decorators
+
+  - classmethod
+  - staticmethod
 
 if you find a bug or something you don't like, feel free to file a ticket on
 github, or *even better*, fork the repo, fix your problem, and then pull
 request. We love pull requests.
-
-Ok, so this project is starting out. And so none of it is implemented yet. But
-I'm working on it ;)
-
-To keep in mind:
-
-- scoping (globals?)
-- module importing...reload...sys.modules...
 
 Pythonic Functions
 ==================
@@ -86,4 +85,4 @@ Here's an example that uses all of these:
 
     !! that looks like python !! well...almost. but it's lovely :)
  
-python-style classes will follow shortly.
+python-style classes are also implemented, with full namespacing!
