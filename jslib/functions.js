@@ -161,25 +161,23 @@ function $m() {
         if (args.length > argnum) {
             if (!aflag)
                 throw new Error("TypeError: " + name + "() takes at most " + (argnum) + " arguments (" + args.length + " given)");
-            // TODO: probably use __builtins__.list here
-            var therest = args.slice(argnum);
+            var therest = __builtins__.list(args.slice(argnum));
             args = args.slice(0, argnum);
             args.push(therest);
         } else {
             for (var i=args.length; i<argnum; i++) {
                 if (!defined(defaults[func_args[i]])) {
-                    // TODO: use __builtin__.Exception
-                    // print(func);
-                    throw new Error("TypeError: " + name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)");
+                    throw __builtins__.TypeError(name + "() takes at least " + (argnum-ndefaults) +" arguments (" + args.length + " given)");
                 }
                 args.push(defaults[func_args[i]]);
             }
             // TODO: list here again
-            args.push([]);
+            if (aflag)
+                args.push(__builtins__.list());
         }
         if (kflag)
             // TODO: use _$$_.dict()
-            args.push({});
+            args.push(__builtins__.dict());
         if (__builtins__)
             __builtins__._debug_stack.push([name, func, args]);
         var result = func.apply(null, args);
@@ -198,18 +196,24 @@ function $m() {
                 args = args.as_js();
             }
         }
+        if (dict.__class__) {
+            if (!__builtins__.isinstance(dict, [__builtins__.dict])) {
+                __builtins__.raise(__builtins__.TypeError('can only pass a dict to .args()'));
+            } else {
+                dict = dict.as_js();
+            }
+        }
         // convert args, dict to types
         if (args.length > argnum) {
             if (!aflag)
                 throw new Error("TypeError: " + name + "() takes at most " + argnum + ' arnuments (' + args.length + ' given)');
-            therest = args.slice(argnum);
+            therest = __builtins__.list(args.slice(argnum));
             args = args.slice(0, argnum);
             args.push(therest);
         } else {
             for (var i=args.length;i<argnum;i++) {
                 var aname = func_args[i];
                 if (defined(dict[aname])) {
-                    // TODO: treat as actual dictionary
                     args.push(dict[aname]);
                     delete dict[aname];
                 } else if (defined(defaults[aname]))
@@ -218,11 +222,10 @@ function $m() {
                     throw new Error('TypeError: ' + name + '() takes at least ' + argnum-ndefaults + ' non-keyword arguments');
             }
             if (aflag)
-                // TODO: use list here
-                args.push([]);
+                args.push(__builtins__.list());
         }
         if (kflag)
-            args.push(dict);
+            args.push(__builtins__.dict(dict));
         else
             for (var kname in dict)
                 throw new Error("TypeError: " + name + '() got unexpected keyword argument: ' + kname);
