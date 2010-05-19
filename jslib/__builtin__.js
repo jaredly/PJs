@@ -546,8 +546,8 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         __ge__: __not_implemented__('ge'),
         __getitem__: $m(function __getitem__(self, index) {
-            if (index < 0) index += self._len;
-            if (index < 0 || index >= self._len)
+            if (index < 0) index += self._list.length;
+            if (index < 0 || index >= self._list.length)
                 throw __globals__.IndexError('index out of range');
             return self._list[index];
         }),
@@ -612,7 +612,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         count: $m(function count(self, value) {
             var c = 0;
-            for (var i=0;i<self._len;i++) {
+            for (var i=0;i<self._list.length;i++) {
                 if (__globals__.eq(self._list[i], value))
                     c++;
             }
@@ -622,7 +622,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             self.__iadd__(__globals__.list(what));
         }),
         index: $m(function index(self, value) {
-            for (var i=0;i<self._len;i++) {
+            for (var i=0;i<self._list.length;i++) {
                 if (__globals__.eq(self._list[i], value))
                     return i;
             }

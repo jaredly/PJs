@@ -386,25 +386,6 @@ describe('pjs-builtins.js', function() {
                 [[c,a],true]
             ]);
         });
-        /** complain about unimplemented stuff...
-        it('list', function(){
-            expect(false).toBe('need to *really* implement lists...');
-        });
-        it('iter', function(){
-            expect(false).toBe('iterators to');
-        });
-        it('print', function(){
-            // TODO: implement file streams? sys.stdout?
-            // mk --> get StringIO, convert it w/ pjs, and make it work =)
-            expect(false).toBe('havent quite gotten sys.stdout working...or >>');
-        });
-        it('tuple', function(){
-            expect('tuples', 'almost done');
-        });
-        it('dict', function(){
-            expect(false).toBe('should do this too');
-        });
-        **/
     });
 
     describe('builtin types', function(){
@@ -441,6 +422,61 @@ describe('pjs-builtins.js', function() {
                 expect(a.__add__(c).as_js()).toEqual([3,4,1,2,3]);
             });
         });
+
+        describe('list', function(){
+            var _ = __builtins__;
+            it('simple', function() {
+                var l = _.list();
+                expect(_.len(l)).toBe(0);
+                expect(l.__getitem__).toThrowWith([0], _.IndexError);
+                expect(l.index).toThrowWith([0], _.ValueError);
+                var t = _.list([]);
+                expect(_.eq(l, t)).toBe(true);
+            });
+            it('small', function(){
+                var e = _.list([1,2,'a','b',2]);
+                expect(_.len(e)).toBe(5);
+                expect(e.__getitem__(0)).toBe(1);
+                expect(e.__getitem__(3)).toBe('b');
+                expect(e.count(2)).toBe(2);
+                expect(e.__contains__('a')).toBe(true);
+                expect(e.__contains__('t')).toBe(false);
+            });
+            it('mod', function(){
+                var e = _.list([1,4,'a','b']);
+                expect(_.len(e)).toBe(4);
+                e.append('what?');
+                expect(_.len(e)).toBe(5);
+                expect(e.pop()).toBe('what?');
+                expect(_.len(e)).toBe(4);
+                e.__setitem__(0, 5);
+                expect(e.__getitem__(0)).toBe(5);
+                e.insert(1,'t');
+                expect(e.__getitem__(2)).toBe(4);
+                e.extend([3,4]);
+                expect(_.len(e)).toBe(7);
+            });
+
+        });
     });
+        /** complain about unimplemented stuff...
+        it('list', function(){
+            expect(false).toBe('need to *really* implement lists...');
+        });
+        it('iter', function(){
+            expect(false).toBe('iterators to');
+        });
+        it('print', function(){
+            // TODO: implement file streams? sys.stdout?
+            // mk --> get StringIO, convert it w/ pjs, and make it work =)
+            expect(false).toBe('havent quite gotten sys.stdout working...or >>');
+        });
+        it('tuple', function(){
+            expect('tuples', 'almost done');
+        });
+        it('dict', function(){
+            expect(false).toBe('should do this too');
+        });
+        **/
 });
 
