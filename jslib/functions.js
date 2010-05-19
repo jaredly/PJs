@@ -181,12 +181,24 @@ function $m() {
         if (kflag)
             // TODO: use _$$_.dict()
             args.push({});
-        return func.apply(null, args);
+        if (__builtins__)
+            __builtins__._debug_stack.push([name, func, args]);
+        var result = func.apply(null, args);
+        if (__builtins__)
+            __builtins__._debug_stack.pop();
+        return result;
     };
 
     meta.args = function(args, dict) {
         if (!defined(dict))
             throw new Error('TypeError: $m(fn).args must be called with both arguments.');
+        if (args.__class__) {
+            if (!__builtins__.isinstance(args, [__builtins__.tuple, __builtins__.list])) {
+                throw new Error('can only pass a list or tuple to .args()');
+            } else {
+                args = args.as_js();
+            }
+        }
         // convert args, dict to types
         if (args.length > argnum) {
             if (!aflag)
@@ -215,7 +227,12 @@ function $m() {
         else
             for (var kname in dict)
                 throw new Error("TypeError: " + name + '() got unexpected keyword argument: ' + kname);
-        return func.apply(null, args);
+        if (__builtins__)
+            __builtins__._debug_stack.push([name, func, [args, dict]]);
+        var result = func.apply(null, args);
+        if (__builtins__)
+            __builtins__._debug_stack.pop();
+        return result;
     };
     meta.__wraps__ = func;
     meta.__type__ = func.__type__?func.__type__:'function';

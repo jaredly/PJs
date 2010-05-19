@@ -14,17 +14,17 @@ module('%(filename)s', function (%(scope)s) {
 ''',
     'class':'''\
 %(left)s = %(dec_front)sClass('%(name)s', [%(bases)s], (function(){
-    var __locals__ = {};
+    var __ = {};
 %(contents)s
-    return __locals__;
+    return __;
 }()))%(dec_back)s;
-%(rname)s.__module__ = __globals__.__name__;
+%(rname)s.__module__ = _.__name__;
 ''',
     'function':'''\
 %(left)s = %(dec_front)s$m(%(special)sfunction %(name)s(%(args)s) {
 %(contents)s
 })%(dec_back)s;
-%(rname)s.__module__ = __globals__.__name__;
+%(rname)s.__module__ = _.__name__;
 ''',
     'if':'''\
 if (%(test)s) {
@@ -84,7 +84,7 @@ def multiline(text):
             in lines[:-1]) + "'%s'" % lines[-1].encode('string_escape')
 
 def convert_module(mod, filename):
-    scope = '__globals__'
+    scope = '_'
     dct = {'scope':scope, 'filename':os.path.abspath(filename)}
     dct['doc'] = multiline(ast.get_docstring(mod))
 
@@ -132,7 +132,7 @@ def _str(node, scope):
     return multiline(node.s), []
 
 def _import(node, scope):
-    tpl = '%s = __builtins__.__import__("%s", __globals__.__name__, __globals__.__file__);\n'
+    tpl = '%s = __builtins__.__import__("%s", _.__name__, _.__file__);\n'
     text = ''
     imports = []
     for name in node.names:
@@ -162,14 +162,14 @@ def do_left(node, scope):
         if isinstance(node, ast.Name):
             if node.id not in scope[0]:
                 scope[0].append(node.id)
-            return '__globals__.%s' % node.id, []
+            return '_.%s' % node.id, []
         js, imp = convert_node(node, scope)
-        return '__globals__.%s' % js, imp
+        return '_.%s' % js, imp
     elif isinstance(node, ast.Name):
         if scope[2]:
             if node.id not in scope[1]:
                 scope[1].append(node.id)
-            return '__locals__.%s' % node.id, []
+            return '__.%s' % node.id, []
         if node.id not in scope[1]:
             scope[1].append(node.id)
             return 'var %s' % node.id, []
@@ -195,21 +195,21 @@ def resolve(name, scope):
     if name in reserved_words:
         raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
     if scope[0] is scope[1] and name in scope[0]:
-        return '__globals__.%s' % name
+        return '_.%s' % name
     elif name in scope[1]:
         if scope[2]:
-            return '__locals__.%s' % name
+            return '__.%s' % name
         return name
     elif name in scope[0]:
-        return '__globals__.%s' % name
+        return '_.%s' % name
     elif name not in scope[0] and name in __builtins__:
         return '__builtins__.%s' % name
     else:
         raise PJsNameError('undefined vbl %s' % name)
         if scope[0] is scope[1]:
-            return '__globals__.%s' % name
+            return '_.%s' % name
         elif scope[2]:
-            return '__locals__.%s' % name
+            return '__.%s' % name
         else:
             return name
 
@@ -448,21 +448,32 @@ def _assert(node, scope):
     return text, imports
 
 for_rhino = '''
-load("%(dir)s/functions.js", "%(dir)s/classes.js", "%(dir)s/modules.js",
-     "%(dir)s/__builtin__.js");
+load("%(dir)s/build/pjslib.js");
 '''
 
 do_run = '''
 try {
     __module_cache['%s'].load('__main__');
 } catch (e) {
-    print(e);
+    print('Traceback (most recent call last)');
+    var stack = __builtins__._debug_stack;
+    for (var i=0;i<stack.length;i++){
+        var fn = stack[i][1];
+        var ost = fn.toString;
+        if (fn._to_String)
+            fn.toString = fn._old_toString;
+        print('  ', stack[i][0]);
+    }
+    if (e.__class__)
+        print('Python Error:', e);
+    else
+        print('Javascript Error:', e);
 }
 '''
 
 def do_compile(filename):
     mods = convert_modules(filename)
-    text = for_rhino % {'dir':'pjs/js'}
+    text = for_rhino % {'dir':'.'}
     for fn in sorted(mods.keys()):
         text += mods[fn]+'\n\n'
     text += do_run % os.path.abspath(filename)

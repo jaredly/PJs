@@ -26,31 +26,10 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 
 /** python-style classes in javascript!! **/
 
-var to_array = function(a){return Array.prototype.slice.call(a,0);};
-
-function __instancemethod(self, val) {
-    var fn = function() {
-        return val.apply(this, [self].concat(to_array(arguments)));
-    };
-    fn.__type__ = 'instancemethod';
-    fn.__wraps__ = val;
-    if (val.args) {
-        fn.args = function(pos, kwd) {
-            return val.args([self].concat(pos), kwd);
-        };
-    }
-    for (var k in val) {
-        if (!defined(fn[k])) {
-            fn[k] = val[k];
-        }
-    }
-    fn.__name__ = val.name;
-    fn.name = val.name;
-    return fn;
-}
+var to_array = function to_array(a){return Array.prototype.slice.call(a,0);};
 
 function instancemethod(cls, fn) {
-    var meta = function() {
+    var meta = function instancemethod() {
         /*
         if (!__builtins__.isinstance(arguments[0], cls))
             throw new Error('TypeError: unbound method '+fn.__name__+'() must be called with '+cls.__name__+' instance as the first argument');
@@ -60,13 +39,13 @@ function instancemethod(cls, fn) {
     meta.__name__ = fn.__name__?fn.__name__:fn.name;
     meta.__type__ = instancemethod;
     meta.__wraps__ = fn;
-    meta.__str__ = function(){
+    meta.__str__ = function str(){
         return '<unbound method '+cls.__name__+'.'+meta.__name__+'>';
     };
     meta.im_class = cls;
     meta.im_func = fn;
     meta.im_self = null;
-    meta.__get__ = function(self, cls) {
+    meta.__get__ = function get(self, cls) {
         cls = cls||self.__class__;
         /*
         if (!__builtins__.isinstance(self, cls))
@@ -84,8 +63,12 @@ function instancemethod(cls, fn) {
         m2.im_class = cls;
         m2.im_func = fn;
         m2.im_self = self;
-        m2.args = function(pos, kwd) {
-            return fn.args([self].concat(pos), kwd);
+        m2.args = function $_args(pos, kwd) {
+            if (pos.__class__)
+               pos = __builtins__.tuple([self]).__add__(pos);
+            else
+               pos = [self].concat(pos);
+            return fn.args(pos, kwd);
         };
         return m2;
     };
@@ -99,7 +82,7 @@ function _set_name(fn, name) {
 }
 
 var type = $m(function type(name, bases, namespace) {
-    var cls = function() {
+    var cls = function $_type() {
         var self = {};
         self.__init__ = instancemethod(cls, function(){}).__get__(self);
         self.__class__ = cls;
@@ -116,11 +99,13 @@ var type = $m(function type(name, bases, namespace) {
                 self[attr] = val;
         }
         self.__init__.apply(null, arguments);
-        self.toString = self.__str__;
+        self._old_toString = self.toString;
+        if (self.__str__)
+            self.toString = self.__str__;
         return self;
     };
     var ts = cls.toString;
-    var __setattr__ = $m(function(key, val) {
+    var __setattr__ = $m(function class_setattr(key, val) {
         if (val && val.__type__ === 'function' ||
                 (val && !val.__type__ && typeof(val)==='function')) {
             cls[key] = instancemethod(cls, val);

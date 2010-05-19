@@ -33,7 +33,7 @@ function module(filename, fn) {
     var that = {};
     that.__file__ = filename;
     that.__init__ = fn;
-    that.load = $m({'mod':null}, function(name, mod) {
+    that.load = $m({'mod':null}, function load_module(name, mod) {
         if (mod === null) mod = {};
         mod.__name__ = name;
         mod.__file__ = that.__file__;

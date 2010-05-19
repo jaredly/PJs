@@ -28,7 +28,7 @@ def bar(r, **man):
 def decorate_me(func):
     print 'decorating',func
     def meta(*a, **b):
-        print a,b
+        print 'deca_args', a,b
         func(*a, **b)
     return meta
 
@@ -42,7 +42,14 @@ class Bar:
         print 'from static', one, alls
 
     def bar(self, **baz):
-        print baz
+        print 'bar_bar', baz
+
+    def __str__(self):
+        return '<Bar inst>'
+
+    def __repr__(self):
+        return str(self)
+
     bar = decorate_me(bar)
 assert True, 'something' + 'other thing'
 [3,4,5]

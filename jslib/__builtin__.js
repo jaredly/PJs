@@ -29,25 +29,25 @@ Now you can import stuff...just like in python.
 **/
 
 var __not_implemented__ = function __not_implemented__(name) {
-    return function() {
+    return function not_implemented() {
         if (arguments.callee.__name__)
             name = arguments.callee.__name__;
-        throw __builtins__.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)");
+        __globals__.raise(__builtins__.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)"));
     };
 };
 
-module('<builtin>/sys.py', function (__globals__) {
+module('<builtin>/sys.py', function sys_module(__globals__) {
     __globals__.__doc__ = "The PJs module responsible for system stuff";
     __globals__.modules = {'sys':__globals__}; // sys and __builtin__ won't be listed
                              // it doesn't make sense for them to be
                              // reloadable.
     __globals__.path = ['.', '<builtin>'];
     __globals__.exit = $m({'code':0}, function exit(code) {
-        throw "SystemExit: sys.exit() was called with code "+code;
+        __globals__.raise("SystemExit: sys.exit() was called with code "+code);
     });
 });
 
-module('<builtin>/os/path.py', function(__globals__) {
+module('<builtin>/os/path.py', function os_path_module(__globals__) {
     __globals__.__doc__ = "a module for dealing with paths";
     __globals__.join = $m({}, true, function join(first, args) {
         var path = first;
@@ -67,7 +67,7 @@ module('<builtin>/os/path.py', function(__globals__) {
     });
     __globals__.abspath = $m(function abspath(path) {
         if (!__globals__.isabs(path))
-            throw "not implementing this atm";
+            __globals__.raise("not implementing this atm");
         return __globals__.normpath(path);
     });
     __globals__.dirname = $m(function dirname(path) {
@@ -112,7 +112,7 @@ function dirname(path) {
 }
 **/
 
-module('<builtin>/__builtin__.py', function (__globals__) {
+module('<builtin>/__builtin__.py', function builting_module(__globals__) {
 
     var sys = __module_cache['<builtin>/sys.py']._module;
 
@@ -139,7 +139,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
             }
         }
         if (!foundat)
-            throw "ImportError: no module named "+name;
+            __globals__.raise("ImportError: no module named "+name);
         if (relflag) {
             var mname = [from.split('.').slice(0,-1)].concat([name]).join('.');
             if (mname[0] == '.')mname = mname.slice(1);
@@ -194,10 +194,10 @@ module('<builtin>/__builtin__.py', function (__globals__) {
             if (key in self._items)
                 delete self._items[key];
             else
-                throw __globals__.KeyError(key+' not found');
+                __globals__.raise(__globals__.KeyError(key+' not found'));
         }),
         __delitem__: $m(function __delitem__(self, key){
-            throw __globals__.KeyError('doesnt make sense');
+            __globals__.raise(__globals__.KeyError('doesnt make sense'));
         }),
         __doc__: 'builtin dictionary type',
         __eq__: $m(function __eq__(self, dct){
@@ -211,12 +211,8 @@ module('<builtin>/__builtin__.py', function (__globals__) {
             }
             return true;
         }),
-        __format__: $m(function __format__(self, fmt) {
-            throw __globals__.NotImplemented('not yet implemented');
-        }),
-        __ge__: $m(function __ge__(self, other) {
-            throw __globals__.NotImplemented('not yet implemented');
-        }),
+        __format__: __not_implemented__('format'),
+        __ge__: __not_implemented__('ge'),
         __hash__: null,
         __iter__: $m(function __iter__(self) {
             return self.keys().__iter__();
@@ -361,7 +357,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
                 while (__.trynext() && self._list.push(__.next())){self._len++}
             }
         }),
-        as_js: $m(function(self){
+        as_js: $m(function as_js(self){
            return self._list;
         }),
         __add__: $m(function __add__(self, other) {
@@ -433,7 +429,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
                 if (__globals__.eq(self._list[i], value))
                     return i;
             }
-            throw __globals__.ValueError('x not in list');
+            __globals__.raise(__globals__.ValueError('x not in list'));
         }),
         __str__: $m(function __str__(self) {
             var a = [];
@@ -473,6 +469,9 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.str = $m(function str(item) {
         if (item.__type__ === 'type')
             return item.__module__ + '.' + item.__name__;
+        else if (item.__class__ && !defined(item.__str__))
+            return '<' + item.__class__.__module__ + '.' + item.__class__.__name__
+                       + ' instance at 0x10beef01>';
         if (defined(item.__str__)) {
             return item.__str__();
         } else if (item instanceof Array) {
@@ -480,7 +479,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
             for (var i=0;i<item.length;i++) {
                 m.push(__globals__.repr(item[i]));
             }
-            return '['+m.join(', ')+']';
+            return '[:'+m.join(', ')+':]';
         } else if (item instanceof Function) {
             if (!item.__name__) {
                 if (!item.__module__)
@@ -533,7 +532,7 @@ module('<builtin>/__builtin__.py', function (__globals__) {
         if (ible instanceof Array) 
             return __globals__.tuple(ible).__iter__();
         if (!defined(ible.__iter__))
-            throw 'item not iterable';
+            __globals__.raise('item not iterable');
         return ible.__iter__();
     });
 
@@ -556,13 +555,13 @@ module('<builtin>/__builtin__.py', function (__globals__) {
 
     __globals__.isinstance = $m(function isinstance(inst, clsses) {
         if (!defined(inst.__class__))
-            throw "PJs Error: isisntance only works on objects";
+            __globals__.raise("PJs Error: isisntance only works on objects");
         return __globals__.issubclass(inst.__class__, clsses);
     });
 
     __globals__.issubclass = $m(function issubclass(cls, clsses) {
         if (!defined(cls.__bases__))
-            throw "PJs Error: issubclass only works on classes";
+            __globals__.raise("PJs Error: issubclass only works on classes");
         if (!(clsses instanceof Array))
             clsses = [clsses];
         for (var i=0;i<clsses.length;i++) {
@@ -601,26 +600,31 @@ module('<builtin>/__builtin__.py', function (__globals__) {
     __globals__.getattr = __not_implemented__("getattr");
     __globals__.abs = __not_implemented__("abs");
     __globals__.exit = __not_implemented__("exit");
-    __globals__.print = $m({}, true, function print(args) {
+    __globals__.print = $m({}, true, function _print(args) {
         var strs = [];
         for (var i=0;i<args.length-1;i++) {
             strs.push(__globals__.str(args[i]));
         }
         print(strs.join(' '));
     });
+    __globals__.print.__name__ = 'print';
     __globals__.assert = $m(function assert(bool, text) {
         if (!bool) {
             throw Error(text);
         }
     });
-    // __globals__.raise = $m(
+    __globals__._debug_stack = [];
+    __globals__.raise = $m(function raise(obj) {
+        obj.stack = __globals__._debug_stack.slice();
+        throw obj;
+    });
     __globals__.True = true;
     __globals__.None = null;
-    __globals__.len = $m(function(obj) {
+    __globals__.len = $m(function len(obj) {
         if (obj instanceof Array) return obj.length;
         if (obj instanceof String) return obj.length;
         if (obj.__len__) return obj.__len__();
-        throw __globals__.TypeError('no function __len__');
+        __globals__.raise(__globals__.TypeError('no function __len__'));
     });
     __globals__.credits = __not_implemented__("credits");
     __globals__.ord = __not_implemented__("ord");
