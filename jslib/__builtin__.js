@@ -407,7 +407,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
                 for (var i=0;i<other;i++) {
                     res = res.concat(self.as_js());
                 }
-                return res;
+                return __globals__.tuple(res);
             }
             throw __globals__.TypeError('only can multiply by a number');
         }),
@@ -503,28 +503,190 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }
     });
 
-    __globals__.list = $m(function list(ible) {
-        if (defined(ible.__iter__)) {
-            var t = [];
-            var i = ible.__iter__();
-            while (true) {
-                try {
-                    t.push(i.next());
-                } catch (e) {
-                    if (__globals__.isinstance(e, __globals__.StopIteration)) {
-                        break;
-                    }
-                    throw e;
+    __globals__.list = Class('list', [], {
+        __init__: $m({'ible':[]}, function __init__(self, ible) {
+            if (ible instanceof Array) {
+                self._list = ible.slice();
+            } else if (__globals__.isinstance(ible, [__globals__.tuple, __globals__.list])) {
+                self._list = ible.as_js().slice();
+            } else {
+                var __ = __globals__.iter(ible);
+                self._list = [];
+                while (__.trynext() && self._list.push(__.next())){}
+            }
+        }),
+        as_js: $m(function as_js(self){
+           return self._list;
+        }),
+        __add__: $m(function __add__(self, other) {
+            if (!__globals__.isinstance(other, __globals__.list))
+                throw __globals__.TypeError('can only concatenate tuple to tuple');
+            return __globals__.tuple(self._list.concat(other._list));
+        }),
+        __contains__: $m(function __contains__(self, one){
+            return self._list.indexOf(one) !== -1;
+        }),
+        __delitem__: $m(function __delitem__(self, i) {
+            self._list = self._list.slice(0, i).concat(self._list.slice(i+1));
+        }),
+        __delslice__: $m(function __delslice__(self, a, b) {
+            self._list = self._list.slice(0, a).concat(self._list.slice(b));
+        }),
+        __doc__: 'javascript equivalent of the python builtin list class',
+        __eq__: $m(function __eq__(self, other){
+            if (!__globals__.isinstance(other, __globals__.list))
+                return false;
+            if (self.__len__() !== other.__len__()) return false;
+            var ln = self.__len__();
+            for (var i=0;i<ln;i++) {
+                if (!__globals__.eq(self._list[i], other._list[i]))
+                    return false;
+            }
+            return true;
+        }),
+        __ge__: __not_implemented__('ge'),
+        __getitem__: $m(function __getitem__(self, index) {
+            if (index < 0) index += self._len;
+            if (index < 0 || index >= self._len)
+                throw __globals__.IndexError('index out of range');
+            return self._list[index];
+        }),
+        __getslice__: $m(function __getslice__(self, a, b) {
+            return __globals__.list(self._list.slice(a,b));
+        }),
+        __gt__: __not_implemented__(''),
+        __iadd__: $m(function __iadd__(self, other) {
+            if (!__globals__.isinstance(other, __globals__.list))
+                __builtins__.raise(__globals__.TypeError('can only add list to list'));
+            self._list = self._list.concat(other._list);
+        }),
+        __imul__: $m(function __imul__(self, other) {
+            if (__globals__.isinstance(other, __globals__._int))
+                other = other.as_js();
+            if (type(other) != 'number')
+                throw __globals__.TypeError('only can multiply by a number');
+            var res = []
+            for (var i=0;i<other;i++) {
+                res = res.concat(self.as_js());
+            }
+            self._list = res;
+        }),
+        __iter__: $m(function __iter__(self) {
+            return __globals__.listiterator(self);
+        }),
+        __le__: __not_implemented__(''),
+        __len__: $m(function __len__(self) { return self._list.length; }),
+        __lt__: __not_implemented__(''),
+        __mul__: $m(function __mul__(self, other) {
+            if (__globals__.isinstance(other, __globals__._int))
+                other = other.as_js();
+            if (type(other) == 'number') {
+                var res = []
+                for (var i=0;i<other;i++) {
+                    res = res.concat(self.as_js());
                 }
+                return __globals__.list(res);
             }
-        } else if (ible instanceof Array) {
-            var t = [];
-            for (var i=0;i<ible.length;i++) {
-                t.push(ible[i]);
+            throw __globals__.TypeError('only can multiply by a number');
+        }),
+        __ne__: __not_implemented__(''),
+        __repr__: $m(function __repr__(self) { return self.__str__(); }),
+        __reversed__: $m(function __reversed__(self) {
+            return __globals__.listreversediterator(self);
+        }),
+        __rmul__: $m(function __rmul__(self, other) {
+            return self.__mul__(other);
+        }),
+        __setitem__: $m(function __setitem__(self, i, val) {
+            if (i < 0) i += self._list.length;
+            if (i < 0 || i >= self._list.length)
+                __globals__.raise(__globals__.IndexError('list index out of range'));
+            self._list[i] = val;
+        }),
+        __setslice__: $m(function __setslice__(self, i, j, val) {
+            var it = __globals__.list(val)._list;
+            self._list = self._list.slice(0, i).concat(it).concat(self._list.slice(j));
+        }),
+        append: $m(function append(self, what){
+            self._list.push(what);
+        }),
+        count: $m(function count(self, value) {
+            var c = 0;
+            for (var i=0;i<self._len;i++) {
+                if (__globals__.eq(self._list[i], value))
+                    c++;
             }
-        }
-        return t;
+            return c;
+        }),
+        extend: $m(function extend(self, what) {
+            self.__iadd__(__globals__.list(what));
+        }),
+        index: $m(function index(self, value) {
+            for (var i=0;i<self._len;i++) {
+                if (__globals__.eq(self._list[i], value))
+                    return i;
+            }
+            __globals__.raise(__globals__.ValueError('x not in list'));
+        }),
+        insert: $m(function insert(self, i, val) {
+            self._list = self._list.slice(0, i).concat([val]).concat(self._list.slice(i));
+        }),
+        pop: $m({'i':-1}, function pop(self, i) {
+            if (i < 0) i += self._list.length;
+            if (i < 0 || i >= self._list.length)
+                __builtins__.raise(__globals__.IndexError('pop index out of range'));
+            var val = self._list[i];
+            self.__delitem__(i);
+            return val;
+        }),
+        remove: $m(function(self, val) {
+            var i = self.index(val);
+            self.__delitem__(i);
+        }),
+        reverse: $m(function(self, val) {
+            var ol = self._list;
+            self._list = [];
+            for (var i=ol.length-1;i>=0;i--)
+                self._list.push(ol[i]);
+        }),
+        sort: $m({'cmp':null, 'key':null, 'reverse':false}, function (self, cmp, key, reverse) {
+            throw new Error('not impl');
+        }),
+        __str__: $m(function __str__(self) {
+            var a = [];
+            for (var i=0;i<self._len;i++) {
+                a.push(__globals__.repr(self._list[i]));
+            }
+            return '['+a.join(', ')+']';
+        }),
     });
+
+    __globals__.listiterator = Class('listiterator', [], {
+        __init__: $m(function(self, wat) {
+            self.lst = lst;
+            self.at = 0;
+            self.ln = lst._list.length;
+        }),
+        next: $m(function(self) {
+            if (self.at > self.lst._list.length)
+                __globals__.raise(__globals__.StopIteration());
+            var val = self.lst._list[self.at];
+            self.at += 1;
+            return val;
+        }),
+    });
+
+    __globals__.listreversediterator = Class('listreversediterator', [__globals__.listiterator], {
+        next: $m(function(self) {
+            if (self.at > self.lst._list.length)
+                __globals__.raise(__globals__.StopIteration());
+            var val = self.lst._list[self.lst._list.length-1-self.at];
+            self.at += 1;
+            return val;
+        }),
+    });
+
+    __globals__.tupleiterator = Class('tupleiterator', [__globals__.listiterator], {});
 
     __globals__.iter = $m({'sentinel':null}, function iter(ible, sentinel) {
         if (sentinel)
@@ -602,7 +764,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
     __globals__.exit = __not_implemented__("exit");
     __globals__.print = $m({}, true, function _print(args) {
         var strs = [];
-        for (var i=0;i<args.length-1;i++) {
+        for (var i=0;i<args.length;i++) {
             strs.push(__globals__.str(args[i]));
         }
         print(strs.join(' '));

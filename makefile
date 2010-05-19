@@ -16,7 +16,11 @@ test-js: jslib
 	@js test/runtests.js
 
 test-py: pylib
-	@echo "not implemented yet"
+	@python test/example.py > _python.log
+	@./build.py test/example.py > test/example.js
+	@js test/example.js > _js.log
+	@diff _python.log _js.log | less
+	@rm -f _python.log _js.log
 
 clean:
 	rm -rf build/*

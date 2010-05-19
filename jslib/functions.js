@@ -120,7 +120,6 @@ function $m() {
     if (typeof(func) !== 'function')
         throw new Error("JS Error: $m requires a function as the last argument");
     var func_args = get_fn_args(func);
-    // func.__args__ = func_args;
     var defaults = args.length?args.shift():{};
     if (!(defaults instanceof Object))
         throw new Error("the defaults argument must be an object");

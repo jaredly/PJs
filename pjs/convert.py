@@ -152,7 +152,7 @@ def _print(node, scope):
         js, imp = convert_node(child, scope)
         values.append(js)
         imports += imp
-    text = '__builtins__.print(%s, %s);\n' % (', '.join(values), str(node.nl).lower())
+    text = '__builtins__.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
     return text, imports
 
 def do_left(node, scope):
@@ -455,19 +455,28 @@ do_run = '''
 try {
     __module_cache['%s'].load('__main__');
 } catch (e) {
-    print('Traceback (most recent call last)');
     var stack = __builtins__._debug_stack;
+    var pf = __builtins__.print;
+    // if __builtins__.print is in the stack, don't use it here
+    for (var i=0;i<stack.length;i++) {
+        if (stack[1] == pf) {
+            print('using rhino\\'s print -- error printing pythony');
+            pf = print;
+            break;
+        }
+    }
+    pf('Traceback (most recent call last)');
     for (var i=0;i<stack.length;i++){
         var fn = stack[i][1];
         var ost = fn.toString;
         if (fn._to_String)
             fn.toString = fn._old_toString;
-        print('  ', stack[i][0]);
+        pf('  ', stack[i][0]);
     }
     if (e.__class__)
-        print('Python Error:', e);
+        pf('Python Error:', e);
     else
-        print('Javascript Error:', e);
+        pf('Javascript Error:', e);
 }
 '''
 
