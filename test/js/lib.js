@@ -1,5 +1,5 @@
 function dump(a) {
-    if (a.__name__) return __builtins__.str(a);
+    //if (a.__name__) return __builtins__.str(a);
     if (a instanceof Array) {
         var r = [];
         for (var i=0;i<a.length;i++) {
@@ -46,6 +46,7 @@ beforeEach(function(){
                         return false;
                     }
                 } else {
+                  //print('theerror', e.__class__.__name__, e.args._list[0], 'after');
                     if (!e.__class__ || !__builtins__.isinstance(e, errorlike)) {
                         this.message = function(){
                             return name + ' got an unexpected error: ' +
@@ -73,6 +74,19 @@ beforeEach(function(){
             }
             return true;
         },
+        toPjEqual: function(other) {
+            if (__builtins__.eq(this.actual, other)) {
+                this.message = function(){
+                return 'expected ' + __builtins__.str(this.actual) + ' to not be ' + __builtins__.str(other) + '.';
+                };
+                return true;
+            } else {
+                this.message = function(){
+                    return 'expected ' + __builtins__.str(this.actual) + ' to be ' + __builtins__.str(other) + '.';
+                };
+                return false;
+            }
+        },
     });
 });
 
@@ -99,9 +113,8 @@ describe('pjs-functions.js', function () {
             expect(noargs).not.toThrowWith([]);
         });
         it('takes some regular args', function(){
-            var someargs = $m(function (a, b) {
-            });
-            expect(someargs).toThrowWith(['too few args'], /^TypeError/);
+            var someargs = $m(function (a, b) {});
+            expect(someargs).toThrowWith(['too few args'], __builtins__.TypeError);
             expect(someargs).not.toThrowWith(['right number','of args']);
             expect(someargs.args).toThrowWith([[1, 2], {'kw':'args'}]);
             expect(someargs.args).not.toThrowWith([['just ', 'positional args'],{}]);
@@ -156,8 +169,8 @@ describe('pjs-functions.js', function () {
             var fn = $m({}, true, function(a, b, c){
                 return [a+b, c];
             });
-            expect(fn(4,5,6,7,8)).toEqual([9,[6,7,8]]);
-            expect(fn(2,3)).toEqual([5,[]]);
+            expect(fn(4,5,6,7,8)).toPjEqual([9,__builtins__.list([6,7,8])]);
+            expect(fn(2,3)).toPjEqual([5,__builtins__.list([])]);
         });
         it('naming', function(){
             var fn = $m(function abc(){});

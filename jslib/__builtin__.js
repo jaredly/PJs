@@ -51,13 +51,13 @@ module('<builtin>/os/path.py', function os_path_module(__globals__) {
     __globals__.__doc__ = "a module for dealing with paths";
     __globals__.join = $m({}, true, function join(first, args) {
         var path = first;
-        for (var i=0;i<args.length;i++) {
-            if (__globals__.isabs(args[i])) {
-                path = args[i];
+        for (var i=0;i<args._list.length;i++) {
+            if (__globals__.isabs(args._list[i])) {
+                path = args._list[i];
             } else if (path === '' || '/\\:'.indexOf(path.slice(-1)) !== -1) {
-                path += args[i];
+                path += args._list[i];
             } else
-                path += '/' + args[i];
+                path += '/' + args._list[i];
         }
         return path;
     });
@@ -472,6 +472,14 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
                     throw e;
             }
         }
+        if (a instanceof Array && b instanceof Array) {
+            if (a.length!==b.length) return false;
+            for (var i=0;i<a.length;i++) {
+                if (!__globals__.eq(a[i], b[i]))
+                    return false;
+            }
+            return true;
+        }
         return a === b;
     });
 
@@ -779,8 +787,8 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
     __globals__.exit = __not_implemented__("exit");
     __globals__.print = $m({}, true, function _print(args) {
         var strs = [];
-        for (var i=0;i<args.length;i++) {
-            strs.push(__globals__.str(args[i]));
+        for (var i=0;i<args._list.length;i++) {
+            strs.push(__globals__.str(args._list[i]));
         }
         print(strs.join(' '));
     });
@@ -863,7 +871,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         __str__: $m(function __str__(self) {
             if (__globals__.len(self.args) == 1)
-                return self.__class__.__name__+': '+__globals__.str(self.args[0]);
+                return self.__class__.__name__+': '+__globals__.str(self.args.__getitem__(0));
             return self.__class__.__name__+': '+__globals__.str(self.args);
         }),
     });
