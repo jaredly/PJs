@@ -190,6 +190,9 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
                 }
             }
         }),
+        as_js: $m(function as_js(self) {
+            return self._items;
+        }),
         __cmp__: $m(function __cmp__(self, other){
             throw __globals__.AttributeError('not yet implemented');
         }),
@@ -303,7 +306,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         popitem: $m(function popitem(self){
             if (self.__len__()==0)
-                throw __globals__.KeyError('dict is empty');
+                throw __globals__.KeyError('popitem(): dictionary is empty');
             for (var k in self._items) {
                 return self.pop(k);
             }
