@@ -163,12 +163,18 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
 
     __globals__.dict = Class('dict', [], {
         // **TODO** add a **kwargs to this
-        __init__: $m({'itable':[]}, function __init__(self, itable){
+        __init__: $m({'itable':{}}, function __init__(self, itable){
             self._items = {};
-            if (__globals__.isisntance(itable, __globals__.dict)) {
+            if (!itable.__class__) {
+                if (!(itable instanceof Object))
+                    __globals__.raise(__globals__.ValueError('arg cannot be coerced to a dict'));
+                for (var k in itable) {
+                    self._items[k] = itable[k];
+                }
+            } else if (__globals__.isinstance(itable, __globals__.dict)) {
                 var keys = itable.keys();
                 for (var i=0;i<keys.__len__();i++){
-                    self._items[key] = itable.__getitem__(key);
+                    self._items[key] = itable.__getitem__(keys.__getitem__(i));
                 }
             } else {
                 var args = __globals__.iter(itable);
@@ -654,7 +660,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         __str__: $m(function __str__(self) {
             var a = [];
-            for (var i=0;i<self._len;i++) {
+            for (var i=0;i<self._list.length;i++) {
                 a.push(__globals__.repr(self._list[i]));
             }
             return '['+a.join(', ')+']';
@@ -662,13 +668,19 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
     });
 
     __globals__.listiterator = Class('listiterator', [], {
-        __init__: $m(function(self, wat) {
+        __init__: $m(function(self, lst) {
             self.lst = lst;
             self.at = 0;
             self.ln = lst._list.length;
         }),
+        __iter__: $m(function(self){
+            return self;
+        }),
+        trynext: $m(function(self){
+            return self.at < self.lst._list.length;
+        }),
         next: $m(function(self) {
-            if (self.at > self.lst._list.length)
+            if (self.at >= self.lst._list.length)
                 __globals__.raise(__globals__.StopIteration());
             var val = self.lst._list[self.at];
             self.at += 1;

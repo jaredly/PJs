@@ -456,23 +456,46 @@ describe('pjs-builtins.js', function() {
                 e.extend([3,4]);
                 expect(_.len(e)).toBe(7);
             });
-
+            it('equal', function(){
+                var a = _.list();
+                var b = _.list([1,2,3]);
+                var c = _.list([2]);
+                var d = _.list(b);
+                var e = _.list([3,4,5]);
+                var f = _.list([1,2,3]);
+                expect(_.eq).toReturnGiven([
+                    [[a,b], false],
+                    [[b,c], false],
+                    [[b,d], true],
+                    [[b,e], false],
+                    [[d,f], true],
+                    [[a,a], true],
+                    [[b,b], true],
+                ]);
+            });
+            it('ops', function(){
+                var a = _.list([2,3]);
+                var b = _.list([3,4]);
+                expect(_.str(a)).toBe('[2, 3]');
+                expect(a.__add__(b).as_js()).toEqual([2,3,3,4]);
+                expect(_.list(a.__reversed__()).as_js()).toEqual([3,2]);
+            });
+        });
+        describe('dict', function(){
+            var _ = __builtins__;
+            it('simple', function(){
+                var d = _.dict();
+                expect(_.len(d)).toBe(0)
+                expect(d.__eq__(d)).toBe(true);
+                expect(d.pop).toThrowWith([], _.KeyError);
+            });
         });
     });
         /** complain about unimplemented stuff...
-        it('list', function(){
-            expect(false).toBe('need to *really* implement lists...');
-        });
-        it('iter', function(){
-            expect(false).toBe('iterators to');
-        });
         it('print', function(){
             // TODO: implement file streams? sys.stdout?
             // mk --> get StringIO, convert it w/ pjs, and make it work =)
             expect(false).toBe('havent quite gotten sys.stdout working...or >>');
-        });
-        it('tuple', function(){
-            expect('tuples', 'almost done');
         });
         it('dict', function(){
             expect(false).toBe('should do this too');
