@@ -101,7 +101,7 @@ var type = $m(function type(name, bases, namespace) {
         self.__init__.apply(null, arguments);
         self._old_toString = self.toString;
         if (self.__str__)
-            self.toString = self.__str__;
+            self.toString = function(){ return self.__str__()._data; };
         return self;
     };
     var ts = cls.toString;

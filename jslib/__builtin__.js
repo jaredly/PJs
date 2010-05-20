@@ -496,41 +496,79 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         return a === b;
     });
 
-    __globals__.str = $m(function str(item) {
-        if (item.__type__ === 'type')
-            return item.__module__ + '.' + item.__name__;
-        else if (item.__class__ && !defined(item.__str__))
-            return '<' + item.__class__.__module__ + '.' + item.__class__.__name__
-                       + ' instance at 0x10beef01>';
-        if (defined(item.__str__)) {
-            return item.__str__();
-        } else if (item instanceof Array) {
-            var m = [];
-            for (var i=0;i<item.length;i++) {
-                m.push(__globals__.repr(item[i]));
-            }
-            return '[:'+m.join(', ')+':]';
-        } else if (item instanceof Function) {
-            if (!item.__name__) {
-                if (!item.__module__)
-                    return '<anonymous function...>';
-                else
-                    return '<anonymous function in module "' + item.__module__ + '">';
+    __globals__.str = Class('str', [], {
+        __init__: $m({'item':''}, function __init__(self, item) {
+            if (typeof(item) === 'string')
+                self._data = item;
+            else if (defined(item.__str__))
+                self._data = item.__str__()._data;
+            else if (item.__type__ === 'type')
+                self._data = "<class '" + item.__module__ + '.' + item.__name__ + "'>";
+            else if (item.__class__)
+                self._data = '<' + item.__class__.__module__ + '.' + item.__class__.__name__
+                                + ' instance at 0xbeaded>';
+            else if (item instanceof Array) {
+                var m = [];
+                for (var i=0;i<item.length;i++) {
+                    m.push(__globals__.repr(item[i]));
+                }
+                self._data = '[:'+m.join(', ')+':]';
+            } else if (item instanceof Function) {
+                if (!item.__name__) {
+                    if (item.name)
+                        self._data = '<javascript function "' + item.name + "'>';
+                    else if (!item.__module__)
+                        self._data = '<anonymous function...>';
+                    else
+                        self._data = '<anonymous function in module "' + item.__module__ + '">';
+                } else {
+                    if (!item.__module__)
+                        self._data = '<function '+item.__name__+'>';
+                    else
+                        self._data = '<function '+item.__name__+' from module '+item.__module__+'>';
+                }
+            } else if (typeof(item) === 'object') {
+                var m = [];
+                for (var a in item) {
+                    m.push("'"+a+"': "+__globals__.repr(item[a]));
+                }
+                self._data = '{'+m.join(', ')+'}';
             } else {
-                if (!item.__module__)
-                    return '<function '+item.__name__+'>';
-                else
-                    return '<function '+item.__name__+' from module '+item.__module__+'>';
+                self._data = ''+item;
             }
-        } else if (typeof(item) === 'object') {
-            var m = [];
-            for (var a in item) {
-                m.push("'"+a+"': "+__globals__.repr(item[a]));
-            }
-            return '{'+m.join(', ')+'}';
-        } else {
-            return ''+item;
-        }
+        }),
+        __add__: $m(function __add__(self, other) {
+            if (__globals__.isinstance(other, __globals__.str))
+                return __globals__.str(self._data + other._data);
+            if (typeof(other) === 'string')
+                return __globals__.str(self._data + other);
+        }),
+        __contains__: $m(function __contains__(self, other) {
+            return self.find(other) !== -1;
+        }),
+        __eq__: $m(function __eq__(self, other) {
+            if (!__globals__.isinstance(other, __globals__.str))
+                return false;
+            return self._data === other._data;
+        }),
+        __format__: __not_implemented__('no formatting'),
+        __ge__: $m(function __ge__(self, other) {
+            return self.__cmd__(other) === -1;
+        }),
+        __getitem__: $m(function __getitem__(self, at) {
+            if (!__globals__.isinstance(at, __globals__._int))
+                __globals__.raise(__globals__.TypeError('need an int'));
+            if (at < 0)
+                at += self._data.length;
+            if (at < 0 || at >= self._data.length)
+                __globals__.raise(__globals__.IndexError('index out of range'));
+            return self._data[at];
+        }),
+        __getslice__: $m(function __getslice__(self, i, j) {
+            if (i<0) i = 0;
+            if (j<0) j = 0;
+            return __globals__.str(self._data.slice(i,j));
+        }),
     });
 
     __globals__.list = Class('list', [], {
@@ -738,6 +776,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
 
     __globals__.all = __not_implemented__("all");
     __globals__.vars = $m(function vars(obj) {
+        // TODO::: this isn't good
         var dct = {};
         for (var a in obj) {
             dct[a] = obj[a];
