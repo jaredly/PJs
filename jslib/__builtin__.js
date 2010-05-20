@@ -30,9 +30,10 @@ Now you can import stuff...just like in python.
 
 var __not_implemented__ = function __not_implemented__(name) {
     return function not_implemented() {
+        print('not impl');
         if (arguments.callee.__name__)
             name = arguments.callee.__name__;
-        _.raise(__builtins__.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)"));
+        throw new Error("the builtin function "+name+" is not implemented yet. You should help out and add it =)");
     };
 };
 
@@ -641,6 +642,10 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         __str__: $m(function(self) {
             return self;
         }),
+        __repr__: $m(function(self) {
+            // TODO: implement string_escape
+            return _.str("'" + self._data + "'");
+        }),
         __add__: $m(function __add__(self, other) {
             if (_.isinstance(other, _.str))
                 return _.str(self._data + other._data);
@@ -739,7 +744,27 @@ format: __not_implemented__('str.format'),
         replace: __not_implemented__('str.replace'),
         rfind: __not_implemented__('str.rfind'),
         rindex: __not_implemented__('str.rindex'),
-        split: __not_implemented__('str.split'),
+        split: $m({'count':-1}, function split(self, sub, count) {
+            var res = _.list();
+            if (typeof(sub) === 'string') sub = _.str(sub);
+            if (!_.isinstance(sub, _.str))
+                _.raise(_.TypeError('sub must be a string'));
+            if (!sub._data.length)
+                _.raise(_.ValueError('empty separator'));
+            if (typeof(count) !== 'number')
+                _.raise(_.TypeError('a number is required'));
+            var rest = self._data;
+            while(count < 0 || count > 0) {
+                var at = rest.indexOf(sub._data);
+                if (at == -1)
+                    break;
+                count -= 1;
+                res.append(_.str(rest.slice(0, at)));
+                rest = rest.slice(at + sub._data.length);
+            }
+            res.append(_.str(rest));
+            return res;
+        }),
         splitlines: $m({'keepends':false}, function(self, keepends) {
             var res = self._data.split(/\n/g);
             var l = _.list();
@@ -765,7 +790,13 @@ format: __not_implemented__('str.format'),
         }),
         strip: __not_implemented__('str.strip'),
         swapcase: __not_implemented__('str.swapcase'),
-        title: __not_implemented__('str.title'),
+        title: $m(function (self) {
+            var parts = self.split(' ');
+            for (var i=0;i<parts._list.length;i++) {
+                parts._list[i] = parts._list[i].capitalize();
+            }
+            return _.str(' ').join(parts);
+        }),
         translate: __not_implemented__('str.translate'),
         upper: $m(function(self) {
             return _.str(self._data.toUpperCase());
@@ -1127,8 +1158,8 @@ format: __not_implemented__('str.format'),
         }),
         __str__: $m(function __str__(self) {
             if (_.len(self.args) == 1)
-                return self.__class__.__name__+': '+_.str(self.args.__getitem__(0));
-            return self.__class__.__name__+': '+_.str(self.args);
+                return _.str(self.__class__.__name__+': '+_.str(self.args.__getitem__(0)));
+            return _.str(self.__class__.__name__+': '+_.str(self.args));
         }),
     });
 
