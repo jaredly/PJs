@@ -607,7 +607,7 @@ try {
     if (e.__class__)
         pf('Python Error:', e);
     else
-        pf('Javascript Error:', e);
+        print('Javascript Error:', e);
 }
 '''
 
