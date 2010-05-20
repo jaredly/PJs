@@ -37,14 +37,6 @@ beforeEach(function(){
                 var name = this.actual.__name__ || this.actual.name;
                 if (errorlike instanceof RegExp) {
                     var err = e.message?e.message:e.msg?e.msg:e+'';
-                    //if (err === undefined || err === 'undefined')
-                    //    err = e;
-                    /*
-                    for (var k in err) {
-                    if (k.indexOf('__')===0)
-                        print(k, err[k]);
-                    }
-                    */
                     var good = (err).match(errorlike);
                     if (!(err).match(errorlike)) {
                         this.message = function(){
@@ -54,7 +46,6 @@ beforeEach(function(){
                         return false;
                     }
                 } else {
-                  //print('theerror', e.__class__.__name__, e.args._list[0], 'after');
                     if (!e.__class__ || !__builtins__.isinstance(e, errorlike)) {
                         this.message = function(){
                             return name + ' got an unexpected error: ' +
