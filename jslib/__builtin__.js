@@ -164,24 +164,31 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
     __globals__.dict = Class('dict', [], {
         // **TODO** add a **kwargs to this
         __init__: $m({'itable':{}}, function __init__(self, itable){
-            self._items = {};
+            self._keys = [];
+            self._values = [];
             if (!itable.__class__) {
-                if (!(itable instanceof Object))
+                if (itable instanceof Array) {
+                    for (var i=0;i<itable.length;i++) {
+                        self.__setitem__(itable[i][0], itable[i][1]);
+                    }
+                } else if (!(itable instanceof Object))
                     __globals__.raise(__globals__.ValueError('arg cannot be coerced to a dict'));
-                for (var k in itable) {
-                    self._items[k] = itable[k];
+                else {
+                    for (var k in itable) {
+                        self.__setitem__(k, itable[k]);
+                    }
                 }
             } else if (__globals__.isinstance(itable, __globals__.dict)) {
                 var keys = itable.keys();
                 for (var i=0;i<keys.__len__();i++){
-                    self._items[key] = itable.__getitem__(keys.__getitem__(i));
+                    self.__setitem__(key, itable.__getitem__(keys.__getitem__(i)));
                 }
             } else {
                 var args = __globals__.iter(itable);
                 while (true) {
                     try {
                         var kv = args.next();
-                        self._items[kv[0]] = kv[1];
+                        self.__setitem__(kv[0], kv[1]);
                     } catch(e) {
                         if (__globals__.isinstance(e, __globals__.StopIteration))
                             break;
@@ -191,21 +198,27 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             }
         }),
         as_js: $m(function as_js(self) {
-            return self._items;
+            var dct = {}
+            for (var i=0;i<self._keys.length;i++){
+                dct[self._keys[i]] = self._values[i];
+            }
+            return dct;
         }),
         __cmp__: $m(function __cmp__(self, other){
             throw __globals__.AttributeError('not yet implemented');
         }),
         __contains__: $m(function __contains__(self, key){
-            return key in self._items;
+            return self._keys.indexOf(key) !== -1;
         }),
-        __delattr__: $m(function __delattr__(self, key){
-            if (key in self._items)
-                delete self._items[key];
-            else
+        __delitem__: $m(function __delattr__(self, key){
+            var i = self._keys.indexOf(key);
+            if (i !== -1) {
+                self._keys = self._keys.slice(0, i).concat(self._keys.slice(i+1));
+                self._values = self._values.slice(0, i).concat(self._values.slice(i+1));
+            } else
                 __globals__.raise(__globals__.KeyError(key+' not found'));
         }),
-        __delitem__: $m(function __delitem__(self, key){
+        __delattr__: $m(function __delitem__(self, key){
             __globals__.raise(__globals__.KeyError('doesnt make sense'));
         }),
         __doc__: 'builtin dictionary type',
@@ -233,18 +246,26 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             return self.__str__();
         }),
         __setitem__: $m(function __setitem__(self, key, value){
-            self._items[key] = value;
+            var i = self._keys.indexOf(key);
+            if (i !== -1) {
+                self._values[i] = value;
+            } else {
+                self._keys.push(key);
+                self._values.push(value);
+            }
         }),
         __str__: $m(function __str__(self){
             var strs = [];
-            for (var key in self._items) {
-                strs.push(__globals__.repr(key)+': '+__globals__.repr(self._items[key]));
+            for (var i=0;i<self._keys.length;i++){
+                strs.push(__globals__.repr(self._keys[i])+': '+__globals__.repr(self._values[i]));
             }
             return '{'+strs.join(', ')+'}';
         }),
         clear: $m(function clear(self){
-            delete self._items;
-            self._items = {};
+            delete self._keys;
+            delete self._values;
+            self._keys = [];
+            self._values = [];
         }),
         copy: $m(function copy(self){
             return __globals__.dict(self);
@@ -264,18 +285,18 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             return d;
         })),
         get: $m({'def':null}, function get(self, key, def){
-            if (key in self._items)
-                return self._items[key];
+            var i = self._keys.indexOf(key);
+            if (i !== -1)
+                return self._values[i];
             return def;
         }),
         has_key: $m(function has_key(self, key){
-            return key in self._items;
+            return self._keys.indexOf(key) !== -1;
         }),
         items: $m(function items(self){
             var items = [];
-            var keys = self.keys().as_js();
-            for (var i=0;i<keys.length;i++){
-                items.push([keys[i], self._items[keys[i]]]);
+            for (var i=0;i<self._keys.length;i++) {
+                items.push(__globals__.list([self._keys[i], self._values[i]]));
             }
             return __globals__.list(items);
         }),
@@ -290,16 +311,13 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             return self.values().__iter__();
         }),
         keys: $m(function keys(self){
-            var ks = [];
-            for (var k in self._items){
-                ks.push(k);
-            }
-            return __globals__.list(ks);
+            return __globals__.list(self._keys.slice());
         }),
         pop: $m({'default_':null}, function pop(self, key, default_){
-            if (key in self._items){
-                var v = self._items[key];
-                delete self._items[key];
+            var i = self._keys.indexOf(key);
+            if (i !== -1) {
+                var v = self._values[i];
+                self.__delitem__(key);
                 return v;
             }
             return default_;
@@ -307,26 +325,21 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         popitem: $m(function popitem(self){
             if (self.__len__()==0)
                 throw __globals__.KeyError('popitem(): dictionary is empty');
-            for (var k in self._items) {
-                return self.pop(k);
-            }
+            return self.pop(self._keys[0]);
         }),
         setdefault: $m(function setdefault(self, k, d){
-            if (!(k in self._items))
-                self._items[k] = d;
-            return self._items[k];
+            if (!self.has_key(k))
+                self.__setitem__(k, d);
+            return self.__getitem__(k);
         }),
         update: $m(function update(self, other){
             var keys = __globals__.dict(other).keys().as_js();
             for (var i=0;i<keys.length;i++){
-                self._items[keys[i]] = other.__getitem__(keys[i]);
+                self.__setitem__(keys[i], other.__getitem__(keys[i]));
             }
         }),
         values: $m(function values(self){
-            var vs = [];
-            for (var k in self._items)
-                vs.push(self._items[k]);
-            return __getitem__.list(vs);
+            return __getitem__.list(self._values.slice());
         }),
     });
 
@@ -877,6 +890,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
     });
 
     __globals__.TypeError = Class('TypeError', [__globals__.Exception], {});
+    __globals__.NameError = Class('NameError', [__globals__.Exception], {});
     __globals__.ValueError = Class('ValueError', [__globals__.Exception], {});
     __globals__.IndexError = Class('IndexError', [__globals__.Exception], {});
     __globals__.NotImplemented = Class('NotImplemented', [__globals__.Exception], {});
