@@ -21,10 +21,11 @@ module('%(filename)s', function (%(scope)s) {
 %(rname)s.__module__ = _.__name__;
 ''',
     'function':'''\
-%(left)s = %(dec_front)s$m(%(special)sfunction %(name)s(%(args)s) {
+%(left)s = %(dec_front)s$m(%(special)sfunction (%(args)s) {
 %(contents)s
 })%(dec_back)s;
 %(rname)s.__module__ = _.__name__;
+%(rname)s.__name__ = "%(name)s";
 ''',
     'if':'''\
 if (%(test)s) {
@@ -122,17 +123,8 @@ def convert_node(node, scope):
         raise
 
 def _expr(node, scope):
-    v = node.value
-    js, imp = convert_node(v, scope)
+    js, imp = convert_node(node.value, scope)
     return js+';\n', imp
-'''
-    if isinstance(v, ast.Str):
-        js, imp = _str(v, scope)
-        js += ';'
-        return js, imp
-    else:
-        raise PJsException, 'failed to convert %s' % v
-'''
 
 def _str(node, scope):
     return multiline(node.s), []
@@ -220,8 +212,6 @@ def resolve(name, scope):
     elif name not in scope[0] and name in __builtins__:
         return '__builtins__.%s' % name
     else:
-        # return '__builtins__.raise(__builtins__.NameError("%s not defined"))' % name
-        # raise PJsNameError('undefined vbl %s' % name)
         if scope[0] is scope[1]:
             return '_.%s' % name
         elif scope[2]:
@@ -294,6 +284,8 @@ def _functiondef(node, scope):
         print scope
         raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
     args = list(n.id for n in node.args.args)
+    for n in node.args.args:
+        scope[1].append(n.id)
     defaults = []
     for d,k in zip(reversed(node.args.defaults), reversed(args)):
         js, imp = convert_node(d, scope)
@@ -556,6 +548,28 @@ def _importfrom(node, scope):
         asname = alias.asname or alias.name
         template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
     return template, [node.module]
+
+def _raise(node, scope):
+    js, imports = convert_node(node.type, scope)
+    if node.inst is None:
+        return '__builtins__.raise(%s);\n' % js, imports
+    inner, imp = convert_node(node.inst, scope)
+    imports += imp
+    return '__builtins__.raise(%s(%s));\n' % (js, inner), imports
+
+def _unaryop(node, scope):
+    js, imp = convert_node(node.operand, scope)
+    if isinstance(node.op, ast.Not):
+        return '!__builtins__.bool(%s)' % js, imp
+
+def _delete(node, scope):
+    t = []
+    imports = []
+    for tag in node.targets:
+        js, imp = convert_node(tag, scope)
+        t.append('delete %s' % js)
+        imports += imp
+    return '\n'.join(t)+'\n', imports
 
 for_rhino = '''
 load("%(dir)s/build/pjslib.js");
