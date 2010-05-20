@@ -11,7 +11,18 @@ b='ho'
 a='hp'
 h=4
 man = 1+2
-man = 1+2
+man = 1+2, ['a', 'list'], {'a':'dict'+' yeah', 3:4}
+try:
+    um
+except NameError:
+    print 'what?'
+except TypeError, e:
+    print 'yeah'
+except (NotImplemented, ValueError), r:
+    print 'and', r
+except:
+    print 'failed'
+print man
 def foo(a,b,c=3,*rest):
     print a+b, c
     c=5

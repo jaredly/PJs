@@ -205,6 +205,7 @@ def resolve(name, scope):
     elif name not in scope[0] and name in __builtins__:
         return '__builtins__.%s' % name
     else:
+        return '__builtins__.raise(__builtins__.NameError("%s not defined"))' % name
         raise PJsNameError('undefined vbl %s' % name)
         if scope[0] is scope[1]:
             return '_.%s' % name
@@ -446,6 +447,72 @@ def _assert(node, scope):
         msg = "'%s'" % js.encode('string_escape')
     text = '__builtins__.assert(%s, %s);\n' % (js, msg)
     return text, imports
+
+def _tuple(node, scope):
+    elts = []
+    imports = []
+    for sub in node.elts:
+        js, imp = convert_node(sub, scope)
+        elts.append(js)
+        imports+=imp
+    text = '__builtins__.tuple([%s])' % ', '.join(elts)
+    return text, imports
+
+def _list(node, scope):
+    elts = []
+    imports = []
+    for sub in node.elts:
+        js, imp = convert_node(sub, scope)
+        elts.append(js)
+        imports+=imp
+    text = '__builtins__.list([%s])' % ', '.join(elts)
+    return text, imports
+
+def _dict(node, scope):
+    elts = []
+    imports = []
+    for k,v in zip(node.keys, node.values):
+        js, imp = convert_node(k, scope)
+        imports += imp
+        j2, imp = convert_node(v, scope)
+        imports += imp
+        elts.append('[%s, %s]' % (js, j2))
+    text = '__builtins__.dict([%s])' % ', '.join(elts)
+    return text, imports
+
+def _tryexcept(node, scope):
+    imports = []
+    template = '''try {
+%s
+} catch (__pjs_err) {
+    %s
+}
+'''
+    single = '''%s{
+    %s
+    }'''
+    body, imports = convert_block(node.body, scope)
+    subs = []
+    for handler in node.handlers:
+        eb = ''
+        if handler.name is not None:
+            name, imp = do_left(handler.name, scope)
+            eb = '    %s = __pjs_err;\n    ' % name
+        eb_, imp = convert_block(handler.body, scope)
+        eb += eb_
+        imports += imp
+
+        if handler.type is not None:
+            t, imp = convert_node(handler.type, scope)
+            imports += imp
+            top = 'if (__builtins__.isinstance(__pjs_err, %s)) ' % t
+        else:
+            top = ''
+
+        subs.append(single % (top, eb))
+    text = template % (body, ' else '.join(subs))
+    return text, imports
+        
 
 for_rhino = '''
 load("%(dir)s/build/pjslib.js");
