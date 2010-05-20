@@ -14,8 +14,8 @@ man = 1+2
 man = 1+2, ['a', 'list'], {'a':'dict'+' yeah', 3:4}
 try:
     um
-except NameError:
-    print 'what?'
+    3+4+[3];
+    a.b();
 except TypeError, e:
     print 'yeah'
 except (NotImplemented, ValueError), r:
