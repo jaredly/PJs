@@ -18,6 +18,7 @@ test-py: py-tests
 
 clean:
 	rm -rf build/*
+	rm -rf test/py/*.js
 
 PY_TEST := $(patsubst %.py,%,$(wildcard test/py/*.py))
 PY_JS_TEST := $(patsubst %.py,%.js,$(wildcard test/py/*.py))

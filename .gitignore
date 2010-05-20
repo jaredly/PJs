@@ -3,4 +3,5 @@
 *.pyc
 *.sess
 test/*.js
+test/py/*.js
 build/
