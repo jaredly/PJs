@@ -126,6 +126,7 @@ def convert_node(node, scope):
 
 # alias only in import
 
+# and, or
 def _boolop(node, scope):
     bools = {
         ast.And:'&&',
@@ -138,6 +139,46 @@ def _boolop(node, scope):
     rjs, imp = convert_node(node.values[1], scope)
     imports += imp
     return '%s %s %s' % (ljs, op, rjs), imports
+
+#arugments -- in funcdef
+
+def _assert(node, scope):
+    js, imports = convert_node(node.test, scope)
+    if node.msg:
+        msg, imp = convert_node(node.msg, scope)
+        imports += imp
+    else:
+        msg = "'%s'" % js.encode('string_escape')
+    text = '__builtins__.assert(%s, %s);\n' % (js, msg)
+    return text, imports
+
+def _assign(node, scope):
+    rest = ''
+    imports = []
+    target = node.targets[0]
+    assert len(node.targets) == 1, 'i guess this is always true'
+    if isinstance(target, ast.Tuple):
+        left = 'var __pjs_tmp'
+        for i,n in enumerate(target.elts):
+            js, imp = do_left(n, scope)
+            imports += imp
+            rest += '%s = __pjs_tmp.__getitem__(%d);\n' % (js, i)
+    else:
+        left, imp = do_left(target, scope)
+        imports += imp
+
+    js, imp = convert_node(node.value, scope)
+    imports += imp
+    line = '%s = %s;\n' % (left, js)
+    return line + rest, imports
+
+def _attribute(node, scope):
+    js, imp = convert_node(node.value, scope)
+    if node.attr in reserved_words:
+        raise PJsException("Sorry, '%s' is a reserved word in javascript." % node.attr)
+    return "%s.%s" % (js, node.attr), imp
+
+
     
 
 def _expr(node, scope):
@@ -237,25 +278,6 @@ def resolve(name, scope):
         else:
             return name
 
-def _assign(node, scope):
-    rest = ''
-    imports = []
-    if len(node.targets) == 1:
-        t = node.targets[0]
-        left, imp = do_left(t, scope)
-        imports += imp
-    else:
-        left = 'var __pjs_tmp'
-        for i,n in enumerate(node.targets):
-            js, imp = convert_node(n, scope)
-            imports += imp
-            rest += '%s = __pjs_tmp[%d];\n' % (js, i)
-
-    js, imp = convert_node(node.value, scope)
-    imports += imp
-    line = '%s = %s;\n' % (left, js)
-    return line + rest, imports
-
 def _binop(node, scope):
     tpl = '__builtins__.%s(%s, %s)'
     op = node.op.__class__.__name__.lower()
@@ -268,12 +290,6 @@ def _binop(node, scope):
 
 def _num(node, scope):
     return str(node.n), []
-
-def _attribute(node, scope):
-    js, imp = convert_node(node.value, scope)
-    if node.attr in reserved_words:
-        raise PJsException("Sorry, '%s' is a reserved word in javascript." % node.attr)
-    return "%s.%s" % (js, node.attr), imp
 
 def _functiondef(node, scope):
     dct = {}
@@ -449,16 +465,6 @@ def _list(node, scope):
 
 def _yield(node, scope):
     raise PJsException('Sorry, PJs doesn\'t work with generators, and probably won\'t for the forseeable future...generators are hard.')
-
-def _assert(node, scope):
-    js, imports = convert_node(node.test, scope)
-    if node.msg:
-        msg, imp = convert_node(node.msg, scope)
-        imports += imp
-    else:
-        msg = "'%s'" % js.encode('string_escape')
-    text = '__builtins__.assert(%s, %s);\n' % (js, msg)
-    return text, imports
 
 def _tuple(node, scope):
     elts = []
