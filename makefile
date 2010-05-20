@@ -8,7 +8,7 @@ jslib: build/pjslib.js
 build/pjslib.js: jslib/*.js
 	@cat jslib/functions.js jslib/classes.js jslib/modules.js jslib/__builtin__.js > build/pjslib.js
 
-test/example.js: test/example.py
+test/example.js: test/example.py jslib pjs/convert.py
 	@./build.py test/example.py > test/example.js
 
 example:
