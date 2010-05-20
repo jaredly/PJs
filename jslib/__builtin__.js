@@ -159,6 +159,98 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         return _.__import__(module.__name__);
     });
 
+    /** operators **/
+    _.do_op = $m(function do_op(op, rop, a, b) {
+        if (a[op]) {
+            try {
+                return a[op](b);
+            } catch(e) {
+                if (!_.isinstance(e, _.NotImplemented))
+                    throw e;
+            }
+        }
+        if (b[rop]) {
+            try {
+                return b[rop](a);
+            } catch(e) {
+                if (!_.isinstance(e, _.NotImplemented))
+                    throw e;
+            }
+        }
+        throw _.NotImplemented('Operator not implemented for ' + _.str(a.__class__) + ' and ' + _.str(b.__class__))
+    });
+    _.add = $m(function add(a, b) {
+        try {
+            return _.do_op('__add__', '__radd__', a, b);
+        } catch(e) {
+            if (_.isinstance(e, _.NotImplemented)) {
+                if (type(a) === type(b) && type(a) === 'number')
+                    return a+b;
+            }
+            throw e;
+        }
+    });
+    _.sub = $m(function sub(a, b) {
+        try { return _.do_op('__sub__', '__rsub__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                if (type(a) === type(b) && type(a) === 'number')
+                    return a - b;
+            throw e;
+        }
+    });
+    _.gt = $m(function gt(a, b) {
+        try { return _.do_op('__gt__', '__lt__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                if (type(a) === type(b) && type(a) === 'number')
+                    return a > b;
+            throw e;
+        }
+    });
+    _.lt = $m(function lt(a, b) {
+        return !_.ge(a, b);
+    });
+    _.ge = $m(function ge(a, b) {
+        try { return _.do_op('__ge__', '__le__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                if (type(a) === type(b) && type(a) === 'number')
+                    return a >= b;
+            throw e;
+        }
+    });
+    _.le = $m(function le(a, b) {
+        return !_.gt(a, b);
+    });
+    _.mod = $m(function mod(a, b) {
+        try { return _.do_op('__mod__', '__rmod__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                if (type(a) === type(b) && type(a) === 'number')
+                    return a % b;
+            throw e;
+        }
+    });
+    _.mul = $m(function mul(a, b) {
+        try { return _.do_op('__mul__', '__rmul__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                if (type(a) === type(b) && type(a) === 'number')
+                    return a * b;
+            throw e;
+        }
+    });
+    _.ne = $m(function ne(a, b) {
+        try { return _.do_op('__ne__', '__ne__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                if (type(a) === type(b) && type(a) === 'number')
+                    return a !== b;
+            throw e;
+        }
+    });
+
     /** basic value types **/
 
     _.dict = Class('dict', [], {
@@ -885,7 +977,6 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.next = __not_implemented__("next");
     _.chr = __not_implemented__("chr");
     _.xrange = __not_implemented__("xrange");
-
 
     _.reversed = __not_implemented__("reversed");
     _.hasattr = __not_implemented__("hasattr");
