@@ -10,5 +10,9 @@ print b
 c,d = [4] + [5]
 print c
 
+# tricky
+a, (b,c) = 1, (2,3)
+print b+c-a
+
 
 # vim: et sw=4 sts=4

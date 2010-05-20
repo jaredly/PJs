@@ -152,6 +152,17 @@ def _assert(node, scope):
     text = '__builtins__.assert(%s, %s);\n' % (js, msg)
     return text, imports
 
+def deepleft(node, at, scope):
+    if isinstance(node, ast.Tuple):
+        text = ''
+        for i,n in enumerate(node.elts):
+            text += deepleft(n, at + [i], scope)
+        return text
+    else:
+        right = '__pjs_tmp' + ''.join('.__getitem__(%d)' % n for n in at)
+        js, imp = do_left(node, scope)
+        return '%s = %s;\n' % (js, right)
+
 def _assign(node, scope):
     rest = ''
     imports = []
@@ -159,10 +170,7 @@ def _assign(node, scope):
     assert len(node.targets) == 1, 'i guess this is always true'
     if isinstance(target, ast.Tuple):
         left = 'var __pjs_tmp'
-        for i,n in enumerate(target.elts):
-            js, imp = do_left(n, scope)
-            imports += imp
-            rest += '%s = __pjs_tmp.__getitem__(%d);\n' % (js, i)
+        rest = deepleft(target, [], scope)
     else:
         left, imp = do_left(target, scope)
         imports += imp
