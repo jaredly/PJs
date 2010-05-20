@@ -229,7 +229,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.lt = $m(function lt(a, b) {
         return !_.ge(a, b);
     });
-    _.ge = $m(function ge(a, b) {
+    _.gte = $m(function ge(a, b) {
         try { return _.do_op('__ge__', '__le__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
@@ -250,7 +250,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             throw e;
         }
     });
-    _.mul = $m(function mul(a, b) {
+    _.mult = $m(function mul(a, b) {
         try { return _.do_op('__mul__', '__rmul__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
@@ -619,6 +619,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 self._data = item;
             else if (typeof(item) === 'number')
                 self._data = ''+item;
+            else if (typeof(item) === 'boolean')
+                self._data = _.str(''+item).title()._data;
             else if (defined(item.__str__))
                 self._data = item.__str__()._data;
             else if (item.__type__ === 'type')

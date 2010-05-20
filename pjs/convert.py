@@ -122,6 +122,24 @@ def convert_node(node, scope):
             e.args = ('Node type %s hasn\'t been implemented yet' % node, )
         raise
 
+# Add, Sub, Mult, 
+
+# alias only in import
+
+def _boolop(node, scope):
+    bools = {
+        ast.And:'&&',
+        ast.Or:'||'
+    }
+    op = bools[node.op.__class__]
+    imports = []
+    ljs, imp = convert_node(node.values[0], scope)
+    imports += imp
+    rjs, imp = convert_node(node.values[1], scope)
+    imports += imp
+    return '%s %s %s' % (ljs, op, rjs), imports
+    
+
 def _expr(node, scope):
     js, imp = convert_node(node.value, scope)
     return js+';\n', imp
@@ -237,26 +255,6 @@ def _assign(node, scope):
     imports += imp
     line = '%s = %s;\n' % (left, js)
     return line + rest, imports
-
-'''
-def do_op(node):
-    ops = {
-        ast.Eq:'eq'
-        ast.Add:'+',
-        ast.Sub:'-',
-        ast.Mult:'*',
-        ast.Div:'/',
-        ast.And:'&&',
-        ast.Or:'||',
-        }
-    op = None
-    for t,j in ops.iteritems():
-        if isinstance(node, t):
-            op = j
-    if op is None:
-        raise PJsException("Operator type %s not yet supported" % node)
-    return op
-    '''
 
 def _binop(node, scope):
     tpl = '__builtins__.%s(%s, %s)'
