@@ -32,27 +32,27 @@ var __not_implemented__ = function __not_implemented__(name) {
     return function not_implemented() {
         if (arguments.callee.__name__)
             name = arguments.callee.__name__;
-        __globals__.raise(__builtins__.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)"));
+        _.raise(__builtins__.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)"));
     };
 };
 
-module('<builtin>/sys.py', function sys_module(__globals__) {
-    __globals__.__doc__ = "The PJs module responsible for system stuff";
-    __globals__.modules = {'sys':__globals__}; // sys and __builtin__ won't be listed
+module('<builtin>/sys.py', function sys_module(_) {
+    _.__doc__ = "The PJs module responsible for system stuff";
+    _.modules = {'sys':_}; // sys and __builtin__ won't be listed
                              // it doesn't make sense for them to be
                              // reloadable.
-    __globals__.path = ['.', '<builtin>'];
-    __globals__.exit = $m({'code':0}, function exit(code) {
-        __globals__.raise("SystemExit: sys.exit() was called with code "+code);
+    _.path = ['.', '<builtin>'];
+    _.exit = $m({'code':0}, function exit(code) {
+        _.raise("SystemExit: sys.exit() was called with code "+code);
     });
 });
 
-module('<builtin>/os/path.py', function os_path_module(__globals__) {
-    __globals__.__doc__ = "a module for dealing with paths";
-    __globals__.join = $m({}, true, function join(first, args) {
+module('<builtin>/os/path.py', function os_path_module(_) {
+    _.__doc__ = "a module for dealing with paths";
+    _.join = $m({}, true, function join(first, args) {
         var path = first;
         for (var i=0;i<args._list.length;i++) {
-            if (__globals__.isabs(args._list[i])) {
+            if (_.isabs(args._list[i])) {
                 path = args._list[i];
             } else if (path === '' || '/\\:'.indexOf(path.slice(-1)) !== -1) {
                 path += args._list[i];
@@ -61,22 +61,22 @@ module('<builtin>/os/path.py', function os_path_module(__globals__) {
         }
         return path;
     });
-    __globals__.isabs = $m(function isabs(path) {
+    _.isabs = $m(function isabs(path) {
         if (!path)return false;
         return path && path[0] == '/';
     });
-    __globals__.abspath = $m(function abspath(path) {
-        if (!__globals__.isabs(path))
-            __globals__.raise("not implementing this atm");
-        return __globals__.normpath(path);
+    _.abspath = $m(function abspath(path) {
+        if (!_.isabs(path))
+            _.raise("not implementing this atm");
+        return _.normpath(path);
     });
-    __globals__.dirname = $m(function dirname(path) {
+    _.dirname = $m(function dirname(path) {
         return path.split('/').slice(0,-1).join('/') || '/';
     });
-    __globals__.basename = $m(function basename(path) {
+    _.basename = $m(function basename(path) {
         return path.split('/').slice(-1)[0];
     });
-    __globals__.normpath = $m(function normpath(path) {
+    _.normpath = $m(function normpath(path) {
         var prefix = path.match(/^\/+/) || '';
         var comps = path.slice(prefix.length).split('/');
         var i = 0;
@@ -112,14 +112,14 @@ function dirname(path) {
 }
 **/
 
-module('<builtin>/__builtin__.py', function builting_module(__globals__) {
+module('<builtin>/__builtin__.py', function builting_module(_) {
 
     var sys = __module_cache['<builtin>/sys.py']._module;
 
-    __globals__.__doc__ = 'Javascript corrospondences to python builtin functions';
+    _.__doc__ = 'Javascript corrospondences to python builtin functions';
 
     /** importing modules **/
-    __globals__.__import__ = $m({'file':'','from':''},
+    _.__import__ = $m({'file':'','from':''},
       function __import__(name, from, file) {
         if (defined(sys.modules[name]))
             return sys.modules[name];
@@ -139,7 +139,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             }
         }
         if (!foundat)
-            __globals__.raise("ImportError: no module named "+name);
+            _.raise("ImportError: no module named "+name);
         if (relflag) {
             var mname = [from.split('.').slice(0,-1)].concat([name]).join('.');
             if (mname[0] == '.')mname = mname.slice(1);
@@ -152,16 +152,16 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         return sys.modules[mname];
     });
 
-    __globals__.reload = $m(function reload(module) {
+    _.reload = $m(function reload(module) {
         delete sys.modules[module.__name__];
         // TODO: this could cause problems, not providing a source file or
         // source name...import might not go through
-        return __globals__.__import__(module.__name__);
+        return _.__import__(module.__name__);
     });
 
     /** basic value types **/
 
-    __globals__.dict = Class('dict', [], {
+    _.dict = Class('dict', [], {
         // **TODO** add a **kwargs to this
         __init__: $m({'itable':{}}, function __init__(self, itable){
             self._keys = [];
@@ -172,25 +172,25 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
                         self.__setitem__(itable[i][0], itable[i][1]);
                     }
                 } else if (!(itable instanceof Object))
-                    __globals__.raise(__globals__.ValueError('arg cannot be coerced to a dict'));
+                    _.raise(_.ValueError('arg cannot be coerced to a dict'));
                 else {
                     for (var k in itable) {
                         self.__setitem__(k, itable[k]);
                     }
                 }
-            } else if (__globals__.isinstance(itable, __globals__.dict)) {
+            } else if (_.isinstance(itable, _.dict)) {
                 var keys = itable.keys();
                 for (var i=0;i<keys.__len__();i++){
                     self.__setitem__(key, itable.__getitem__(keys.__getitem__(i)));
                 }
             } else {
-                var args = __globals__.iter(itable);
+                var args = _.iter(itable);
                 while (true) {
                     try {
                         var kv = args.next();
                         self.__setitem__(kv[0], kv[1]);
                     } catch(e) {
-                        if (__globals__.isinstance(e, __globals__.StopIteration))
+                        if (_.isinstance(e, _.StopIteration))
                             break;
                         throw e;
                     }
@@ -205,7 +205,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             return dct;
         }),
         __cmp__: $m(function __cmp__(self, other){
-            throw __globals__.AttributeError('not yet implemented');
+            throw _.AttributeError('not yet implemented');
         }),
         __contains__: $m(function __contains__(self, key){
             return self._keys.indexOf(key) !== -1;
@@ -216,10 +216,10 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
                 self._keys = self._keys.slice(0, i).concat(self._keys.slice(i+1));
                 self._values = self._values.slice(0, i).concat(self._values.slice(i+1));
             } else
-                __globals__.raise(__globals__.KeyError(key+' not found'));
+                _.raise(_.KeyError(key+' not found'));
         }),
         __delattr__: $m(function __delitem__(self, key){
-            __globals__.raise(__globals__.KeyError('doesnt make sense'));
+            _.raise(_.KeyError('doesnt make sense'));
         }),
         __doc__: 'builtin dictionary type',
         __eq__: $m(function __eq__(self, dct){
@@ -227,7 +227,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             var ok = dct.keys();
             if (!mk.__eq__(ok))return false;
             for (var i=0;i<mk.__len__();i++) {
-                if (!__globals__.eq(self.__getitem__(mk.__getitem__(i)),
+                if (!_.eq(self.__getitem__(mk.__getitem__(i)),
                         dct.__getitem__(mk.__getitem__(i))))
                     return false;
             }
@@ -257,9 +257,9 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         __str__: $m(function __str__(self){
             var strs = [];
             for (var i=0;i<self._keys.length;i++){
-                strs.push(__globals__.repr(self._keys[i])+': '+__globals__.repr(self._values[i]));
+                strs.push(_.repr(self._keys[i])+': '+_.repr(self._values[i]));
             }
-            return __globals__.str('{'+strs.join(', ')+'}');
+            return _.str('{'+strs.join(', ')+'}');
         }),
         clear: $m(function clear(self){
             delete self._keys;
@@ -268,16 +268,16 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             self._values = [];
         }),
         copy: $m(function copy(self){
-            return __globals__.dict(self);
+            return _.dict(self);
         }),
         fromkeys: classmethod($m({'v':null}, function fromkeys(cls, keys, v){
             var d = cls();
-            var keys = __globals__.iter(keys);
+            var keys = _.iter(keys);
             while (true) {
                 try {
                     d.__setitem__(keys.next(), v);
                 } catch(e) {
-                    if (__globals__.isinstance(e, __globals__.StopIteration))
+                    if (_.isinstance(e, _.StopIteration))
                         break
                     throw e;
                 }
@@ -296,9 +296,9 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         items: $m(function items(self){
             var items = [];
             for (var i=0;i<self._keys.length;i++) {
-                items.push(__globals__.list([self._keys[i], self._values[i]]));
+                items.push(_.list([self._keys[i], self._values[i]]));
             }
-            return __globals__.list(items);
+            return _.list(items);
         }),
         iteritems: $m(function iteritems(self){
             // TODO: nasty hack...doesn't actually get you any lazy benefits
@@ -311,7 +311,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             return self.values().__iter__();
         }),
         keys: $m(function keys(self){
-            return __globals__.list(self._keys.slice());
+            return _.list(self._keys.slice());
         }),
         pop: $m({'default_':null}, function pop(self, key, default_){
             var i = self._keys.indexOf(key);
@@ -324,7 +324,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         popitem: $m(function popitem(self){
             if (self.__len__()==0)
-                throw __globals__.KeyError('popitem(): dictionary is empty');
+                throw _.KeyError('popitem(): dictionary is empty');
             return self.pop(self._keys[0]);
         }),
         setdefault: $m(function setdefault(self, k, d){
@@ -333,7 +333,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             return self.__getitem__(k);
         }),
         update: $m(function update(self, other){
-            var keys = __globals__.dict(other).keys().as_js();
+            var keys = _.dict(other).keys().as_js();
             for (var i=0;i<keys.length;i++){
                 self.__setitem__(keys[i], other.__getitem__(keys[i]));
             }
@@ -343,12 +343,12 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
     });
 
-    __globals__.unicode = __not_implemented__("unicode");
-    __globals__.bytearray = __not_implemented__("bytearray");
-    __globals__.object = __not_implemented__("object");
-    __globals__.complex = __not_implemented__("complex");
+    _.unicode = __not_implemented__("unicode");
+    _.bytearray = __not_implemented__("bytearray");
+    _.object = __not_implemented__("object");
+    _.complex = __not_implemented__("complex");
 
-    __globals__.bool = $m(function bool(what) {
+    _.bool = $m(function bool(what) {
         if (defined(what.__bool__))
             return what.__bool__();
         if (what)
@@ -356,24 +356,24 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         return false;
     });
 
-    __globals__._int = $m(function _int(what) {
+    _._int = $m(function _int(what) {
         if (typeof(what) === 'string')
             return parseInt(what);
         else if (typeof(what) === 'number') return what;
         else
-            throw __globals__.TypeError('can\'t coerce to int');
+            throw _.TypeError('can\'t coerce to int');
     });
 
-    __globals__.tuple = Class('tuple', [], {
+    _.tuple = Class('tuple', [], {
         __init__: $m({'ible':[]}, function __init__(self, ible) {
             if (ible instanceof Array) {
                 self._len = ible.length;
                 self._list = ible.slice();
-            } else if (__globals__.isinstance(ible, [__globals__.tuple, __globals__.list])) {
+            } else if (_.isinstance(ible, [_.tuple, _.list])) {
                 self._list = ible.as_js().slice();
                 self._len = self._list.length;
             } else {
-                var __ = __globals__.iter(ible);
+                var __ = _.iter(ible);
                 self._list = [];
                 self._len = 0;
                 while (__.trynext() && self._list.push(__.next())){self._len++}
@@ -383,21 +383,21 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
            return self._list;
         }),
         __add__: $m(function __add__(self, other) {
-            if (!__globals__.isinstance(other, __globals__.tuple))
-                throw __globals__.TypeError('can only concatenate tuple to tuple');
-            return __globals__.tuple(self._list.concat(other._list));
+            if (!_.isinstance(other, _.tuple))
+                throw _.TypeError('can only concatenate tuple to tuple');
+            return _.tuple(self._list.concat(other._list));
         }),
         __contains__: $m(function __contains__(self, one){
             return self._list.indexOf(one) !== -1;
         }),
         __doc__: 'javascript equivalent of the python builtin tuble class',
         __eq__: $m(function __eq__(self, other){
-            if (!__globals__.isinstance(other, __globals__.tuple))
+            if (!_.isinstance(other, _.tuple))
                 return false;
             if (self.__len__() !== other.__len__()) return false;
             var ln = self.__len__();
             for (var i=0;i<ln;i++) {
-                if (!__globals__.eq(self._list[i], other._list[i]))
+                if (!_.eq(self._list[i], other._list[i]))
                     return false;
             }
             return true;
@@ -406,32 +406,32 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         __getitem__: $m(function __getitem__(self, index) {
             if (index < 0) index += self._len;
             if (index < 0 || index >= self._len)
-                throw __globals__.IndexError('index out of range');
+                throw _.IndexError('index out of range');
             return self._list[index];
         }),
         __getnewargs__: __not_implemented__('sorry'),
         __getslice__: $m(function __getslice__(self, a, b) {
-            return __globals__.tuple(self._list.slice(a,b));
+            return _.tuple(self._list.slice(a,b));
         }),
         __gt__: __not_implemented__(''),
         __hash__: __not_implemented__(''),
         __iter__: $m(function __iter__(self) {
-            return __globals__.tupleiterator(self);
+            return _.tupleiterator(self);
         }),
         __le__: __not_implemented__(''),
         __len__: $m(function __len__(self) { return self._len; }),
         __lt__: __not_implemented__(''),
         __mul__: $m(function __mul__(self, other) {
-            if (__globals__.isinstance(other, __globals__._int))
+            if (_.isinstance(other, _._int))
                 other = other.as_js();
             if (type(other) == 'number') {
                 var res = []
                 for (var i=0;i<other;i++) {
                     res = res.concat(self.as_js());
                 }
-                return __globals__.tuple(res);
+                return _.tuple(res);
             }
-            throw __globals__.TypeError('only can multiply by a number');
+            throw _.TypeError('only can multiply by a number');
         }),
         __ne__: __not_implemented__(''),
         __repr__: $m(function __repr__(self) { return self.__str__(); }),
@@ -441,54 +441,54 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         count: $m(function count(self, value) {
             var c = 0;
             for (var i=0;i<self._len;i++) {
-                if (__globals__.eq(self._list[i], value))
+                if (_.eq(self._list[i], value))
                     c++;
             }
             return c;
         }),
         index: $m(function index(self, value) {
             for (var i=0;i<self._len;i++) {
-                if (__globals__.eq(self._list[i], value))
+                if (_.eq(self._list[i], value))
                     return i;
             }
-            __globals__.raise(__globals__.ValueError('x not in list'));
+            _.raise(_.ValueError('x not in list'));
         }),
         __str__: $m(function __str__(self) {
             var a = [];
             for (var i=0;i<self._len;i++) {
-                a.push(__globals__.repr(self._list[i]));
+                a.push(_.repr(self._list[i]));
             }
             if (a.length == 1) {
-                return __globals__.str('('+a[0]+',)');
+                return _.str('('+a[0]+',)');
             }
-            return __globals__.str('('+a.join(', ')+')');
+            return _.str('('+a.join(', ')+')');
         }),
     });
 
-    __globals__.frozenset = __not_implemented__("frozenset");
-    __globals__.hash = __not_implemented__("hash");
-    __globals__._float = __not_implemented__("float");
-    __globals__._long = __not_implemented__("long");
-    __globals__.basestring = __not_implemented__("basestring");
-    __globals__.eq = $m(function eq(a, b){
+    _.frozenset = __not_implemented__("frozenset");
+    _.hash = __not_implemented__("hash");
+    _._float = __not_implemented__("float");
+    _._long = __not_implemented__("long");
+    _.basestring = __not_implemented__("basestring");
+    _.eq = $m(function eq(a, b){
         if (a.__eq__) {
             try { return a.__eq__(b); }
             catch(e) {
-                if (!__globals__.isinstance(e, __globals__.NotImplemented))
+                if (!_.isinstance(e, _.NotImplemented))
                     throw e;
             }
         }
         if (b.__eq__) {
             try { return b.__eq__(a); }
             catch(e) {
-                if (!__globals__.isinstance(e, __globals__.NotImplemented))
+                if (!_.isinstance(e, _.NotImplemented))
                     throw e;
             }
         }
         if (a instanceof Array && b instanceof Array) {
             if (a.length!==b.length) return false;
             for (var i=0;i<a.length;i++) {
-                if (!__globals__.eq(a[i], b[i]))
+                if (!_.eq(a[i], b[i]))
                     return false;
             }
             return true;
@@ -496,7 +496,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         return a === b;
     });
 
-    __globals__.str = Class('str', [], {
+    _.str = Class('str', [], {
         __init__: $m({'item':''}, function __init__(self, item) {
             if (typeof(item) === 'string')
                 self._data = item;
@@ -512,7 +512,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             else if (item instanceof Array) {
                 var m = [];
                 for (var i=0;i<item.length;i++) {
-                    m.push(__globals__.repr(item[i]));
+                    m.push(_.repr(item[i]));
                 }
                 self._data = '[:'+m.join(', ')+':]';
             } else if (item instanceof Function) {
@@ -532,7 +532,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             } else if (typeof(item) === 'object') {
                 var m = [];
                 for (var a in item) {
-                    m.push("'"+a+"': "+__globals__.repr(item[a]));
+                    m.push("'"+a+"': "+_.repr(item[a]));
                 }
                 self._data = '{'+m.join(', ')+'}';
             } else {
@@ -540,16 +540,16 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             }
         }),
         __add__: $m(function __add__(self, other) {
-            if (__globals__.isinstance(other, __globals__.str))
-                return __globals__.str(self._data + other._data);
+            if (_.isinstance(other, _.str))
+                return _.str(self._data + other._data);
             if (typeof(other) === 'string')
-                return __globals__.str(self._data + other);
+                return _.str(self._data + other);
         }),
         __contains__: $m(function __contains__(self, other) {
             return self.find(other) !== -1;
         }),
         __eq__: $m(function __eq__(self, other) {
-            if (!__globals__.isinstance(other, __globals__.str))
+            if (!_.isinstance(other, _.str))
                 return false;
             return self._data === other._data;
         }),
@@ -558,29 +558,29 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             return self.__cmd__(other) === -1;
         }),
         __getitem__: $m(function __getitem__(self, at) {
-            if (!__globals__.isinstance(at, __globals__._int))
-                __globals__.raise(__globals__.TypeError('need an int'));
+            if (!_.isinstance(at, _._int))
+                _.raise(_.TypeError('need an int'));
             if (at < 0)
                 at += self._data.length;
             if (at < 0 || at >= self._data.length)
-                __globals__.raise(__globals__.IndexError('index out of range'));
+                _.raise(_.IndexError('index out of range'));
             return self._data[at];
         }),
         __getslice__: $m(function __getslice__(self, i, j) {
             if (i<0) i = 0;
             if (j<0) j = 0;
-            return __globals__.str(self._data.slice(i,j));
+            return _.str(self._data.slice(i,j));
         }),
     });
 
-    __globals__.list = Class('list', [], {
+    _.list = Class('list', [], {
         __init__: $m({'ible':[]}, function __init__(self, ible) {
             if (ible instanceof Array) {
                 self._list = ible.slice();
-            } else if (__globals__.isinstance(ible, [__globals__.tuple, __globals__.list])) {
+            } else if (_.isinstance(ible, [_.tuple, _.list])) {
                 self._list = ible.as_js().slice();
             } else {
-                var __ = __globals__.iter(ible);
+                var __ = _.iter(ible);
                 self._list = [];
                 while (__.trynext() && self._list.push(__.next())){}
             }
@@ -589,9 +589,9 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
            return self._list;
         }),
         __add__: $m(function __add__(self, other) {
-            if (!__globals__.isinstance(other, __globals__.list))
-                throw __globals__.TypeError('can only concatenate tuple to tuple');
-            return __globals__.tuple(self._list.concat(other._list));
+            if (!_.isinstance(other, _.list))
+                throw _.TypeError('can only concatenate tuple to tuple');
+            return _.tuple(self._list.concat(other._list));
         }),
         __contains__: $m(function __contains__(self, one){
             return self._list.indexOf(one) !== -1;
@@ -604,12 +604,12 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         __doc__: 'javascript equivalent of the python builtin list class',
         __eq__: $m(function __eq__(self, other){
-            if (!__globals__.isinstance(other, __globals__.list))
+            if (!_.isinstance(other, _.list))
                 return false;
             if (self.__len__() !== other.__len__()) return false;
             var ln = self.__len__();
             for (var i=0;i<ln;i++) {
-                if (!__globals__.eq(self._list[i], other._list[i]))
+                if (!_.eq(self._list[i], other._list[i]))
                     return false;
             }
             return true;
@@ -618,23 +618,23 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         __getitem__: $m(function __getitem__(self, index) {
             if (index < 0) index += self._list.length;
             if (index < 0 || index >= self._list.length)
-                throw __globals__.IndexError('index out of range');
+                throw _.IndexError('index out of range');
             return self._list[index];
         }),
         __getslice__: $m(function __getslice__(self, a, b) {
-            return __globals__.list(self._list.slice(a,b));
+            return _.list(self._list.slice(a,b));
         }),
         __gt__: __not_implemented__(''),
         __iadd__: $m(function __iadd__(self, other) {
-            if (!__globals__.isinstance(other, __globals__.list))
-                __builtins__.raise(__globals__.TypeError('can only add list to list'));
+            if (!_.isinstance(other, _.list))
+                __builtins__.raise(_.TypeError('can only add list to list'));
             self._list = self._list.concat(other._list);
         }),
         __imul__: $m(function __imul__(self, other) {
-            if (__globals__.isinstance(other, __globals__._int))
+            if (_.isinstance(other, _._int))
                 other = other.as_js();
             if (type(other) != 'number')
-                throw __globals__.TypeError('only can multiply by a number');
+                throw _.TypeError('only can multiply by a number');
             var res = []
             for (var i=0;i<other;i++) {
                 res = res.concat(self.as_js());
@@ -642,27 +642,27 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             self._list = res;
         }),
         __iter__: $m(function __iter__(self) {
-            return __globals__.listiterator(self);
+            return _.listiterator(self);
         }),
         __le__: __not_implemented__(''),
         __len__: $m(function __len__(self) { return self._list.length; }),
         __lt__: __not_implemented__(''),
         __mul__: $m(function __mul__(self, other) {
-            if (__globals__.isinstance(other, __globals__._int))
+            if (_.isinstance(other, _._int))
                 other = other.as_js();
             if (type(other) == 'number') {
                 var res = []
                 for (var i=0;i<other;i++) {
                     res = res.concat(self.as_js());
                 }
-                return __globals__.list(res);
+                return _.list(res);
             }
-            throw __globals__.TypeError('only can multiply by a number');
+            throw _.TypeError('only can multiply by a number');
         }),
         __ne__: __not_implemented__(''),
         __repr__: $m(function __repr__(self) { return self.__str__(); }),
         __reversed__: $m(function __reversed__(self) {
-            return __globals__.listreversediterator(self);
+            return _.listreversediterator(self);
         }),
         __rmul__: $m(function __rmul__(self, other) {
             return self.__mul__(other);
@@ -670,11 +670,11 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         __setitem__: $m(function __setitem__(self, i, val) {
             if (i < 0) i += self._list.length;
             if (i < 0 || i >= self._list.length)
-                __globals__.raise(__globals__.IndexError('list index out of range'));
+                _.raise(_.IndexError('list index out of range'));
             self._list[i] = val;
         }),
         __setslice__: $m(function __setslice__(self, i, j, val) {
-            var it = __globals__.list(val)._list;
+            var it = _.list(val)._list;
             self._list = self._list.slice(0, i).concat(it).concat(self._list.slice(j));
         }),
         append: $m(function append(self, what){
@@ -683,20 +683,20 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         count: $m(function count(self, value) {
             var c = 0;
             for (var i=0;i<self._list.length;i++) {
-                if (__globals__.eq(self._list[i], value))
+                if (_.eq(self._list[i], value))
                     c++;
             }
             return c;
         }),
         extend: $m(function extend(self, what) {
-            self.__iadd__(__globals__.list(what));
+            self.__iadd__(_.list(what));
         }),
         index: $m(function index(self, value) {
             for (var i=0;i<self._list.length;i++) {
-                if (__globals__.eq(self._list[i], value))
+                if (_.eq(self._list[i], value))
                     return i;
             }
-            __globals__.raise(__globals__.ValueError('x not in list'));
+            _.raise(_.ValueError('x not in list'));
         }),
         insert: $m(function insert(self, i, val) {
             self._list = self._list.slice(0, i).concat([val]).concat(self._list.slice(i));
@@ -704,7 +704,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         pop: $m({'i':-1}, function pop(self, i) {
             if (i < 0) i += self._list.length;
             if (i < 0 || i >= self._list.length)
-                __builtins__.raise(__globals__.IndexError('pop index out of range'));
+                __builtins__.raise(_.IndexError('pop index out of range'));
             var val = self._list[i];
             self.__delitem__(i);
             return val;
@@ -725,13 +725,13 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         __str__: $m(function __str__(self) {
             var a = [];
             for (var i=0;i<self._list.length;i++) {
-                a.push(__globals__.repr(self._list[i]));
+                a.push(_.repr(self._list[i]));
             }
-            return __globals__.str('['+a.join(', ')+']');
+            return _.str('['+a.join(', ')+']');
         }),
     });
 
-    __globals__.listiterator = Class('listiterator', [], {
+    _.listiterator = Class('listiterator', [], {
         __init__: $m(function(self, lst) {
             self.lst = lst;
             self.at = 0;
@@ -745,39 +745,39 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         }),
         next: $m(function(self) {
             if (self.at >= self.lst._list.length)
-                __globals__.raise(__globals__.StopIteration());
+                _.raise(_.StopIteration());
             var val = self.lst._list[self.at];
             self.at += 1;
             return val;
         }),
     });
 
-    __globals__.listreversediterator = Class('listreversediterator', [__globals__.listiterator], {
+    _.listreversediterator = Class('listreversediterator', [_.listiterator], {
         next: $m(function(self) {
             if (self.at > self.lst._list.length)
-                __globals__.raise(__globals__.StopIteration());
+                _.raise(_.StopIteration());
             var val = self.lst._list[self.lst._list.length-1-self.at];
             self.at += 1;
             return val;
         }),
     });
 
-    __globals__.tupleiterator = Class('tupleiterator', [__globals__.listiterator], {});
+    _.tupleiterator = Class('tupleiterator', [_.listiterator], {});
 
-    __globals__.iter = $m({'sentinel':null}, function iter(ible, sentinel) {
+    _.iter = $m({'sentinel':null}, function iter(ible, sentinel) {
         if (sentinel)
             return callable_iterator(ible, sentinel);
         if (ible instanceof Array) 
-            return __globals__.tuple(ible).__iter__();
+            return _.tuple(ible).__iter__();
         if (!defined(ible.__iter__))
-            __globals__.raise('item not iterable');
+            _.raise('item not iterable');
         return ible.__iter__();
     });
 
     /** function progging **/
 
-    __globals__.all = __not_implemented__("all");
-    __globals__.vars = $m(function vars(obj) {
+    _.all = __not_implemented__("all");
+    _.vars = $m(function vars(obj) {
         // TODO::: this isn't good
         var dct = {};
         for (var a in obj) {
@@ -788,155 +788,155 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
 
     /** inheritence **/
 
-    __globals__.type = type;
-    __globals__.classmethod = classmethod;
-    __globals__.staticmethod = staticmethod;
+    _.type = type;
+    _.classmethod = classmethod;
+    _.staticmethod = staticmethod;
 
-    __globals__.isinstance = $m(function isinstance(inst, clsses) {
+    _.isinstance = $m(function isinstance(inst, clsses) {
         if (!defined(inst.__class__))
-            __globals__.raise("PJs Error: isisntance only works on objects");
-        return __globals__.issubclass(inst.__class__, clsses);
+            _.raise("PJs Error: isisntance only works on objects");
+        return _.issubclass(inst.__class__, clsses);
     });
 
-    __globals__.issubclass = $m(function issubclass(cls, clsses) {
+    _.issubclass = $m(function issubclass(cls, clsses) {
         if (!defined(cls.__bases__))
-            __globals__.raise("PJs Error: issubclass only works on classes");
+            _.raise("PJs Error: issubclass only works on classes");
         if (!(clsses instanceof Array))
             clsses = [clsses];
         for (var i=0;i<clsses.length;i++) {
             if (cls === clsses[i]) return true;
             for (var a=0;a<cls.__bases__.length;a++) {
-                if (__globals__.issubclass(cls.__bases__[a], clsses))
+                if (_.issubclass(cls.__bases__[a], clsses))
                     return true;
             }
         }
         return false;
     });
 
-    __globals__.help = __not_implemented__("help");
+    _.help = __not_implemented__("help");
 
-    __globals__.copyright = 'something should go here...';
+    _.copyright = 'something should go here...';
 
-    __globals__.input = __not_implemented__("input");
-    __globals__.oct = __not_implemented__("oct");
-    __globals__.bin = __not_implemented__("bin");
-    __globals__.SystemExit = __not_implemented__("SystemExit");
-    __globals__.format = __not_implemented__("format");
-    __globals__.sorted = __not_implemented__("sorted");
-    __globals__.False = __not_implemented__("False");
-    __globals__.__package__ = __not_implemented__("__package__");
-    __globals__.round = __not_implemented__("round");
-    __globals__.dir = __not_implemented__("dir");
-    __globals__.cmp = __not_implemented__("cmp");
-    __globals__.set = __not_implemented__("set");
-    __globals__.bytes = __not_implemented__("bytes");
-    __globals__.reduce = __not_implemented__("reduce");
-    __globals__.intern = __not_implemented__("intern");
-    __globals__.Ellipsis = __not_implemented__("Ellipsis");
-    __globals__.locals = __not_implemented__("locals");
-    __globals__.slice = __not_implemented__("slice");
-    __globals__.sum = __not_implemented__("sum");
-    __globals__.getattr = __not_implemented__("getattr");
-    __globals__.abs = __not_implemented__("abs");
-    __globals__.exit = __not_implemented__("exit");
-    __globals__.print = $m({}, true, function _print(args) {
+    _.input = __not_implemented__("input");
+    _.oct = __not_implemented__("oct");
+    _.bin = __not_implemented__("bin");
+    _.SystemExit = __not_implemented__("SystemExit");
+    _.format = __not_implemented__("format");
+    _.sorted = __not_implemented__("sorted");
+    _.False = __not_implemented__("False");
+    _.__package__ = __not_implemented__("__package__");
+    _.round = __not_implemented__("round");
+    _.dir = __not_implemented__("dir");
+    _.cmp = __not_implemented__("cmp");
+    _.set = __not_implemented__("set");
+    _.bytes = __not_implemented__("bytes");
+    _.reduce = __not_implemented__("reduce");
+    _.intern = __not_implemented__("intern");
+    _.Ellipsis = __not_implemented__("Ellipsis");
+    _.locals = __not_implemented__("locals");
+    _.slice = __not_implemented__("slice");
+    _.sum = __not_implemented__("sum");
+    _.getattr = __not_implemented__("getattr");
+    _.abs = __not_implemented__("abs");
+    _.exit = __not_implemented__("exit");
+    _.print = $m({}, true, function _print(args) {
         var strs = [];
         for (var i=0;i<args._list.length;i++) {
-            strs.push(__globals__.str(args._list[i]));
+            strs.push(_.str(args._list[i]));
         }
         print(strs.join(' '));
     });
-    __globals__.print.__name__ = 'print';
-    __globals__.assert = $m(function assert(bool, text) {
+    _.print.__name__ = 'print';
+    _.assert = $m(function assert(bool, text) {
         if (!bool) {
             throw Error(text);
         }
     });
-    __globals__._debug_stack = [];
-    __globals__.raise = $m(function raise(obj) {
-        obj.stack = __globals__._debug_stack.slice();
+    _._debug_stack = [];
+    _.raise = $m(function raise(obj) {
+        obj.stack = _._debug_stack.slice();
         throw obj;
     });
-    __globals__.True = true;
-    __globals__.None = null;
-    __globals__.len = $m(function len(obj) {
+    _.True = true;
+    _.None = null;
+    _.len = $m(function len(obj) {
         if (obj instanceof Array) return obj.length;
         if (obj instanceof String) return obj.length;
         if (obj.__len__) return obj.__len__();
-        __globals__.raise(__globals__.TypeError('no function __len__'));
+        _.raise(_.TypeError('no function __len__'));
     });
-    __globals__.credits = __not_implemented__("credits");
-    __globals__.ord = __not_implemented__("ord");
-    // __globals__.super = __not_implemented__("super");
-    __globals__.license = __not_implemented__("license");
-    __globals__.KeyboardInterrupt = __not_implemented__("KeyboardInterrupt");
-    __globals__.filter = __not_implemented__("filter");
-    __globals__.range = __not_implemented__("range");
-    __globals__.BaseException = __not_implemented__("BaseException");
-    __globals__.pow = __not_implemented__("pow");
-    __globals__.globals = __not_implemented__("globals");
-    __globals__.divmod = __not_implemented__("divmod");
-    __globals__.enumerate = __not_implemented__("enumerate");
-    __globals__.apply = __not_implemented__("apply");
-    __globals__.open = __not_implemented__("open");
-    __globals__.quit = __not_implemented__("quit");
-    __globals__.zip = __not_implemented__("zip");
-    __globals__.hex = __not_implemented__("hex");
-    __globals__.next = __not_implemented__("next");
-    __globals__.chr = __not_implemented__("chr");
-    __globals__.xrange = __not_implemented__("xrange");
+    _.credits = __not_implemented__("credits");
+    _.ord = __not_implemented__("ord");
+    // _.super = __not_implemented__("super");
+    _.license = __not_implemented__("license");
+    _.KeyboardInterrupt = __not_implemented__("KeyboardInterrupt");
+    _.filter = __not_implemented__("filter");
+    _.range = __not_implemented__("range");
+    _.BaseException = __not_implemented__("BaseException");
+    _.pow = __not_implemented__("pow");
+    _.globals = __not_implemented__("globals");
+    _.divmod = __not_implemented__("divmod");
+    _.enumerate = __not_implemented__("enumerate");
+    _.apply = __not_implemented__("apply");
+    _.open = __not_implemented__("open");
+    _.quit = __not_implemented__("quit");
+    _.zip = __not_implemented__("zip");
+    _.hex = __not_implemented__("hex");
+    _.next = __not_implemented__("next");
+    _.chr = __not_implemented__("chr");
+    _.xrange = __not_implemented__("xrange");
 
 
-    __globals__.reversed = __not_implemented__("reversed");
-    __globals__.hasattr = __not_implemented__("hasattr");
-    __globals__.delattr = __not_implemented__("delattr");
-    __globals__.setattr = __not_implemented__("setattr");
-    __globals__.raw_input = __not_implemented__("raw_input");
-    __globals__.compile = __not_implemented__("compile");
+    _.reversed = __not_implemented__("reversed");
+    _.hasattr = __not_implemented__("hasattr");
+    _.delattr = __not_implemented__("delattr");
+    _.setattr = __not_implemented__("setattr");
+    _.raw_input = __not_implemented__("raw_input");
+    _.compile = __not_implemented__("compile");
 
-    __globals__.repr = $m(function repr(item) {
+    _.repr = $m(function repr(item) {
         if (typeof(item) === 'string') {
             return "'" + item + "'";
         } else if (typeof(item) === 'number') {
             return '' + item;
         } else if (defined(item.__repr__)) {
             return item.__repr__();
-        } else return __globals__.str(item);
+        } else return _.str(item);
     });
 
-    __globals__.property = __not_implemented__("property");
-    __globals__.GeneratorExit = __not_implemented__("GeneratorExit");
-    __globals__.coerce = __not_implemented__("coerce");
-    __globals__.file = __not_implemented__("file");
-    __globals__.unichr = __not_implemented__("unichr");
-    __globals__.id = __not_implemented__("id");
-    __globals__.min = __not_implemented__("min");
-    __globals__.execfile = __not_implemented__("execfile");
-    __globals__.any = __not_implemented__("any");
-    __globals__.NotImplemented = __not_implemented__("NotImplemented");
-    __globals__.map = __not_implemented__("map");
-    __globals__.buffer = __not_implemented__("buffer");
-    __globals__.max = __not_implemented__("max");
-    __globals__.callable = __not_implemented__("callable");
-    __globals__.eval = __not_implemented__("eval");
-    __globals__.__debug__ = __not_implemented__("__debug__");
+    _.property = __not_implemented__("property");
+    _.GeneratorExit = __not_implemented__("GeneratorExit");
+    _.coerce = __not_implemented__("coerce");
+    _.file = __not_implemented__("file");
+    _.unichr = __not_implemented__("unichr");
+    _.id = __not_implemented__("id");
+    _.min = __not_implemented__("min");
+    _.execfile = __not_implemented__("execfile");
+    _.any = __not_implemented__("any");
+    _.NotImplemented = __not_implemented__("NotImplemented");
+    _.map = __not_implemented__("map");
+    _.buffer = __not_implemented__("buffer");
+    _.max = __not_implemented__("max");
+    _.callable = __not_implemented__("callable");
+    _.eval = __not_implemented__("eval");
+    _.__debug__ = __not_implemented__("__debug__");
 
-    __globals__.Exception = Class('Exception', [], {
+    _.Exception = Class('Exception', [], {
         __init__: $m({}, true, function __init__(self, args) {
             self.args = args;
         }),
         __str__: $m(function __str__(self) {
-            if (__globals__.len(self.args) == 1)
-                return self.__class__.__name__+': '+__globals__.str(self.args.__getitem__(0));
-            return self.__class__.__name__+': '+__globals__.str(self.args);
+            if (_.len(self.args) == 1)
+                return self.__class__.__name__+': '+_.str(self.args.__getitem__(0));
+            return self.__class__.__name__+': '+_.str(self.args);
         }),
     });
 
-    __globals__.TypeError = Class('TypeError', [__globals__.Exception], {});
-    __globals__.NameError = Class('NameError', [__globals__.Exception], {});
-    __globals__.ValueError = Class('ValueError', [__globals__.Exception], {});
-    __globals__.IndexError = Class('IndexError', [__globals__.Exception], {});
-    __globals__.NotImplemented = Class('NotImplemented', [__globals__.Exception], {});
+    _.TypeError = Class('TypeError', [_.Exception], {});
+    _.NameError = Class('NameError', [_.Exception], {});
+    _.ValueError = Class('ValueError', [_.Exception], {});
+    _.IndexError = Class('IndexError', [_.Exception], {});
+    _.NotImplemented = Class('NotImplemented', [_.Exception], {});
 });
 
 __module_cache['<builtin>/sys.py'].load('sys'); // must be loaded for importing to work.
