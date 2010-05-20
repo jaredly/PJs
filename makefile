@@ -11,6 +11,9 @@ build/pjslib.js: jslib/*.js
 test/example.js: test/example.py
 	@./build.py test/example.py > test/example.js
 
+example:
+	./build.py test/example.py > test/example.js
+
 pylib:
 	@echo "this isn't supported ATM"
 
