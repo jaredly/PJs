@@ -30,10 +30,9 @@ Now you can import stuff...just like in python.
 
 var __not_implemented__ = function __not_implemented__(name) {
     return function not_implemented() {
-        print('not impl');
         if (arguments.callee.__name__)
             name = arguments.callee.__name__;
-        throw new Error("the builtin function "+name+" is not implemented yet. You should help out and add it =)");
+        $b.raise($b.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)"));
     };
 };
 
@@ -51,33 +50,41 @@ module('<builtin>/sys.py', function sys_module(_) {
 module('<builtin>/os/path.py', function os_path_module(_) {
     _.__doc__ = "a module for dealing with paths";
     _.join = $m({}, true, function join(first, args) {
+        first = $b.js(first);
+        args = $b.js(args);
         var path = first;
-        for (var i=0;i<args._list.length;i++) {
-            if (_.isabs(args._list[i])) {
-                path = args._list[i];
+        for (var i=0;i<args.length;i++) {
+            args[i] = $b.js(args[i]);
+            if (_.isabs(args[i])) {
+                path = args[i];
             } else if (path === '' || '/\\:'.indexOf(path.slice(-1)) !== -1) {
-                path += args._list[i];
+                path += args[i];
             } else
-                path += '/' + args._list[i];
+                path += '/' + args[i];
         }
-        return path;
+        return $b.str(path);
     });
     _.isabs = $m(function isabs(path) {
+        path = $b.js(path);
         if (!path)return false;
         return path && path[0] == '/';
     });
     _.abspath = $m(function abspath(path) {
+        path = $b.js(path);
         if (!_.isabs(path))
             _.raise("not implementing this atm");
         return _.normpath(path);
     });
     _.dirname = $m(function dirname(path) {
-        return path.split('/').slice(0,-1).join('/') || '/';
+        path = $b.js(path);
+        return $b.str(path.split('/').slice(0,-1).join('/') || '/');
     });
     _.basename = $m(function basename(path) {
-        return path.split('/').slice(-1)[0];
+        path = $b.js(path);
+        return $b.str(path.split('/').slice(-1)[0]);
     });
     _.normpath = $m(function normpath(path) {
+        path = $b.js(path);
         var prefix = path.match(/^\/+/) || '';
         var comps = path.slice(prefix.length).split('/');
         var i = 0;
@@ -94,7 +101,7 @@ module('<builtin>/os/path.py', function os_path_module(_) {
         }
         if (!prefix && !comps)
             comps.push('.');
-        return prefix + comps.join('/');
+        return $b.str(prefix + comps.join('/'));
     });
 });
 
@@ -119,21 +126,31 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     _.__doc__ = 'Javascript corrospondences to python builtin functions';
 
+    _.js = $m(function(what) {
+        if (defined(what.as_js))
+            return what.as_js();
+        else if (what.__class__ || what.__type__)
+            _.raise(_.TypeError('cannot coerce to javascript'));
+        return what;
+    });
     /** importing modules **/
     _.__import__ = $m({'file':'','from':''},
       function __import__(name, from, file) {
+        from = $b.js(from);
+        file = $b.js(file);
         if (defined(sys.modules[name]))
             return sys.modules[name];
         var path = __module_cache['<builtin>/os/path.py']._module;
         var relflag = false;
         var foundat = null;
-        for (var i=0;i<sys.path.length;i++) {
-            relflag = sys.path[i][0] !== '/' && sys.path[i].indexOf('<builtin>') !== 0;
+        var syspath = $b.js(sys.path);
+        for (var i=0;i<syspath.length;i++) {
+            relflag = syspath[i][0] !== '/' && syspath[i].indexOf('<builtin>') !== 0;
             if (relflag)
-                var dname = path.normpath(path.join(path.dirname(file), sys.path[i]));
+                var dname = $b.js(path.normpath(path.join(path.dirname(file), syspath[i])));
             else
-                var dname = sys.path[i];
-            var fname = path.join(dname, name.replace('.', '/')+'.py');
+                var dname = $b.js(syspath[i]);
+            var fname = $b.js(path.join(dname, $b.js(name).replace('.', '/')+'.py'));
             if (defined(__module_cache[fname])) {
                 foundat = fname;
                 break;
@@ -195,7 +212,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         try { return _.do_op('__sub__', '__rsub__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
-                if (type(a) === type(b) && type(a) === 'number')
+                if (typeof(a) === typeof(b) && typeof(a) === 'number')
                     return a - b;
             throw e;
         }
@@ -204,7 +221,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         try { return _.do_op('__gt__', '__lt__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
-                if (type(a) === type(b) && type(a) === 'number')
+                if (typeof(a) === typeof(b) && typeof(a) === 'number')
                     return a > b;
             throw e;
         }
@@ -216,7 +233,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         try { return _.do_op('__ge__', '__le__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
-                if (type(a) === type(b) && type(a) === 'number')
+                if (typeof(a) === typeof(b) && typeof(a) === 'number')
                     return a >= b;
             throw e;
         }
@@ -228,7 +245,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         try { return _.do_op('__mod__', '__rmod__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
-                if (type(a) === type(b) && type(a) === 'number')
+                if (typeof(a) === typeof(b) && typeof(a) === 'number')
                     return a % b;
             throw e;
         }
@@ -237,7 +254,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         try { return _.do_op('__mul__', '__rmul__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
-                if (type(a) === type(b) && type(a) === 'number')
+                if (typeof(a) === typeof(b) && typeof(a) === 'number')
                     return a * b;
             throw e;
         }
@@ -524,7 +541,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         __mul__: $m(function __mul__(self, other) {
             if (_.isinstance(other, _._int))
                 other = other.as_js();
-            if (type(other) == 'number') {
+            if (typeof(other) == 'number') {
                 var res = []
                 for (var i=0;i<other;i++) {
                     res = res.concat(self.as_js());
@@ -657,6 +674,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return self.find(other) !== -1;
         }),
         __eq__: $m(function __eq__(self, other) {
+            if (typeof(other) === 'string')
+                other = _.str(other);
             if (!_.isinstance(other, _.str))
                 return false;
             return self._data === other._data;
@@ -680,6 +699,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return _.str(self._data.slice(i,j));
         }),
         toString: $m(function(self) {
+            return self._data;
+        }),
+        as_js: $m(function(self) {
             return self._data;
         }),
         capitalize: $m(function(self) {
@@ -729,6 +751,8 @@ format: __not_implemented__('str.format'),
             var v;
             while (__.trynext()) {
                 v = __.next();
+                if (typeof(v) === 'string')
+                    v = _.str(v);
                 if (!_.isinstance(v, _.str))
                     _.raise(_.TypeError('joining: string expected'));
                 res.push(v._data);
@@ -864,7 +888,7 @@ format: __not_implemented__('str.format'),
         __imul__: $m(function __imul__(self, other) {
             if (_.isinstance(other, _._int))
                 other = other.as_js();
-            if (type(other) != 'number')
+            if (typeof(other) != 'number')
                 throw _.TypeError('only can multiply by a number');
             var res = []
             for (var i=0;i<other;i++) {
@@ -881,7 +905,7 @@ format: __not_implemented__('str.format'),
         __mul__: $m(function __mul__(self, other) {
             if (_.isinstance(other, _._int))
                 other = other.as_js();
-            if (type(other) == 'number') {
+            if (typeof(other) == 'number') {
                 var res = []
                 for (var i=0;i<other;i++) {
                     res = res.concat(self.as_js());
@@ -1174,4 +1198,5 @@ __module_cache['<builtin>/sys.py'].load('sys'); // must be loaded for importing 
 __module_cache['<builtin>/os/path.py'].load('os.path');
 var __builtins__ = __module_cache['<builtin>/__builtin__.py'].load('__builtin__');
 var __import__ = __builtins__.__import__; // should I make this global?
+var $b = __builtins__;
 

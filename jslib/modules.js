@@ -36,7 +36,9 @@ function module(filename, fn) {
     that.load = $m({'mod':null}, function load_module(name, mod) {
         if (mod === null) mod = {};
         mod.__name__ = name;
+        if (__builtins__) mod.__name__ = __builtins__.str(name);
         mod.__file__ = that.__file__;
+        if (__builtins__) mod.__file__ = __builtins__.str(that.__file__);
         mod.__dict__ = mod;
         that._module = mod;
         fn(mod);

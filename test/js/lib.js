@@ -22,6 +22,28 @@ function dump(a) {
     else return ''+a;
 }
 
+var old = jasmine.util.formatException;
+jasmine.util.formatException = function(e) {
+    if ($b.isinstance(e, $b.Exception)) {
+        var stack = e.stack;
+        var message = '';
+        message += 'Traceback (most recent call last)\n';
+        for (var i=0;i<stack.length;i++){
+            var fn = stack[i][1];
+            var ost = fn.toString;
+            if (fn._to_String)
+                fn.toString = fn._old_toString;
+            message += '  ' + $b.str(stack[i][0]) + '\n';
+        }
+        if (e.__class__)
+            message += 'Python Error:' + $b.str(e) + '\n';
+        else
+            message += 'Javascript Error:' + e + '\n';
+        return message;
+    } else
+        return old(e);
+};
+
 beforeEach(function(){
     this.addMatchers({
         toThrowWith: function(args, errorlike) {
@@ -67,7 +89,7 @@ beforeEach(function(){
                 if (!(all[i][0] instanceof Array))
                     all[i][0] = [all[i][0]];
                 var res = this.actual.apply(null, all[i][0]);
-                if (!this.env.equals_(res, all[i][1])) {
+                if (!$b.eq(res, all[i][1])) {
                     return false;
                 }
             }
@@ -350,10 +372,10 @@ describe('pjs-builtins.js', function() {
         var path = __builtins__.__import__('os.path');
         it('join', function(){
             expect(path.join).toReturnGiven([
-                [['a','b'],'a/b'],
-                [['a','/b'],'/b'],
-                [['a/','b'],'a/b'],
-                [['/a/b/../c','d'],'/a/b/../c/d']
+                [['a','b'],$b.str('a/b')],
+                [['a','/b'],$b.str('/b')],
+                [['a/','b'],$b.str('a/b')],
+                [['/a/b/../c','d'],$b.str('/a/b/../c/d')]
             ]);
         });
         it('isabs', function(){
@@ -365,8 +387,8 @@ describe('pjs-builtins.js', function() {
         });
         it('abspath', function(){
             expect(path.abspath).toThrowWith(['not/absolute']);
-            expect(path.abspath('/a/b/./../c/')).toEqual('/a/c');
-            expect(path.abspath('/first/second/../../third/./fourth/../')).toEqual('/third');
+            expect(path.abspath('/a/b/./../c/')).toPjEqual('/a/c');
+            expect(path.abspath('/first/second/../../third/./fourth/../')).toPjEqual('/third');
         });
         it('dirname', function(){
             expect(path.dirname).toReturnGiven([

@@ -35,6 +35,7 @@ $(PY_TEST): pjs/convert.py jslib
 	else \
 		echo "$@ failed"; \
 		diff _py.log _js.log|less; \
+		exit; \
 	fi; \
 	rm -f _py.log _js.log;
 
