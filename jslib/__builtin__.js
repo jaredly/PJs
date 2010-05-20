@@ -177,14 +177,14 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                     throw e;
             }
         }
-        throw _.NotImplemented('Operator not implemented for ' + _.str(a.__class__) + ' and ' + _.str(b.__class__))
+        throw _.NotImplemented('Operator not implemented for ' + _.str(a) + ' and ' + _.str(b))
     });
     _.add = $m(function add(a, b) {
         try {
             return _.do_op('__add__', '__radd__', a, b);
         } catch(e) {
             if (_.isinstance(e, _.NotImplemented)) {
-                if (type(a) === type(b) && type(a) === 'number')
+                if (typeof(a) === typeof(b) && typeof(a) === 'number')
                     return a+b;
             }
             throw e;
@@ -245,8 +245,15 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         try { return _.do_op('__ne__', '__ne__', a, b); }
         catch(e) {
             if (_.isinstance(e, _.NotImplemented))
-                if (type(a) === type(b) && type(a) === 'number')
-                    return a !== b;
+                return a !== b;
+            throw e;
+        }
+    });
+    _.eq = $m(function eq(a, b) {
+        try { return _.do_op('__eq__', '__eq__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                return a === b;
             throw e;
         }
     });
@@ -631,11 +638,15 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 self._data = ''+item;
             }
         }),
+        __str__: $m(function(self) {
+            return self;
+        }),
         __add__: $m(function __add__(self, other) {
             if (_.isinstance(other, _.str))
                 return _.str(self._data + other._data);
             if (typeof(other) === 'string')
                 return _.str(self._data + other);
+            _.raise(_.NotImplemented());
         }),
         __contains__: $m(function __contains__(self, other) {
             return self.find(other) !== -1;
@@ -663,6 +674,103 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (j<0) j = 0;
             return _.str(self._data.slice(i,j));
         }),
+        toString: $m(function(self) {
+            return self._data;
+        }),
+        capitalize: $m(function(self) {
+            var s = self._data[0].toUpperCase();
+            return _.str(s + self._data.slice(1).toLowerCase());
+        }),
+        center: __not_implemented__('str.center'),
+        count: __not_implemented__('str.count'),
+        decode: __not_implemented__('str.decode'),
+        encode: __not_implemented__('str.encode'),
+        endswith: $m(function(self, what) {
+            if (!_.isinstance(what, [_.tuple, _.list]))
+                what = [what]
+            else
+                what = what.as_js();
+            for (var i=0;i<what.length;i++) {
+                if (self._data.slice(-what[i].length).indexOf(what[i]) === 0)
+                    return true;
+            }
+            return false;
+        }),
+        expandtabs: __not_implemented__('str.expandtabs'),
+        find: $m({'start':null, 'end':null}, function find(self, sub, start, end) {
+            if (start === null) start = 0;
+            if (end === null) end = self._data.length;
+            var at = self._data.slice(start,end).indexOf(sub);
+            if (at !== -1)at += start;
+            return at;
+        }),
+format: __not_implemented__('str.format'),
+        index: $m({'start':null, 'end':null}, function index(self, sub, start, end) {
+            var res = self.find(sub, start, end);
+            if (res === -1)
+                _.raise(_.ValueError('substring not found'));
+            return res;
+        }),
+        isalnum: __not_implemented__('str.isalnum'),
+        isalpha: __not_implemented__('str.isalpha'),
+        isdigit: __not_implemented__('str.isdigit'),
+        islower: __not_implemented__('str.islower'),
+        isspace: __not_implemented__('str.isspace'),
+        istitle: __not_implemented__('str.istitle'),
+        isupper: __not_implemented__('str.isupper'),
+        join: $m(function(self, ible) {
+            var __ = _.iter(ible);
+            var res = [];
+            var v;
+            while (__.trynext()) {
+                v = __.next();
+                if (!_.isinstance(v, _.str))
+                    _.raise(_.TypeError('joining: string expected'));
+                res.push(v._data);
+            }
+            return _.str(res.join(self._data));
+        }),
+        ljust: __not_implemented__('str.ljust'),
+        lower: $m(function(self) {
+            return _.str(self._data.toLowerCase());
+        }),
+        lstrip: __not_implemented__('str.lstrip'),
+        partition: __not_implemented__('str.partition'),
+        replace: __not_implemented__('str.replace'),
+        rfind: __not_implemented__('str.rfind'),
+        rindex: __not_implemented__('str.rindex'),
+        split: __not_implemented__('str.split'),
+        splitlines: $m({'keepends':false}, function(self, keepends) {
+            var res = self._data.split(/\n/g);
+            var l = _.list();
+            for (var i=0;i<res.length;i++) {
+                var k = res[i];
+                if (keepends) k += '\n';
+                l.append(_.str(k));
+            }
+            return l;
+        }),
+        startswith: $m({'start':null, 'end':null}, function(self, sub, start, end) {
+            if (!_.isinstance(sub, [_.tuple, _.list]))
+                sub = [sub]
+            else
+                sub = sub.as_js();
+            if (start === null)start = 0;
+            if (end === null)end = self._data.length;
+            for (var i=0;i<sub.length;i++) {
+                if (self._data.slice(start,end).indexOf(sub[i]) === 0)
+                    return true;
+            }
+            return false;
+        }),
+        strip: __not_implemented__('str.strip'),
+        swapcase: __not_implemented__('str.swapcase'),
+        title: __not_implemented__('str.title'),
+        translate: __not_implemented__('str.translate'),
+        upper: $m(function(self) {
+            return _.str(self._data.toUpperCase());
+        }),
+        zfill: __not_implemented__('str.zfill'),
     });
 
     _.list = Class('list', [], {
@@ -886,7 +994,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     _.isinstance = $m(function isinstance(inst, clsses) {
         if (!defined(inst.__class__))
-            _.raise("PJs Error: isisntance only works on objects");
+            return false;
+            // _.raise("PJs Error: isisntance only works on objects");
         return _.issubclass(inst.__class__, clsses);
     });
 

@@ -394,7 +394,7 @@ describe('pjs-builtins.js', function() {
             var c=Class('c',[a],{});
             expect($.isinstance(a(),a)).toBe(true);
             expect($.isinstance(b(),a)).toBe(false);
-            expect($.isinstance).toThrowWith([a,a]);
+            // expect($.isinstance).toThrowWith([a,a]);
             expect($.isinstance(c(),a)).toBe(true);
         });
         it('issubclass', function() {

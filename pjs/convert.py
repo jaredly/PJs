@@ -127,7 +127,7 @@ def _expr(node, scope):
     return js+';\n', imp
 
 def _str(node, scope):
-    return multiline(node.s), []
+    return '__builtins__.str(%s)' % multiline(node.s), []
 
 def _import(node, scope):
     tpl = '%s = __builtins__.__import__("%s", _.__name__, _.__file__);\n'
@@ -238,9 +238,10 @@ def _assign(node, scope):
     line = '%s = %s;\n' % (left, js)
     return line + rest, imports
 
+'''
 def do_op(node):
     ops = {
-        ast.Eq:'===',
+        ast.Eq:'eq'
         ast.Add:'+',
         ast.Sub:'-',
         ast.Mult:'*',
@@ -255,15 +256,17 @@ def do_op(node):
     if op is None:
         raise PJsException("Operator type %s not yet supported" % node)
     return op
+    '''
 
 def _binop(node, scope):
-    op = do_op(node.op)
+    tpl = '__builtins__.%s(%s, %s)'
+    op = node.op.__class__.__name__.lower()
     imports = []
     ljs, imp = convert_node(node.left, scope)
     imports += imp
     rjs, imp = convert_node(node.right, scope)
     imports += imp
-    return "%s %s %s" % (ljs, op, rjs), imports
+    return tpl % (op, ljs, rjs), imports
 
 def _num(node, scope):
     return str(node.n), []
@@ -369,12 +372,16 @@ def _if(node, scope):
     return text, imports
 
 def _compare(node, scope):
-    text, imports = convert_node(node.left, scope)
-    for cp, sub in zip(node.ops, node.comparators):
-        js, imp = convert_node(sub, scope)
-        imports += imp
-        text += ' %s %s' % (do_op(cp), js)
-    return text, imports
+    if len(node.ops) > 1:
+        raise PJsException('sorry, multiple comparisons 1 > 2 > 3 is not supported.')
+    tpl = '__builtins__.%s(%s, %s)'
+    op = node.ops[0].__class__.__name__.lower()
+    imports = []
+    ljs, imp = convert_node(node.left, scope)
+    imports += imp
+    rjs, imp = convert_node(node.comparators[0], scope)
+    imports += imp
+    return tpl % (op, ljs, rjs), imports
 
 def _call(node, scope):
     imports = []
