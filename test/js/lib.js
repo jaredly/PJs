@@ -37,6 +37,14 @@ beforeEach(function(){
                 var name = this.actual.__name__ || this.actual.name;
                 if (errorlike instanceof RegExp) {
                     var err = e.message?e.message:e.msg?e.msg:e+'';
+                    //if (err === undefined || err === 'undefined')
+                    //    err = e;
+                    /*
+                    for (var k in err) {
+                    if (k.indexOf('__')===0)
+                        print(k, err[k]);
+                    }
+                    */
                     var good = (err).match(errorlike);
                     if (!(err).match(errorlike)) {
                         this.message = function(){
@@ -203,7 +211,7 @@ describe('pjs-classes.js', function(){
                 return a+self.g;
             }),
         });
-        expect(Abc).toThrowWith([],/^TypeError/);
+        expect(Abc).toThrowWith([],__builtins__.TypeError);
         var abc = Abc(7);
         expect(abc.g).toEqual(7);
         expect(abc.bar(3)).toEqual(10);
@@ -278,6 +286,17 @@ describe('pjs-modules.js', function() {
 });
 
 describe('pjs-builtins.js', function() {
+    describe('str+repr', function(){
+        var _ = __builtins__;
+        it('numbers', function(){
+            expect(_.str(3)._data).toBe('3');
+            expect(_.str(3+4)).toPjEqual(_.str('7'));
+        });
+        it('lists', function(){
+            expect(_.str(_.list([3]))._data).toBe('[3]');
+            expect(_.str(_.list([1,'2']))._data).toBe('[1, \'2\']');
+        });
+    });
     describe('module-imports', function(){
         var sys = __builtins__.__import__('sys');
         var numimports = 0;
@@ -431,7 +450,7 @@ describe('pjs-builtins.js', function() {
             it('ops', function(){
                 var a = _.tuple([3,4]);
                 var c = _.tuple([1,2,3]);
-                expect(_.str(a)).toBe('(3, 4)');
+                expect(_.str(a)._data).toBe('(3, 4)');
                 expect(a.__add__(c).as_js()).toEqual([3,4,1,2,3]);
             });
         });
@@ -489,7 +508,7 @@ describe('pjs-builtins.js', function() {
             it('ops', function(){
                 var a = _.list([2,3]);
                 var b = _.list([3,4]);
-                expect(_.str(a)).toBe('[2, 3]');
+                expect(_.str(a)._data).toBe('[2, 3]');
                 expect(a.__add__(b).as_js()).toEqual([2,3,3,4]);
                 expect(_.list(a.__reversed__()).as_js()).toEqual([3,2]);
             });

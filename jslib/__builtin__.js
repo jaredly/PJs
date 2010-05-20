@@ -259,7 +259,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             for (var i=0;i<self._keys.length;i++){
                 strs.push(__globals__.repr(self._keys[i])+': '+__globals__.repr(self._values[i]));
             }
-            return '{'+strs.join(', ')+'}';
+            return __globals__.str('{'+strs.join(', ')+'}');
         }),
         clear: $m(function clear(self){
             delete self._keys;
@@ -459,9 +459,9 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
                 a.push(__globals__.repr(self._list[i]));
             }
             if (a.length == 1) {
-                return '('+a[0]+',)';
+                return __globals__.str('('+a[0]+',)');
             }
-            return '('+a.join(', ')+')';
+            return __globals__.str('('+a.join(', ')+')');
         }),
     });
 
@@ -500,6 +500,8 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         __init__: $m({'item':''}, function __init__(self, item) {
             if (typeof(item) === 'string')
                 self._data = item;
+            else if (typeof(item) === 'number')
+                self._data = ''+item;
             else if (defined(item.__str__))
                 self._data = item.__str__()._data;
             else if (item.__type__ === 'type')
@@ -516,7 +518,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             } else if (item instanceof Function) {
                 if (!item.__name__) {
                     if (item.name)
-                        self._data = '<javascript function "' + item.name + "'>';
+                        self._data = '<javascript function "' + item.name + "'>'";
                     else if (!item.__module__)
                         self._data = '<anonymous function...>';
                     else
@@ -725,7 +727,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
             for (var i=0;i<self._list.length;i++) {
                 a.push(__globals__.repr(self._list[i]));
             }
-            return '['+a.join(', ')+']';
+            return __globals__.str('['+a.join(', ')+']');
         }),
     });
 
@@ -895,6 +897,8 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
     __globals__.repr = $m(function repr(item) {
         if (typeof(item) === 'string') {
             return "'" + item + "'";
+        } else if (typeof(item) === 'number') {
+            return '' + item;
         } else if (defined(item.__repr__)) {
             return item.__repr__();
         } else return __globals__.str(item);
