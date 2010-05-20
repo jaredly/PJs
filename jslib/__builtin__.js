@@ -238,7 +238,7 @@ module('<builtin>/__builtin__.py', function builting_module(__globals__) {
         __str__: $m(function __str__(self){
             var strs = [];
             for (var key in self._items) {
-                strs.push(__globals__.repr(key)+':'+__globals__.repr(self._items[key]));
+                strs.push(__globals__.repr(key)+': '+__globals__.repr(self._items[key]));
             }
             return '{'+strs.join(', ')+'}';
         }),

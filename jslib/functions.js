@@ -161,7 +161,7 @@ function $m() {
         if (args.length > argnum) {
             if (!aflag)
                 throw new Error("TypeError: " + name + "() takes at most " + (argnum) + " arguments (" + args.length + " given)");
-            var therest = __builtins__.list(args.slice(argnum));
+            var therest = __builtins__.tuple(args.slice(argnum));
             args = args.slice(0, argnum);
             args.push(therest);
         } else {
@@ -171,12 +171,10 @@ function $m() {
                 }
                 args.push(defaults[func_args[i]]);
             }
-            // TODO: list here again
             if (aflag)
-                args.push(__builtins__.list());
+                args.push(__builtins__.tuple());
         }
         if (kflag)
-            // TODO: use _$$_.dict()
             args.push(__builtins__.dict());
         if (__builtins__)
             __builtins__._debug_stack.push([name, func, args]);
@@ -207,7 +205,7 @@ function $m() {
         if (args.length > argnum) {
             if (!aflag)
                 throw new Error("TypeError: " + name + "() takes at most " + argnum + ' arnuments (' + args.length + ' given)');
-            therest = __builtins__.list(args.slice(argnum));
+            therest = __builtins__.tuple(args.slice(argnum));
             args = args.slice(0, argnum);
             args.push(therest);
         } else {
@@ -222,7 +220,7 @@ function $m() {
                     throw new Error('TypeError: ' + name + '() takes at least ' + argnum-ndefaults + ' non-keyword arguments');
             }
             if (aflag)
-                args.push(__builtins__.list());
+                args.push(__builtins__.tuple());
         }
         if (kflag)
             args.push(__builtins__.dict(dict));
