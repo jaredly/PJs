@@ -15,9 +15,17 @@ test-js: jslib
 	@js test/runtests.js
 
 test-py: jslib py-tests
-	@js test/example.js > _js.log
-	@if [ `diff _python.log _js.log|wc -l` -eq 0 ];then echo "example passed";else diff _python.log _js.log|less;fi
-	@rm -f _python.log _js.log
+	@for name in $(PY_TEST); do \
+		python $$name.py > _py.log; \
+		js $$name.js > _js.log; \
+		if [ `diff _py.log _js.log|wc -l` -eq 0 ]; \
+		then \
+			echo "$$name passed"; \
+		else \
+			diff _py.log _js.log|less; \
+		fi; \
+		rm -f _py.log _js.log; \
+	done
 
 clean:
 	rm -rf build/*
