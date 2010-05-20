@@ -35,6 +35,8 @@ if (%(test)s) {
 
 import sys
 
+pjs_modules = ['sys', 'os.path', '__builtin__']
+
 def convert_modules(filename):
     '''
     a function to cunvert python to javascript. uses python's ``ast`` module.
@@ -54,6 +56,8 @@ def convert_modules(filename):
         tree = ast.parse(text, fname)
         js, imports = convert_module(tree, fname)
         for imp in imports:
+            if imp in pjs_modules:
+                continue
             toimport.append(find_import(imp, fname))
         modules[fname] = js
 
@@ -79,6 +83,8 @@ def find_import(iname, fname):
     raise PJsException('module not found: %s' % iname)
 
 def multiline(text):
+    if text is None:
+        return '""';
     lines = text.split('\n')
     return ''.join("'%s\\n' +\n" % line.encode('string_escape') for line\
             in lines[:-1]) + "'%s'" % lines[-1].encode('string_escape')
@@ -155,6 +161,15 @@ def _print(node, scope):
     text = '__builtins__.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
     return text, imports
 
+def local_prefix(scope):
+    if scope[0] is scope[1]:
+        return '_.'
+    elif isinstance(node, ast.Name):
+        if scope[2]:
+            return '__.'
+        return 'var '
+    return ''
+
 def do_left(node, scope):
     if not isinstance(node, (ast.Name, ast.Attribute)):
         raise PJsException("unsupported left %s" % node)
@@ -205,8 +220,8 @@ def resolve(name, scope):
     elif name not in scope[0] and name in __builtins__:
         return '__builtins__.%s' % name
     else:
-        return '__builtins__.raise(__builtins__.NameError("%s not defined"))' % name
-        raise PJsNameError('undefined vbl %s' % name)
+        # return '__builtins__.raise(__builtins__.NameError("%s not defined"))' % name
+        # raise PJsNameError('undefined vbl %s' % name)
         if scope[0] is scope[1]:
             return '_.%s' % name
         elif scope[2]:
@@ -505,14 +520,42 @@ def _tryexcept(node, scope):
         if handler.type is not None:
             t, imp = convert_node(handler.type, scope)
             imports += imp
-            top = 'if (__builtins__.isinstance(__pjs_err, %s)) ' % t
+            top = 'if (__pjs_err.__class__ && __builtins__.isinstance(__pjs_err, %s)) ' % t
         else:
             top = ''
 
         subs.append(single % (top, eb))
     text = template % (body, ' else '.join(subs))
     return text, imports
-        
+
+all_import = '''if (__pjs_tmp_module.__all__ === undefined) {
+    for (var __pjs_k in __pjs_tmp_module) {
+        if (__pjs_k.indexOf('__') !== 0)
+            eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
+    }
+    delete __pjs_k;
+} else {
+    var __pjs_a = __pjs_tmp_module.__all__.as_js();
+    for (var __pjs_i=0; __pjs_i<__pjs_a.length; __pjs_i++) {
+        var __pjs_k = __pjs_a[__pjs_i];
+        eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
+    }
+    delete __pjs_a;
+    delete __pjs_i;
+    delete __pjs_k;
+}
+'''
+
+def _importfrom(node, scope):
+    template = 'var __pjs_tmp_module = __builtins__.__import__("%s", _.__name__, _.__file__);\n' % node.module
+    prefix = local_prefix(scope)
+    for alias in node.names:
+        if alias.name == '*':
+            template += all_import % (prefix, prefix)
+            break
+        asname = alias.asname or alias.name
+        template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
+    return template, [node.module]
 
 for_rhino = '''
 load("%(dir)s/build/pjslib.js");
