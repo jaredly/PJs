@@ -186,6 +186,20 @@ def _attribute(node, scope):
         raise PJsException("Sorry, '%s' is a reserved word in javascript." % node.attr)
     return "%s.%s" % (js, node.attr), imp
 
+def _augassign(node, scope):
+
+    tpl = '%s = __builtins__.%s(%s, %s);\n'
+    op = node.op.__class__.__name__.lower()
+    imports = []
+    ljs, imp = convert_node(node.target, scope)
+    imports += imp
+    rjs, imp = convert_node(node.value, scope)
+    imports += imp
+
+    js, imp = do_left(node.target, scope)
+    return tpl % (js, op, ljs, rjs), imports
+
+
 
     
 

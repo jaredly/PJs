@@ -188,10 +188,10 @@ describe('pjs-functions.js', function () {
         });
         it('catchargs', function(){
             var fn = $m({}, true, function(a, b, c){
-                return [a+b, c];
+                return $b.tuple([a+b, c]);
             });
-            expect(fn(4,5,6,7,8)).toPjEqual([9,__builtins__.tuple([6,7,8])]);
-            expect(fn(2,3)).toPjEqual([5,__builtins__.tuple([])]);
+            expect(fn(4,5,6,7,8)).toPjEqual($b.tuple([9,__builtins__.tuple([6,7,8])]));
+            expect(fn(2,3)).toPjEqual($b.tuple([5,__builtins__.tuple([])]));
         });
         it('naming', function(){
             var fn = $m(function abc(){});

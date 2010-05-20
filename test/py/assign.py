@@ -14,5 +14,12 @@ print c
 a, (b,c) = 1, (2,3)
 print b+c-a
 
+r=[3]
+r+=[1]
+print r
+a += 2
+b /= 1
+print a,b
+
 
 # vim: et sw=4 sts=4

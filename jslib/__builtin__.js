@@ -275,6 +275,16 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             throw e;
         }
     });
+    _.div = $m(function div(a, b) {
+        try { return _.do_op('__div__', '__rdiv__', a, b); }
+        catch(e) {
+            if (_.isinstance(e, _.NotImplemented))
+                if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                    return a / b;
+            throw e;
+        }
+    });
+
 
     /** basic value types **/
 
@@ -587,31 +597,6 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _._float = __not_implemented__("float");
     _._long = __not_implemented__("long");
     _.basestring = __not_implemented__("basestring");
-    _.eq = $m(function eq(a, b){
-        if (a.__eq__) {
-            try { return a.__eq__(b); }
-            catch(e) {
-                if (!_.isinstance(e, _.NotImplemented))
-                    throw e;
-            }
-        }
-        if (b.__eq__) {
-            try { return b.__eq__(a); }
-            catch(e) {
-                if (!_.isinstance(e, _.NotImplemented))
-                    throw e;
-            }
-        }
-        if (a instanceof Array && b instanceof Array) {
-            if (a.length!==b.length) return false;
-            for (var i=0;i<a.length;i++) {
-                if (!_.eq(a[i], b[i]))
-                    return false;
-            }
-            return true;
-        }
-        return a === b;
-    });
 
     _.str = Class('str', [], {
         __init__: $m({'item':''}, function __init__(self, item) {
@@ -847,8 +832,8 @@ format: __not_implemented__('str.format'),
         }),
         __add__: $m(function __add__(self, other) {
             if (!_.isinstance(other, _.list))
-                throw _.TypeError('can only concatenate tuple to tuple');
-            return _.tuple(self._list.concat(other._list));
+                throw _.TypeError('can only concatenate list to list');
+            return _.list(self._list.concat(other._list));
         }),
         __contains__: $m(function __contains__(self, one){
             return self._list.indexOf(one) !== -1;
