@@ -216,6 +216,8 @@ def _binop(node, scope):
     return tpl % (op, ljs, rjs), imports
 
 #TODO: break
+def _break(node, scope):
+    return 'break;\n', []
     
 def _call(node, scope):
     imports = []
@@ -307,6 +309,9 @@ def _compare(node, scope):
     return tpl % (op, ljs, rjs), imports
 
 # TODO: comprehension, continue, 
+
+def _continue(node, scope):
+    return 'continue;\n', []
 
 def _delete(node, scope):
     t = []
@@ -585,8 +590,6 @@ def _unaryop(node, scope):
            ast.UAdd:'+%s',
            ast.USub:'-%s'}
     return jss[node.op.__class__] % js, imp
-
-#TODO: while
 
 def _while(node, scope):
     if node.orelse:
