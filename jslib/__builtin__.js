@@ -555,10 +555,19 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }),
         __ge__: __not_implemented__('nope'),
         __getitem__: $m(function __getitem__(self, index) {
-            if (index < 0) index += self._len;
-            if (index < 0 || index >= self._len)
-                _.raise(_.IndexError('index out of range'));
-            return self._list[index];
+            if (_.isinstance(index, _.slice)) {
+                var nw = [];
+                var sss = index.indices(self._list.length).as_js();
+                for (var i=sss[0];i<sss[1];i+=sss[2])
+                    nw.push(self._list[i]);
+                return _.tuple(nw);
+            } else if (typeof(index) === 'number') {
+                if (index < 0) index += self._list.length;
+                if (index < 0 || index >= self._list.length)
+                    _.raise(_.IndexError('index out of range'));
+                return self._list[index];
+            } else
+                _.raise(_.ValueError('index must be a number or slice'));
         }),
         __getnewargs__: __not_implemented__('sorry'),
         __getslice__: $m(function __getslice__(self, a, b) {
@@ -762,7 +771,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (at !== -1)at += start;
             return at;
         }),
-format: __not_implemented__('str.format'),
+        format: __not_implemented__('str.format'),
         index: $m({'start':null, 'end':null}, function index(self, sub, start, end) {
             var res = self.find(sub, start, end);
             if (res === -1)
