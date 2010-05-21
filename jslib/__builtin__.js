@@ -32,7 +32,7 @@ var __not_implemented__ = function __not_implemented__(name) {
     return function not_implemented() {
         if (arguments.callee.__name__)
             name = arguments.callee.__name__;
-        $b.raise($b.NotImplemented("the builtin function "+name+" is not implemented yet. You should help out and add it =)"));
+        $b.raise($b.NotImplementedError("the builtin function "+name+" is not implemented yet. You should help out and add it =)"));
     };
 };
 
@@ -179,23 +179,17 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     /** operators **/
     _.do_op = $m(function do_op(op, rop, a, b) {
+        var val;
         if (a[op]) {
-            try {
-                return a[op](b);
-            } catch(e) {
-                if (!_.isinstance(e, _.NotImplemented))
-                    throw e;
-            }
+            val = a[op](b);
+            if (val !== _.NotImplemented)
+                return val;
         }
         if (b[rop]) {
-            try {
-                return b[rop](a);
-            } catch(e) {
-                if (!_.isinstance(e, _.NotImplemented))
-                    throw e;
-            }
+            return b[rop](a);
         }
-        throw _.NotImplemented('Operator not implemented for ' + _.str(a) + ' and ' + _.str(b))
+        return _.NotImplemented;
+
     });
     _.do_ops = $m({}, true, function do_ops(allthem) {
         var ops = {'<':_.lt,'>':_.gt,'<=':_.lte,'>=':_.gte,'==':_.eq,'!=':_.ne};
@@ -219,92 +213,95 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         return true;
     });
     _.add = $m(function add(a, b) {
-        try {
-            return _.do_op('__add__', '__radd__', a, b);
-        } catch(e) {
-            if (_.isinstance(e, _.NotImplemented)) {
-                if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                    return a+b;
-            }
-            throw e;
-        }
+        var val = _.do_op('__add__', '__radd__', a, b);
+        if (val === _.NotImplemented) {
+            if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                return a + b;
+            else
+                _.raise(_.TypeError('unsupported operand type(s) for %'));
+        } else
+            return val;
     });
     _.add.__module__ = _.__name__;
     _.sub = $m(function sub(a, b) {
-        try { return _.do_op('__sub__', '__rsub__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                    return a - b;
-            throw e;
-        }
+        var val = _.do_op('__sub__', '__rsub__', a, b);
+        if (val === _.NotImplemented) {
+            if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                return a - b;
+            else
+                _.raise(_.TypeError('unsupported operand type(s) for %'));
+        } else
+            return val;
     });
     _.gt = $m(function gt(a, b) {
-        try { return _.do_op('__gt__', '__lt__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                    return a > b;
-            throw e;
-        }
+        var val = _.do_op('__gt__', '__lt__', a, b);
+        if (val === _.NotImplemented) {
+            if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                return a > b;
+            else
+                _.raise(_.TypeError('unsupported operand type(s) for %'));
+        } else
+            return val;
     });
     _.lt = $m(function lt(a, b) {
-        return !_.ge(a, b);
+        return !_.gte(a, b);
     });
     _.gte = $m(function ge(a, b) {
-        try { return _.do_op('__ge__', '__le__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                    return a >= b;
-            throw e;
-        }
+        var val = _.do_op('__ge__', '__le__', a, b);
+        if (val === _.NotImplemented) {
+            if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                return a >= b;
+            else
+                _.raise(_.TypeError('unsupported operand type(s) for %'));
+        } else
+            return val;
     });
     _.lte = $m(function le(a, b) {
         return !_.gt(a, b);
     });
     _.mod = $m(function mod(a, b) {
-        try { return _.do_op('__mod__', '__rmod__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                    return a % b;
-            throw e;
-        }
+        var val = _.do_op('__mod__', '__rmod__', a, b);
+        if (val === _.NotImplemented) {
+            if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                return a % b;
+            else
+                _.raise(_.TypeError('unsupported operand type(s) for %'));
+        } else
+            return val;
     });
     _.mult = $m(function mul(a, b) {
-        try { return _.do_op('__mul__', '__rmul__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                    return a * b;
-            throw e;
-        }
+        var val = _.do_op('__mul__', '__rmul__', a, b);
+        if (val === _.NotImplemented) {
+            if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                return a * b;
+            else
+                _.raise(_.TypeError('unsupported operand type(s) for *'));
+        } else
+            return val;
     });
     _.ne = $m(function ne(a, b) {
-        try { return _.do_op('__ne__', '__ne__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                return a !== b;
-            throw e;
-        }
+        var val = _.do_op('__ne__', '__ne__', a, b);
+        if (val === _.NotImplemented) {
+              return a !== b;
+        } else
+            return val;
     });
     _.eq = $m(function eq(a, b) {
-        try { return _.do_op('__eq__', '__eq__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                return a === b;
-            throw e;
-        }
+        var val = _.do_op('__eq__', '__eq__', a, b);
+        if (val === _.NotImplemented) {
+              return a === b;
+        } else
+            return val;
     });
     _.div = $m(function div(a, b) {
-        try { return _.do_op('__div__', '__rdiv__', a, b); }
-        catch(e) {
-            if (_.isinstance(e, _.NotImplemented))
-                if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                    return a / b;
-            throw e;
-        }
+        var val = _.do_op('__div__', '__rdiv__', a, b);
+        if (val === _.NotImplemented) {
+            if (typeof(a) === typeof(b) && typeof(a) === 'number')
+                return a / b;
+            else
+                _.raise(_.TypeError('unsupported operand type(s) for /'));
+        } else
+            return val;
     });
 
 
@@ -354,7 +351,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return dct;
         }),
         __cmp__: $m(function __cmp__(self, other){
-            throw _.AttributeError('not yet implemented');
+            _.raise(_.AttributeError('not yet implemented'));
         }),
         __contains__: $m(function __contains__(self, key){
             return self._keys.indexOf(key) !== -1;
@@ -473,7 +470,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }),
         popitem: $m(function popitem(self){
             if (self.__len__()==0)
-                throw _.KeyError('popitem(): dictionary is empty');
+                _.raise(_.KeyError('popitem(): dictionary is empty'));
             return self.pop(self._keys[0]);
         }),
         setdefault: $m(function setdefault(self, k, d){
@@ -512,7 +509,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return parseInt(what);
         else if (typeof(what) === 'number') return what;
         else
-            throw _.TypeError('can\'t coerce to int');
+            _.raise(_.TypeError('can\'t coerce to int'));
     });
 
     _.tuple = Class('tuple', [], {
@@ -538,7 +535,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }),
         __add__: $m(function __add__(self, other) {
             if (!_.isinstance(other, _.tuple))
-                throw _.TypeError('can only concatenate tuple to tuple');
+                _.raise(_.TypeError('can only concatenate tuple to tuple'));
             return _.tuple(self._list.concat(other._list));
         }),
         __contains__: $m(function __contains__(self, one){
@@ -560,7 +557,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         __getitem__: $m(function __getitem__(self, index) {
             if (index < 0) index += self._len;
             if (index < 0 || index >= self._len)
-                throw _.IndexError('index out of range');
+                _.raise(_.IndexError('index out of range'));
             return self._list[index];
         }),
         __getnewargs__: __not_implemented__('sorry'),
@@ -585,7 +582,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 }
                 return _.tuple(res);
             }
-            throw _.TypeError('only can multiply by a number');
+            _.raise(_.TypeError('only can multiply by a number'));
         }),
         __ne__: __not_implemented__(''),
         __repr__: $m(function __repr__(self) { return self.__str__(); }),
@@ -633,7 +630,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 self._data = ''+item;
             else if (typeof(item) === 'boolean')
                 self._data = _.str(''+item).title()._data;
-            else if (defined(item.__str__))
+            else if (defined(item.__str__) && item.__str__.im_self)
                 self._data = item.__str__()._data;
             else if (item.__type__ === 'type')
                 self._data = "<class '" + item.__module__ + '.' + item.__name__ + "'>";
@@ -691,7 +688,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 return _.str(self._data + other._data);
             if (typeof(other) === 'string')
                 return _.str(self._data + other);
-            _.raise(_.NotImplemented());
+            return _.NotImplemented;
         }),
         __contains__: $m(function __contains__(self, other) {
             return self.find(other) !== -1;
@@ -702,6 +699,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (!_.isinstance(other, _.str))
                 return false;
             return self._data === other._data;
+        }),
+        __ne__: $m(function __ne__(self, other) {
+            return !self.__eq__(other);
         }),
         __format__: __not_implemented__('no formatting'),
         __ge__: $m(function __ge__(self, other) {
@@ -815,11 +815,12 @@ format: __not_implemented__('str.format'),
         splitlines: $m({'keepends':false}, function(self, keepends) {
             var res = self._data.split(/\n/g);
             var l = _.list();
-            for (var i=0;i<res.length;i++) {
+            for (var i=0;i<res.length-1;i++) {
                 var k = res[i];
                 if (keepends) k += '\n';
                 l.append(_.str(k));
             }
+            l.append(_.str(res[res.length-1]));
             return l;
         }),
         startswith: $m({'start':null, 'end':null}, function(self, sub, start, end) {
@@ -852,10 +853,24 @@ format: __not_implemented__('str.format'),
     });
 
     _.slice = Class('slice', [], {
-        __init__: $m({'upper':null, 'step':1}, function __init__(self, lower, upper, step) {
-            if (upper === null) {
-                upper = lower;
-                lower = 0;
+        __init__: $m({}, true, function __init__(self, args) {
+            if (_.len(args) > 3)
+                _.raise(_.TypeError('slice() takes a max of 3 arguments'));
+            args = args.as_js();
+            if (args.length === 0)
+                _.raise(_.TypeError('slice() takes at leat 1 argument (0 given)'));
+            if (args.length === 1) {
+                upper = args[0];
+                lower = null;
+                step = null;
+            } else if (args.length === 2) {
+                upper = args[1];
+                lower = args[0];
+                step = null;
+            } else {
+                lower = args[0];
+                upper = args[1];
+                step = args[2];
             }
             self.upper = upper;
             self.lower = lower;
@@ -868,6 +883,7 @@ format: __not_implemented__('str.format'),
             var start = self.lower, stop = self.upper, step = self.step;
             if (start === null)start = 0;
             if (stop === null)stop = len;
+            if (step === null)step = 1;
             if (start < 0) start += len;
             if (start < 0) start = 0;
             if (start > len) start = len;
@@ -897,7 +913,7 @@ format: __not_implemented__('str.format'),
         }),
         __add__: $m(function __add__(self, other) {
             if (!_.isinstance(other, _.list))
-                throw _.TypeError('can only concatenate list to list');
+                _.raise(_.TypeError('can only concatenate list to list'));
             return _.list(self._list.concat(other._list));
         }),
         __contains__: $m(function __contains__(self, one){
@@ -932,7 +948,7 @@ format: __not_implemented__('str.format'),
             } else if (typeof(index) === 'number') {
                 if (index < 0) index += self._list.length;
                 if (index < 0 || index >= self._list.length)
-                    throw _.IndexError('index out of range');
+                    _.raise(_.IndexError('index out of range'));
                 return self._list[index];
             } else
                 _.raise(_.ValueError('index must be a number or slice'));
@@ -950,7 +966,7 @@ format: __not_implemented__('str.format'),
             if (_.isinstance(other, _._int))
                 other = other.as_js();
             if (typeof(other) != 'number')
-                throw _.TypeError('only can multiply by a number');
+                _.raise(_.TypeError('only can multiply by a number'));
             var res = []
             for (var i=0;i<other;i++) {
                 res = res.concat(self.as_js());
@@ -973,7 +989,7 @@ format: __not_implemented__('str.format'),
                 }
                 return _.list(res);
             }
-            throw _.TypeError('only can multiply by a number');
+            _.raise(_.TypeError('only can multiply by a number'));
         }),
         __ne__: __not_implemented__(''),
         __repr__: $m(function __repr__(self) { return self.__str__(); }),
@@ -1035,9 +1051,7 @@ format: __not_implemented__('str.format'),
             for (var i=ol.length-1;i>=0;i--)
                 self._list.push(ol[i]);
         }),
-        sort: $m({'cmp':null, 'key':null, 'reverse':false}, function (self, cmp, key, reverse) {
-            throw new Error('not impl');
-        }),
+        sort: __not_implemented__('sort'),
         __str__: $m(function __str__(self) {
             var a = [];
             for (var i=0;i<self._list.length;i++) {
@@ -1144,14 +1158,16 @@ format: __not_implemented__('str.format'),
     _.issubclass = $m(function issubclass(cls, clsses) {
         if (!defined(cls.__bases__))
             _.raise("PJs Error: issubclass only works on classes");
+        if (clsses.__class__ === _.list || clsses.__class__ === _.tuple)
+            clsses = clsses.as_js();
         if (!(clsses instanceof Array))
             clsses = [clsses];
         for (var i=0;i<clsses.length;i++) {
             if (cls === clsses[i]) return true;
-            for (var a=0;a<cls.__bases__.length;a++) {
-                if (_.issubclass(cls.__bases__[a], clsses))
-                    return true;
-            }
+        }
+        for (var a=0;a<cls.__bases__.length;a++) {
+            if (_.issubclass(cls.__bases__[a], clsses))
+                return true;
         }
         return false;
     });
@@ -1190,7 +1206,7 @@ format: __not_implemented__('str.format'),
     _.print.__name__ = 'print';
     _.assert = $m(function assert(bool, text) {
         if (!bool) {
-            throw Error(text);
+            _.raise(_.AssertionError(text));
         }
     });
     _._debug_stack = [];
@@ -1263,7 +1279,9 @@ format: __not_implemented__('str.format'),
     _.min = __not_implemented__("min");
     _.execfile = __not_implemented__("execfile");
     _.any = __not_implemented__("any");
-    _.NotImplemented = __not_implemented__("NotImplemented");
+    _.NotImplemented = (Class('NotImplementedType', [], {
+        __str__:$m(function(self){return _.str('NotImplemented');}),
+    })());
     _.map = __not_implemented__("map");
     _.buffer = __not_implemented__("buffer");
     _.max = __not_implemented__("max");
