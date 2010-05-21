@@ -679,6 +679,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         __str__: $m(function(self) {
             return self;
         }),
+        __len__: $m(function(self) {
+            return self._data.length;
+        }),
         __repr__: $m(function(self) {
             // TODO: implement string_escape
             return _.str("'" + self._data + "'");
@@ -1163,7 +1166,6 @@ format: __not_implemented__('str.format'),
     _.SystemExit = __not_implemented__("SystemExit");
     _.format = __not_implemented__("format");
     _.sorted = __not_implemented__("sorted");
-    _.False = __not_implemented__("False");
     _.__package__ = __not_implemented__("__package__");
     _.round = __not_implemented__("round");
     _.dir = __not_implemented__("dir");
@@ -1197,12 +1199,13 @@ format: __not_implemented__('str.format'),
         throw obj;
     });
     _.True = true;
+    _.False = false;
     _.None = null;
     _.len = $m(function len(obj) {
         if (obj instanceof Array) return obj.length;
-        if (obj instanceof String) return obj.length;
+        if (typeof(obj) === 'string') return obj.length;
         if (obj.__len__) return obj.__len__();
-        _.raise(_.TypeError('no function __len__'));
+        _.raise(_.TypeError('no function __len__ in object <' + _.str(obj) + '> ' + typeof(obj)));
     });
     _.credits = __not_implemented__("credits");
     _.ord = __not_implemented__("ord");
@@ -1268,7 +1271,7 @@ format: __not_implemented__('str.format'),
     _.eval = __not_implemented__("eval");
     _.__debug__ = __not_implemented__("__debug__");
 
-    _.Exception = Class('Exception', [], {
+    _.BaseException = Class('BaseException', [], {
         __init__: $m({}, true, function __init__(self, args) {
             self.args = args;
         }),
@@ -1278,14 +1281,53 @@ format: __not_implemented__('str.format'),
             return _.str(self.__class__.__name__+': '+_.str(self.args));
         }),
     });
-
-    _.TypeError = Class('TypeError', [_.Exception], {});
-    _.NameError = Class('NameError', [_.Exception], {});
-    _.ValueError = Class('ValueError', [_.Exception], {});
-    _.IndexError = Class('IndexError', [_.Exception], {});
+    _.Exception = Class('Exception', [_.BaseException], {});
+    _.StandardError = Class('StandardError', [_.Exception], {});
+    _.TypeError = Class('TypeError', [_.StandardError], {});
     _.StopIteration = Class('StopIteration', [_.Exception], {});
-    _.NotImplemented = Class('NotImplemented', [_.Exception], {});
-
+    _.GeneratorExit = Class('GeneratorExit', [_.BaseException], {});
+    _.SystemExit = Class('SystemExit', [_.BaseException], {});
+    _.KeyboardInterrupt = Class('KeyboardInterrupt', [_.BaseException], {});
+    _.ImportError = Class('ImportError', [_.StandardError], {});
+    _.EnvironmentError = Class('EnvironmentError', [_.StandardError], {});
+    _.IOError = Class('IOError', [_.EnvironmentError], {});
+    _.OSError = Class('OSError', [_.EnvironmentError], {});
+    _.EOFError = Class('EOFError', [_.StandardError], {});
+    _.RuntimeError = Class('RuntimeError', [_.StandardError], {});
+    _.NotImplementedError = Class('NotImplementedError', [_.RuntimeError], {});
+    _.NameError = Class('NameError', [_.StandardError], {});
+    _.UnboundLocalError = Class('UnboundLocalError', [_.NameError], {});
+    _.AttributeError = Class('AttributeError', [_.StandardError], {});
+    _.SyntaxError = Class('SyntaxError', [_.StandardError], {});
+    _.IndentationError = Class('IndentationError', [_.SyntaxError], {});
+    _.TabError = Class('TabError', [_.IndentationError], {});
+    _.LookupError = Class('LookupError', [_.StandardError], {});
+    _.IndexError = Class('IndexError', [_.LookupError], {});
+    _.KeyError = Class('KeyError', [_.LookupError], {});
+    _.ValueError = Class('ValueError', [_.StandardError], {});
+    _.UnicodeError = Class('UnicodeError', [_.ValueError], {});
+    _.UnicodeEncodeError = Class('UnicodeEncodeError', [_.UnicodeError], {});
+    _.UnicodeDecodeError = Class('UnicodeDecodeError', [_.UnicodeError], {});
+    _.UnicodeTranslateError = Class('UnicodeTranslateError', [_.UnicodeError], {});
+    _.AssertionError = Class('AssertionError', [_.StandardError], {});
+    _.ArithmeticError = Class('ArithmeticError', [_.StandardError], {});
+    _.FloatingPointError = Class('FloatingPointError', [_.ArithmeticError], {});
+    _.OverflowError = Class('OverflowError', [_.ArithmeticError], {});
+    _.ZeroDivisionError = Class('ZeroDivisionError', [_.ArithmeticError], {});
+    _.SystemError = Class('SystemError', [_.StandardError], {});
+    _.ReferenceError = Class('ReferenceError', [_.StandardError], {});
+    _.MemoryError = Class('MemoryError', [_.StandardError], {});
+    _.BufferError = Class('BufferError', [_.StandardError], {});
+    _.Warning = Class('Warning', [_.Exception], {});
+    _.UserWarning = Class('UserWarning', [_.Warning], {});
+    _.DeprecationWarning = Class('DeprecationWarning', [_.Warning], {});
+    _.PendingDeprecationWarning = Class('PendingDeprecationWarning', [_.Warning], {});
+    _.SyntaxWarning = Class('SyntaxWarning', [_.Warning], {});
+    _.RuntimeWarning = Class('RuntimeWarning', [_.Warning], {});
+    _.FutureWarning = Class('FutureWarning', [_.Warning], {});
+    _.ImportWarning = Class('ImportWarning', [_.Warning], {});
+    _.UnicodeWarning = Class('UnicodeWarning', [_.Warning], {});
+    _.BytesWarning = Class('BytesWarning', [_.Warning], {});
 
     _.assertdefined = function assertdefined(x) {
         if (x === undefined)
