@@ -149,7 +149,7 @@ def _assert(node, scope):
         imports += imp
     else:
         msg = "'%s'" % js.encode('string_escape')
-    text = '__builtins__.assert(%s, %s);\n' % (js, msg)
+    text = '$b.assert(%s, %s);\n' % (js, msg)
     return text, imports
 
 def deepleft(node, at, scope, name='__pjs_tmp'):
@@ -188,7 +188,7 @@ def _attribute(node, scope):
 
 def _augassign(node, scope):
 
-    tpl = '%s = __builtins__.%s(%s, %s);\n'
+    tpl = '%s = $b.%s(%s, %s);\n'
     op = node.op.__class__.__name__.lower()
     imports = []
     ljs, imp = convert_node(node.target, scope)
@@ -206,7 +206,7 @@ def _augstore(node, scope):
     raise Exception('i don\'t know what "AugStore" is. if you see this, please email jared@jaredforsyth.com w/ code...')
 
 def _binop(node, scope):
-    tpl = '__builtins__.%s(%s, %s)'
+    tpl = '$b.%s(%s, %s)'
     op = node.op.__class__.__name__.lower()
     imports = []
     ljs, imp = convert_node(node.left, scope)
@@ -228,7 +228,7 @@ def _call(node, scope):
                 js, imp = convert_node(n, scope)
                 imports += imp
                 args.append(js)
-            dct['args'] = '__builtins__.tuple([%s])' % ', '.join(args)
+            dct['args'] = '$b.tuple([%s])' % ', '.join(args)
             if node.starargs:
                 js, imp = convert_node(node.starargs, scope)
                 imports += imp
@@ -238,7 +238,7 @@ def _call(node, scope):
             imports += imp
             dct['args'] = js
         else:
-            dct['args'] = '__builtins__.tuple([])'
+            dct['args'] = '$b.tuple([])'
         if node.keywords:
             kargs = []
             for kw in node.keywords:
@@ -297,7 +297,7 @@ def _classdef(node, scope):
 def _compare(node, scope):
     if len(node.ops) > 1:
         raise PJsException('sorry, multiple comparisons 1 > 2 > 3 is not supported.')
-    tpl = '__builtins__.%s(%s, %s)'
+    tpl = '$b.%s(%s, %s)'
     op = node.ops[0].__class__.__name__.lower()
     imports = []
     ljs, imp = convert_node(node.left, scope)
@@ -326,7 +326,7 @@ def _dict(node, scope):
         j2, imp = convert_node(v, scope)
         imports += imp
         elts.append('[%s, %s]' % (js, j2))
-    text = '__builtins__.dict([%s])' % ', '.join(elts)
+    text = '$b.dict([%s])' % ', '.join(elts)
     return text, imports
 
 #TODO: ellipsis
@@ -430,7 +430,7 @@ all_import = '''if (__pjs_tmp_module.__all__ === undefined) {
 '''
 
 def _importfrom(node, scope):
-    template = 'var __pjs_tmp_module = __builtins__.__import__("%s", _.__name__, _.__file__);\n' % node.module
+    template = 'var __pjs_tmp_module = $b.__import__("%s", _.__name__, _.__file__);\n' % node.module
     prefix = local_prefix(scope)
     for alias in node.names:
         if alias.name == '*':
@@ -441,7 +441,7 @@ def _importfrom(node, scope):
     return template, [node.module]
 
 def _import(node, scope):
-    tpl = '%s = __builtins__.__import__("%s", _.__name__, _.__file__);\n'
+    tpl = '%s = $b.__import__("%s", _.__name__, _.__file__);\n'
     text = ''
     imports = []
     for name in node.names:
@@ -461,7 +461,7 @@ def _list(node, scope):
         js, imp = convert_node(sub, scope)
         elts.append(js)
         imports+=imp
-    text = '__builtins__.list([%s])' % ', '.join(elts)
+    text = '$b.list([%s])' % ', '.join(elts)
     return text, imports
 
 #TODO: listcomp
@@ -489,14 +489,15 @@ def resolve(name, scope):
     elif name in scope[0]:
         return '_.%s' % name
     elif name not in scope[0] and name in __builtins__:
-        return '__builtins__.%s' % name
+        return '$b.%s' % name
     else:
+        ## for all we know, it's not defined....
         if scope[0] is scope[1]:
-            return '_.%s' % name
+            return '$b.assertdefined(_.%s)' % name
         elif scope[2]:
-            return '__.%s' % name
+            return '$b.assertdefined(__.%s)' % name
         else:
-            return name
+            return '$b.assertdefined(%s)' % name
 
 def _num(node, scope):
     return str(node.n), []
@@ -513,23 +514,23 @@ def _print(node, scope):
         js, imp = convert_node(child, scope)
         values.append(js)
         imports += imp
-    text = '__builtins__.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
+    text = '$b.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
     return text, imports
 
 def _raise(node, scope):
     js, imports = convert_node(node.type, scope)
     if node.inst is None:
-        return '__builtins__.raise(%s);\n' % js, imports
+        return '$b.raise(%s);\n' % js, imports
     inner, imp = convert_node(node.inst, scope)
     imports += imp
-    return '__builtins__.raise(%s(%s));\n' % (js, inner), imports
+    return '$b.raise(%s(%s));\n' % (js, inner), imports
 
 def _return(node, scope):
     js, imp = convert_node(node.value, scope)
     return 'return %s;\n' % js, imp
 
 def _str(node, scope):
-    return '__builtins__.str(%s)' % multiline(node.s), []
+    return '$b.str(%s)' % multiline(node.s), []
 
 def _tryexcept(node, scope):
     imports = []
@@ -556,7 +557,7 @@ def _tryexcept(node, scope):
         if handler.type is not None:
             t, imp = convert_node(handler.type, scope)
             imports += imp
-            top = 'if (__pjs_err.__class__ && __builtins__.isinstance(__pjs_err, %s)) ' % t
+            top = 'if (__pjs_err.__class__ && $b.isinstance(__pjs_err, %s)) ' % t
         else:
             top = ''
 
@@ -573,14 +574,14 @@ def _tuple(node, scope):
         js, imp = convert_node(sub, scope)
         elts.append(js)
         imports+=imp
-    text = '__builtins__.tuple([%s])' % ', '.join(elts)
+    text = '$b.tuple([%s])' % ', '.join(elts)
     return text, imports
 
 #unaryop
 
 def _unaryop(node, scope):
     js, imp = convert_node(node.operand, scope)
-    jss = {ast.Not:'!__builtins__.bool(%s)',
+    jss = {ast.Not:'!$b.bool(%s)',
            ast.UAdd:'+%s',
            ast.USub:'-%s'}
     return jss[node.op.__class__] % js, imp
@@ -670,7 +671,7 @@ load("%(dir)s/build/pjslib.js");
 '''
 
 do_run = '''
-__builtins__.run_main('%s');
+$b.run_main('%s');
 '''
 
 def do_compile(filename):
