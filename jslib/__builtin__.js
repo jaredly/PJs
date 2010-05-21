@@ -500,10 +500,13 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 self._list = ible.as_js().slice();
                 self._len = self._list.length;
             } else {
-                var __ = _.iter(ible);
+                var __ = _.foriter(ible);
                 self._list = [];
                 self._len = 0;
-                while (__.trynext() && self._list.push(__.next())){self._len++}
+                while (__.trynext()){
+                    self._list.push(__.value);
+                    self._len++
+                }
             }
         }),
         as_js: $m(function as_js(self){
@@ -628,10 +631,16 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                     else
                         self._data = '<anonymous function in module "' + item.__module__ + '">';
                 } else {
+                    var name = item.__name__;
+                    if (item.im_class)
+                        name = item.im_class.__name__ + '.' + name;
+                    if (item.__class__)
+                        name = item.__class__.__name__ + '.' + name;
                     if (!item.__module__)
-                        self._data = '<function '+item.__name__+'>';
+                        
+                        self._data = '<function '+ name +'>';
                     else
-                        self._data = '<function '+item.__name__+' from module '+item.__module__+'>';
+                        self._data = '<function '+ name +' from module '+item.__module__+'>';
                 }
             } else if (typeof(item) === 'object') {
                 var m = [];
@@ -733,11 +742,11 @@ format: __not_implemented__('str.format'),
         istitle: __not_implemented__('str.istitle'),
         isupper: __not_implemented__('str.isupper'),
         join: $m(function(self, ible) {
-            var __ = _.iter(ible);
+            var __ = _.foriter(ible);
             var res = [];
             var v;
             while (__.trynext()) {
-                v = __.next();
+                v = __.value;
                 if (typeof(v) === 'string')
                     v = _.str(v);
                 if (!_.isinstance(v, _.str))
@@ -822,9 +831,11 @@ format: __not_implemented__('str.format'),
             } else if (_.isinstance(ible, [_.tuple, _.list])) {
                 self._list = ible.as_js().slice();
             } else {
-                var __ = _.iter(ible);
+                var __ = _.foriter(ible);
                 self._list = [];
-                while (__.trynext() && self._list.push(__.next())){}
+                while (__.trynext()){
+                    self._list.push(__.value)
+                }
             }
         }),
         as_js: $m(function as_js(self){
@@ -982,9 +993,6 @@ format: __not_implemented__('str.format'),
         __iter__: $m(function(self){
             return self;
         }),
-        trynext: $m(function(self){
-            return self.at < self.lst._list.length;
-        }),
         next: $m(function(self) {
             if (self.at >= self.lst._list.length)
                 _.raise(_.StopIteration());
@@ -1014,6 +1022,35 @@ format: __not_implemented__('str.format'),
         if (!defined(ible.__iter__))
             _.raise('item not iterable');
         return ible.__iter__();
+    });
+
+    /** for use in emulating python for loops. example:
+     *
+     * for a in b:
+     *      pass
+     *
+     * becomes
+     *
+     * var __iter = foriter(b);
+     * while (__iter.trynext()) {
+     *      a = __iter.value;
+     * }
+     */
+    _.foriter = Class('foriter', [], {
+        __init__: $m(function(self, ible){
+            self.iter = _.iter(ible);
+            self.value = null;
+        }),
+        trynext: $m(function(self){
+            try {
+                self.value = self.iter.next();
+            } catch (e) {
+                if (_.isinstance(e, _.StopIteration))
+                    return false;
+                throw e;
+            }
+            return true;
+        }),
     });
 
     /** function progging **/
@@ -1114,7 +1151,16 @@ format: __not_implemented__('str.format'),
     _.license = __not_implemented__("license");
     _.KeyboardInterrupt = __not_implemented__("KeyboardInterrupt");
     _.filter = __not_implemented__("filter");
-    _.range = __not_implemented__("range");
+    _.range = $m({'end':null, 'step':1}, function(start, end, step) {
+        if (end === null) {
+            end = start;
+            start = 0;
+        }
+        var res = _.list();
+        for (var i=start;i<end;i+=step)
+            res.append(i);
+        return res;
+    });
     _.BaseException = __not_implemented__("BaseException");
     _.pow = __not_implemented__("pow");
     _.globals = __not_implemented__("globals");
@@ -1178,7 +1224,37 @@ format: __not_implemented__('str.format'),
     _.NameError = Class('NameError', [_.Exception], {});
     _.ValueError = Class('ValueError', [_.Exception], {});
     _.IndexError = Class('IndexError', [_.Exception], {});
+    _.StopIteration = Class('StopIteration', [_.Exception], {});
     _.NotImplemented = Class('NotImplemented', [_.Exception], {});
+
+    _.run_main = $m(function(filename){
+        try {
+            __module_cache[filename].load('__main__');
+        } catch (e) {
+            var stack = __builtins__._debug_stack;
+            var pf = __builtins__.print;
+            // if __builtins__.print is in the stack, don't use it here
+            for (var i=0;i<stack.length;i++) {
+                if (stack[1] == pf) {
+                    print('using rhino\'s print -- error printing pythony');
+                    pf = print;
+                    break;
+                }
+            }
+            pf('Traceback (most recent call last)');
+            for (var i=0;i<stack.length;i++){
+                var fn = stack[i][1];
+                var ost = fn.toString;
+                if (fn._to_String)
+                    fn.toString = fn._old_toString;
+                pf('  ', stack[i][1]);
+            }
+            if (e.__class__)
+                pf('Python Error:', e);
+            else
+                print('Javascript Error:', e);
+        }
+    });
 });
 
 __module_cache['<builtin>/sys.py'].load('sys'); // must be loaded for importing to work.
