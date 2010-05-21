@@ -156,8 +156,10 @@ function $m() {
         var name = func.__name__ || func.name;
         var args = to_array(arguments);
         for (var i=0;i<args.length;i++)
-            if (!defined(args[i]))
-                throw new Error("TypeError: you passed in something that was undefined to " + __builtins__.str(func) + '() for argument ' + func_args[i]);
+            if (!defined(args[i])) {
+                var an = func_args[i] || aflag && func_args.slice(-1)[0];
+                throw new Error("TypeError: you passed in something that was undefined to " + __builtins__.str(meta) + '() for argument ' + an);
+            }
         if (args.length > argnum) {
             if (!aflag)
                 throw new Error("TypeError: " + name + "() takes at most " + (argnum) + " arguments (" + args.length + " given)");
@@ -177,7 +179,7 @@ function $m() {
         if (kflag)
             args.push(__builtins__.dict());
         if (__builtins__)
-            __builtins__._debug_stack.push([name, func, args]);
+            __builtins__._debug_stack.push([name, meta, args]);
         var result = func.apply(null, args);
         if (__builtins__)
             __builtins__._debug_stack.pop();
