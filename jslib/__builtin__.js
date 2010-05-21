@@ -825,6 +825,33 @@ format: __not_implemented__('str.format'),
         zfill: __not_implemented__('str.zfill'),
     });
 
+    _.slice = Class('slice', [], {
+        __init__: $m({'upper':null, 'step':1}, function __init__(self, lower, upper, step) {
+            if (upper === null) {
+                upper = lower;
+                lower = 0;
+            }
+            self.upper = upper;
+            self.lower = lower;
+            self.step = step;
+        }),
+        __str__: $m(function __str__(self) {
+            return _.str('slice(' + self.lower + ', ' + self.upper + ', ' + self.step + ')');
+        }),
+        indices: $m(function indices(self, len) {
+            var start = self.lower, stop = self.upper, step = self.step;
+            if (start === null)start = 0;
+            if (stop === null)stop = len;
+            if (start < 0) start += len;
+            if (start < 0) start = 0;
+            if (start > len) start = len;
+            if (stop < 0) stop += len;
+            if (stop < 0) stop = 0;
+            if (stop > len) stop = len;
+            return _.tuple([start, stop, step]);
+        }),
+    });
+
     _.list = Class('list', [], {
         __init__: $m({'ible':[]}, function __init__(self, ible) {
             if (ible instanceof Array) {
@@ -870,10 +897,19 @@ format: __not_implemented__('str.format'),
         }),
         __ge__: __not_implemented__('ge'),
         __getitem__: $m(function __getitem__(self, index) {
-            if (index < 0) index += self._list.length;
-            if (index < 0 || index >= self._list.length)
-                throw _.IndexError('index out of range');
-            return self._list[index];
+            if (_.isinstance(index, _.slice)) {
+                var nw = [];
+                var sss = index.indices(self._list.length).as_js();
+                for (var i=sss[0];i<sss[1];i+=sss[2])
+                    nw.push(self._list[i]);
+                return _.list(nw);
+            } else if (typeof(index) === 'number') {
+                if (index < 0) index += self._list.length;
+                if (index < 0 || index >= self._list.length)
+                    throw _.IndexError('index out of range');
+                return self._list[index];
+            } else
+                _.raise(_.ValueError('index must be a number or slice'));
         }),
         __getslice__: $m(function __getslice__(self, a, b) {
             return _.list(self._list.slice(a,b));
@@ -1115,7 +1151,6 @@ format: __not_implemented__('str.format'),
     _.intern = __not_implemented__("intern");
     _.Ellipsis = __not_implemented__("Ellipsis");
     _.locals = __not_implemented__("locals");
-    _.slice = __not_implemented__("slice");
     _.sum = __not_implemented__("sum");
     _.getattr = __not_implemented__("getattr");
     _.abs = __not_implemented__("abs");

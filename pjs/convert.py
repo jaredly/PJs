@@ -542,6 +542,36 @@ def _return(node, scope):
     js, imp = convert_node(node.value, scope)
     return 'return %s;\n' % js, imp
 
+def _subscript(node, scope):
+    js, imports = convert_node(node.value, scope)
+    if isinstance(node.slice, ast.Slice) and node.slice.step is None:
+        upper = convert_node(node.slice.upper, scope)[0]
+        if node.slice.lower:
+            lower = convert_node(node.slice.lower, scope)[0]
+        else:
+            lower = 0
+        return '%s.__getslice__(%s, %s)' % (js, lower, upper), imports
+    idex, imp = convert_node(node.slice, scope)
+    return '%s.__getitem__(%s)' % (js, idex), imports+imp
+
+def _index(node, scope):
+    return convert_node(node.value, scope)
+
+def _slice(node, scope):
+    if node.lower:
+        lower = convert_node(node.lower, scope)[0]
+    else:
+        lower = 'null'
+    if node.upper:
+        upper = convert_node(node.upper, scope)[0]
+    else:
+        upper = 'null'
+    if node.step:
+        step = convert_node(node.step, scope)[0]
+    else:
+        step = '1'
+    return '$b.slice(%s, %s, %s)' % (lower, upper, step), []
+
 def _str(node, scope):
     return '$b.str(%s)' % multiline(node.s), []
 
