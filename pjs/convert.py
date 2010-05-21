@@ -199,106 +199,11 @@ def _augassign(node, scope):
     js, imp = do_left(node.target, scope)
     return tpl % (js, op, ljs, rjs), imports
 
+def _augload(node, scope):
+    raise Exception('i don\'t know what "AugLoad" is. if you see this, please email jared@jaredforsyth.com w/ code...')
 
-
-    
-
-def _expr(node, scope):
-    js, imp = convert_node(node.value, scope)
-    return js+';\n', imp
-
-def _str(node, scope):
-    return '__builtins__.str(%s)' % multiline(node.s), []
-
-def _import(node, scope):
-    tpl = '%s = __builtins__.__import__("%s", _.__name__, _.__file__);\n'
-    text = ''
-    imports = []
-    for name in node.names:
-        asname = name.name
-        if name.asname:asname = name.asname
-        asname, imp = do_left(ast.Name(asname, {}), scope)
-        text += tpl % (asname, name.name)
-        imports.append(name.name)
-    return text, imports
-
-def _print(node, scope):
-    if node.dest:
-        raise PJsException('print>> is not yet supported')
-    values = []
-    imports = []
-    for child in node.values:
-        js, imp = convert_node(child, scope)
-        values.append(js)
-        imports += imp
-    text = '__builtins__.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
-    return text, imports
-
-def local_prefix(scope):
-    if scope[0] is scope[1]:
-        return '_.'
-    elif isinstance(node, ast.Name):
-        if scope[2]:
-            return '__.'
-        return 'var '
-    return ''
-
-def do_left(node, scope):
-    if not isinstance(node, (ast.Name, ast.Attribute)):
-        raise PJsException("unsupported left %s" % node)
-    if scope[0] is scope[1]:
-        if isinstance(node, ast.Name):
-            if node.id not in scope[0]:
-                scope[0].append(node.id)
-            return '_.%s' % node.id, []
-        js, imp = convert_node(node, scope)
-        return '_.%s' % js, imp
-    elif isinstance(node, ast.Name):
-        if scope[2]:
-            if node.id not in scope[1]:
-                scope[1].append(node.id)
-            return '__.%s' % node.id, []
-        if node.id not in scope[1]:
-            scope[1].append(node.id)
-            return 'var %s' % node.id, []
-        else:
-            return node.id, []
-    elif isinstance(node, ast.Tuple):
-        raise PJsException("tuple left assignments not yet supported")
-    else:
-        return convert_node(node, scope)
-
-def _name(node, scope):
-    try:
-        return resolve(node.id, scope), []
-    except PJsNameError, e:
-        print scope
-        raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
-
-import os
-localfile = lambda x:os.path.join(os.path.dirname(__file__), x)
-reserved_words = open(localfile('js_reserved.txt')).read().split()
-
-def resolve(name, scope):
-    if name in reserved_words:
-        raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
-    if scope[0] is scope[1] and name in scope[0]:
-        return '_.%s' % name
-    elif name in scope[1]:
-        if scope[2]:
-            return '__.%s' % name
-        return name
-    elif name in scope[0]:
-        return '_.%s' % name
-    elif name not in scope[0] and name in __builtins__:
-        return '__builtins__.%s' % name
-    else:
-        if scope[0] is scope[1]:
-            return '_.%s' % name
-        elif scope[2]:
-            return '__.%s' % name
-        else:
-            return name
+def _augstore(node, scope):
+    raise Exception('i don\'t know what "AugStore" is. if you see this, please email jared@jaredforsyth.com w/ code...')
 
 def _binop(node, scope):
     tpl = '__builtins__.%s(%s, %s)'
@@ -310,115 +215,8 @@ def _binop(node, scope):
     imports += imp
     return tpl % (op, ljs, rjs), imports
 
-def _num(node, scope):
-    return str(node.n), []
-
-def _functiondef(node, scope):
-    dct = {}
-    dct['left'], imports = do_left(ast.Name(node.name, []), scope)
-    dct['name'] = node.name
-    try:
-        dct['rname'] = resolve(node.name, scope);
-    except PJsNameError, e:
-        print scope
-        raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
-    args = list(n.id for n in node.args.args)
-    for n in node.args.args:
-        scope[1].append(n.id)
-    defaults = []
-    for d,k in zip(reversed(node.args.defaults), reversed(args)):
-        js, imp = convert_node(d, scope)
-        imports += imp
-        defaults.append("'%s': %s" % (k, js))
-    dct['defaults'] = "{" + ','.join(defaults) + '}'
-    if node.args.kwarg:
-        special = dct['defaults'] + ', ' + str(bool(node.args.vararg)).lower() + ', true, '
-    elif node.args.vararg:
-        special = dct['defaults'] + ', true, '
-    elif defaults:
-        special = dct['defaults'] + ', '
-    else:
-        special = ''
-    dct['special'] = special
-    if node.args.vararg:
-        args.append(node.args.vararg)
-    if node.args.kwarg:
-        args.append(node.args.kwarg)
-    dct['args'] = ', '.join(args)
-
-    dct['dec_front'] = ''
-    dct['dec_back'] = ''
-    for dec in node.decorator_list:
-        js, imp = convert_node(dec, scope)
-        imports += imp
-        dct['dec_front'] += js+'('
-        dct['dec_back'] += ')'
-
-    scope = scope[0], scope[1]+args[:], False
-    dct['contents'], imp = convert_block(node.body, scope)
-    imports += imp
-    text = TEMPLATES['function'] % dct
-    return text, imports
-
-def _return(node, scope):
-    js, imp = convert_node(node.value, scope)
-    return 'return %s;\n' % js, imp
-
-def _classdef(node, scope):
-    imports = []
-    dct = {}
-    dct['left'], imports = do_left(ast.Name(node.name, {}), scope)
-    dct['name'] = node.name;
-    dct['rname'] = resolve(node.name, scope);
-    dct['bases'] = ', '.join(resolve(name.id, scope) for name in node.bases)
-
-    dct['dec_front'] = ''
-    dct['dec_back'] = ''
-    for dec in node.decorator_list:
-        js, imp = convert_node(dec, scope)
-        imports += imp
-        dct['dec_front'] += js+'('
-        dct['dec_back'] += ')'
-
-    scope = scope[0], [], True
-
-    dct['contents'], imp = convert_block(node.body, scope)
-    imports += imp
-
-    text = TEMPLATES['class'] % dct
-    return text, imports
-
-def _if(node, scope):
-    dct = {}
-    dct['test'], imports = convert_node(node.test, scope)
-    dct['contents'], imp = convert_block(node.body, scope)
-    imports += imp
-    if node.orelse:
-        if len(node.orelse) == 1:
-            js, imp = convert_node(node.orelse[0], scope)
-            dct['more'] = ' else ' + js
-            imports += imp
-        else:
-            js, imp = convert_block(node.orelse, scope)
-            imports += imp
-            dct['more'] = ' else {\n%s\n}' % js
-    else:
-        dct['more'] = ''
-    text = TEMPLATES['if'] % dct
-    return text, imports
-
-def _compare(node, scope):
-    if len(node.ops) > 1:
-        raise PJsException('sorry, multiple comparisons 1 > 2 > 3 is not supported.')
-    tpl = '__builtins__.%s(%s, %s)'
-    op = node.ops[0].__class__.__name__.lower()
-    imports = []
-    ljs, imp = convert_node(node.left, scope)
-    imports += imp
-    rjs, imp = convert_node(node.comparators[0], scope)
-    imports += imp
-    return tpl % (op, ljs, rjs), imports
-
+#TODO: break
+    
 def _call(node, scope):
     imports = []
     dct = {}
@@ -472,41 +270,52 @@ def _call(node, scope):
     text = dct['left'] + dct['right']
     return text, imports
 
-def _pass(node, scope):
-    return '//pass\n', []
-
-def _list(node, scope):
+def _classdef(node, scope):
     imports = []
-    elems = []
-    for e in node.elts:
-        js, imp = convert_node(e, scope)
-        elems.append(js)
+    dct = {}
+    dct['left'], imports = do_left(ast.Name(node.name, {}), scope)
+    dct['name'] = node.name;
+    dct['rname'] = resolve(node.name, scope);
+    dct['bases'] = ', '.join(resolve(name.id, scope) for name in node.bases)
+
+    dct['dec_front'] = ''
+    dct['dec_back'] = ''
+    for dec in node.decorator_list:
+        js, imp = convert_node(dec, scope)
         imports += imp
-    text = '[%s]' % ', '.join(elems)
+        dct['dec_front'] += js+'('
+        dct['dec_back'] += ')'
+
+    scope = scope[0], [], True
+
+    dct['contents'], imp = convert_block(node.body, scope)
+    imports += imp
+
+    text = TEMPLATES['class'] % dct
     return text, imports
 
-def _yield(node, scope):
-    raise PJsException('Sorry, PJs doesn\'t work with generators, and probably won\'t for the forseeable future...generators are hard.')
-
-def _tuple(node, scope):
-    elts = []
+def _compare(node, scope):
+    if len(node.ops) > 1:
+        raise PJsException('sorry, multiple comparisons 1 > 2 > 3 is not supported.')
+    tpl = '__builtins__.%s(%s, %s)'
+    op = node.ops[0].__class__.__name__.lower()
     imports = []
-    for sub in node.elts:
-        js, imp = convert_node(sub, scope)
-        elts.append(js)
-        imports+=imp
-    text = '__builtins__.tuple([%s])' % ', '.join(elts)
-    return text, imports
+    ljs, imp = convert_node(node.left, scope)
+    imports += imp
+    rjs, imp = convert_node(node.comparators[0], scope)
+    imports += imp
+    return tpl % (op, ljs, rjs), imports
 
-def _list(node, scope):
-    elts = []
+# TODO: comprehension, continue, 
+
+def _delete(node, scope):
+    t = []
     imports = []
-    for sub in node.elts:
-        js, imp = convert_node(sub, scope)
-        elts.append(js)
-        imports+=imp
-    text = '__builtins__.list([%s])' % ', '.join(elts)
-    return text, imports
+    for tag in node.targets:
+        js, imp = convert_node(tag, scope)
+        t.append('delete %s' % js)
+        imports += imp
+    return '\n'.join(t)+'\n', imports
 
 def _dict(node, scope):
     elts = []
@@ -519,6 +328,208 @@ def _dict(node, scope):
         elts.append('[%s, %s]' % (js, j2))
     text = '__builtins__.dict([%s])' % ', '.join(elts)
     return text, imports
+
+#TODO: ellipsis
+
+#TODO: exec...or not. I don't think I'll implement exec
+
+def _expr(node, scope):
+    js, imp = convert_node(node.value, scope)
+    return js+';\n', imp
+
+# TODO: extslice, floordiv (its a binop, no?)
+
+#TODO: for
+
+def _functiondef(node, scope):
+    dct = {}
+    dct['left'], imports = do_left(ast.Name(node.name, []), scope)
+    dct['name'] = node.name
+    try:
+        dct['rname'] = resolve(node.name, scope);
+    except PJsNameError, e:
+        print scope
+        raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
+    args = list(n.id for n in node.args.args)
+    for n in node.args.args:
+        scope[1].append(n.id)
+    defaults = []
+    for d,k in zip(reversed(node.args.defaults), reversed(args)):
+        js, imp = convert_node(d, scope)
+        imports += imp
+        defaults.append("'%s': %s" % (k, js))
+    dct['defaults'] = "{" + ','.join(defaults) + '}'
+    if node.args.kwarg:
+        special = dct['defaults'] + ', ' + str(bool(node.args.vararg)).lower() + ', true, '
+    elif node.args.vararg:
+        special = dct['defaults'] + ', true, '
+    elif defaults:
+        special = dct['defaults'] + ', '
+    else:
+        special = ''
+    dct['special'] = special
+    if node.args.vararg:
+        args.append(node.args.vararg)
+    if node.args.kwarg:
+        args.append(node.args.kwarg)
+    dct['args'] = ', '.join(args)
+
+    dct['dec_front'] = ''
+    dct['dec_back'] = ''
+    for dec in node.decorator_list:
+        js, imp = convert_node(dec, scope)
+        imports += imp
+        dct['dec_front'] += js+'('
+        dct['dec_back'] += ')'
+
+    scope = scope[0], scope[1]+args[:], False
+    dct['contents'], imp = convert_block(node.body, scope)
+    imports += imp
+    text = TEMPLATES['function'] % dct
+    return text, imports
+
+#TODO: genexp, global
+
+def _if(node, scope):
+    dct = {}
+    dct['test'], imports = convert_node(node.test, scope)
+    dct['contents'], imp = convert_block(node.body, scope)
+    imports += imp
+    if node.orelse:
+        if len(node.orelse) == 1:
+            js, imp = convert_node(node.orelse[0], scope)
+            dct['more'] = ' else ' + js
+            imports += imp
+        else:
+            js, imp = convert_block(node.orelse, scope)
+            imports += imp
+            dct['more'] = ' else {\n%s\n}' % js
+    else:
+        dct['more'] = ''
+    text = TEMPLATES['if'] % dct
+    return text, imports
+
+#TODO: ifexp
+
+all_import = '''if (__pjs_tmp_module.__all__ === undefined) {
+    for (var __pjs_k in __pjs_tmp_module) {
+        if (__pjs_k.indexOf('__') !== 0)
+            eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
+    }
+    delete __pjs_k;
+} else {
+    var __pjs_a = __pjs_tmp_module.__all__.as_js();
+    for (var __pjs_i=0; __pjs_i<__pjs_a.length; __pjs_i++) {
+        var __pjs_k = __pjs_a[__pjs_i];
+        eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
+    }
+    delete __pjs_a;
+    delete __pjs_i;
+    delete __pjs_k;
+}
+'''
+
+def _importfrom(node, scope):
+    template = 'var __pjs_tmp_module = __builtins__.__import__("%s", _.__name__, _.__file__);\n' % node.module
+    prefix = local_prefix(scope)
+    for alias in node.names:
+        if alias.name == '*':
+            template += all_import % (prefix, prefix)
+            break
+        asname = alias.asname or alias.name
+        template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
+    return template, [node.module]
+
+def _import(node, scope):
+    tpl = '%s = __builtins__.__import__("%s", _.__name__, _.__file__);\n'
+    text = ''
+    imports = []
+    for name in node.names:
+        asname = name.name
+        if name.asname:asname = name.asname
+        asname, imp = do_left(ast.Name(asname, {}), scope)
+        text += tpl % (asname, name.name)
+        imports.append(name.name)
+    return text, imports
+
+#TODO: lambda?
+
+def _list(node, scope):
+    elts = []
+    imports = []
+    for sub in node.elts:
+        js, imp = convert_node(sub, scope)
+        elts.append(js)
+        imports+=imp
+    text = '__builtins__.list([%s])' % ', '.join(elts)
+    return text, imports
+
+#TODO: listcomp
+
+def _name(node, scope):
+    try:
+        return resolve(node.id, scope), []
+    except PJsNameError, e:
+        print scope
+        raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
+
+import os
+localfile = lambda x:os.path.join(os.path.dirname(__file__), x)
+reserved_words = open(localfile('js_reserved.txt')).read().split()
+
+def resolve(name, scope):
+    if name in reserved_words:
+        raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
+    if scope[0] is scope[1] and name in scope[0]:
+        return '_.%s' % name
+    elif name in scope[1]:
+        if scope[2]:
+            return '__.%s' % name
+        return name
+    elif name in scope[0]:
+        return '_.%s' % name
+    elif name not in scope[0] and name in __builtins__:
+        return '__builtins__.%s' % name
+    else:
+        if scope[0] is scope[1]:
+            return '_.%s' % name
+        elif scope[2]:
+            return '__.%s' % name
+        else:
+            return name
+
+def _num(node, scope):
+    return str(node.n), []
+
+def _pass(node, scope):
+    return '', []
+
+def _print(node, scope):
+    if node.dest:
+        raise PJsException('print>> is not yet supported')
+    values = []
+    imports = []
+    for child in node.values:
+        js, imp = convert_node(child, scope)
+        values.append(js)
+        imports += imp
+    text = '__builtins__.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
+    return text, imports
+
+def _raise(node, scope):
+    js, imports = convert_node(node.type, scope)
+    if node.inst is None:
+        return '__builtins__.raise(%s);\n' % js, imports
+    inner, imp = convert_node(node.inst, scope)
+    imports += imp
+    return '__builtins__.raise(%s(%s));\n' % (js, inner), imports
+
+def _return(node, scope):
+    js, imp = convert_node(node.value, scope)
+    return 'return %s;\n' % js, imp
+
+def _str(node, scope):
+    return '__builtins__.str(%s)' % multiline(node.s), []
 
 def _tryexcept(node, scope):
     imports = []
@@ -553,56 +564,72 @@ def _tryexcept(node, scope):
     text = template % (body, ' else '.join(subs))
     return text, imports
 
-all_import = '''if (__pjs_tmp_module.__all__ === undefined) {
-    for (var __pjs_k in __pjs_tmp_module) {
-        if (__pjs_k.indexOf('__') !== 0)
-            eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
-    }
-    delete __pjs_k;
-} else {
-    var __pjs_a = __pjs_tmp_module.__all__.as_js();
-    for (var __pjs_i=0; __pjs_i<__pjs_a.length; __pjs_i++) {
-        var __pjs_k = __pjs_a[__pjs_i];
-        eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
-    }
-    delete __pjs_a;
-    delete __pjs_i;
-    delete __pjs_k;
-}
-'''
+#TODO: tryfinally
 
-def _importfrom(node, scope):
-    template = 'var __pjs_tmp_module = __builtins__.__import__("%s", _.__name__, _.__file__);\n' % node.module
-    prefix = local_prefix(scope)
-    for alias in node.names:
-        if alias.name == '*':
-            template += all_import % (prefix, prefix)
-            break
-        asname = alias.asname or alias.name
-        template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
-    return template, [node.module]
+def _tuple(node, scope):
+    elts = []
+    imports = []
+    for sub in node.elts:
+        js, imp = convert_node(sub, scope)
+        elts.append(js)
+        imports+=imp
+    text = '__builtins__.tuple([%s])' % ', '.join(elts)
+    return text, imports
 
-def _raise(node, scope):
-    js, imports = convert_node(node.type, scope)
-    if node.inst is None:
-        return '__builtins__.raise(%s);\n' % js, imports
-    inner, imp = convert_node(node.inst, scope)
-    imports += imp
-    return '__builtins__.raise(%s(%s));\n' % (js, inner), imports
+#unaryop
 
 def _unaryop(node, scope):
     js, imp = convert_node(node.operand, scope)
-    if isinstance(node.op, ast.Not):
-        return '!__builtins__.bool(%s)' % js, imp
+    jss = {ast.Not:'!__builtins__.bool(%s)',
+           ast.UAdd:'+%s',
+           ast.USub:'-%s'}
+    return jss[node.op.__class__] % js, imp
 
-def _delete(node, scope):
-    t = []
-    imports = []
-    for tag in node.targets:
-        js, imp = convert_node(tag, scope)
-        t.append('delete %s' % js)
-        imports += imp
-    return '\n'.join(t)+'\n', imports
+#TODO: while
+
+#WONTFIX: with
+
+#TODO: Yield
+
+def _yield(node, scope):
+    raise PJsException('Sorry, PJs doesn\'t work with generators, and probably won\'t for the forseeable future...generators are hard.')
+
+def local_prefix(scope):
+    if scope[0] is scope[1]:
+        return '_.'
+    elif isinstance(node, ast.Name):
+        if scope[2]:
+            return '__.'
+        return 'var '
+    return ''
+
+def do_left(node, scope):
+    if not isinstance(node, (ast.Name, ast.Attribute)):
+        raise PJsException("unsupported left %s" % node)
+    if scope[0] is scope[1]:
+        if isinstance(node, ast.Name):
+            if node.id not in scope[0]:
+                scope[0].append(node.id)
+            return '_.%s' % node.id, []
+        js, imp = convert_node(node, scope)
+        return '_.%s' % js, imp
+    elif isinstance(node, ast.Name):
+        if scope[2]:
+            if node.id not in scope[1]:
+                scope[1].append(node.id)
+            return '__.%s' % node.id, []
+        if node.id not in scope[1]:
+            scope[1].append(node.id)
+            return 'var %s' % node.id, []
+        else:
+            return node.id, []
+    elif isinstance(node, ast.Tuple):
+        raise PJsException("tuple left assignments not yet supported")
+    else:
+        return convert_node(node, scope)
+
+
+
 
 for_rhino = '''
 load("%(dir)s/build/pjslib.js");
