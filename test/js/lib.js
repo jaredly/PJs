@@ -24,7 +24,7 @@ function dump(a) {
 
 var old = jasmine.util.formatException;
 jasmine.util.formatException = function(e) {
-    if ($b.isinstance(e, $b.Exception)) {
+    if ($b.isinstance(e, $b.BaseException) && e.stack) {
         var stack = e.stack;
         var message = '';
         message += 'Traceback (most recent call last)\n';
@@ -212,6 +212,7 @@ describe('pjs-classes.js', function(){
         });
         var abc = Abc(43);
         expect(abc.__name__).toEqual('Abc');
+        //expect($b.issubclass(Abc, Abc)).toBe(true);
         expect(abc.foo).toEqual(43);
         expect(abc.bar('hi')).toEqual([43, 'hi']);
     });
@@ -532,7 +533,7 @@ describe('pjs-builtins.js', function() {
                 var d = _.dict();
                 expect(_.len(d)).toBe(0)
                 expect(d.__eq__(d)).toBe(true);
-                expect(d.pop).toThrowWith([], _.KeyError);
+                expect(d.popitem).toThrowWith([], _.KeyError);
             });
         });
     });
