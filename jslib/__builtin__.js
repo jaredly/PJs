@@ -201,7 +201,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         var ops = {'<':_.lt,'>':_.gt,'<=':_.lte,'>=':_.gte,'==':_.eq,'!=':_.ne};
         if (_.len(allthem) % 2 === 0)
             _.raise(_.ValueError('do_ops requires an odd number of arguments'));
-        allthem = $.js(allthem);
+        allthem = _.js(allthem);
         for (var i=0;i<allthem.length-2;i+=2) {
             if (undefined === ops[allthem[i+1]])
                 _.raise(_.ValueError('invalid op'));
