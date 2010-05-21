@@ -630,6 +630,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _._float = __not_implemented__("float");
     _._long = __not_implemented__("long");
     _.basestring = __not_implemented__("basestring");
+    _.floordiv = $m(function floordiv(a, b) {
+        return Math.floor(a/b);
+    });
 
     _.str = Class('str', [], {
         __init__: $m({'item':''}, function __init__(self, item) {
@@ -690,7 +693,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }),
         __repr__: $m(function(self) {
             // TODO: implement string_escape
-            return _.str("'" + self._data + "'");
+            return _.str("'" + self._data.replace('\n','\\n') + "'");
         }),
         __add__: $m(function __add__(self, other) {
             if (_.isinstance(other, _.str))
@@ -1293,7 +1296,17 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.file = __not_implemented__("file");
     _.unichr = __not_implemented__("unichr");
     _.id = __not_implemented__("id");
-    _.min = __not_implemented__("min");
+    _.min = $m({}, true, function(args) {
+        if (_.len(args) === 1)
+            args = _.list(args.__getitem__(0));
+        args = _.js(args);
+        var m = null;
+        for (var i=0;i<args.length;i++) {
+            if (m === null || _.lt(args[i], m))
+                m = args[i];
+        }
+        return m;
+    });
     _.execfile = __not_implemented__("execfile");
     _.any = __not_implemented__("any");
     _.NotImplemented = (Class('NotImplementedType', [], {

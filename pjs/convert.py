@@ -466,6 +466,8 @@ all_import = '''if (__pjs_tmp_module.__all__ === undefined) {
 '''
 
 def _importfrom(node, scope):
+    if node.module == '__future__':
+        return '',[]
     template = 'var __pjs_tmp_module = $b.__import__("%s", _.__name__, _.__file__);\n' % node.module
     prefix = local_prefix(scope)
     for alias in node.names:
