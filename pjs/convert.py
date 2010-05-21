@@ -96,7 +96,7 @@ def convert_module(mod, filename):
     dct['doc'] = multiline(ast.get_docstring(mod))
 
     _globs = ['__name__','__doc__','__file__']
-    scope = (_globs, _globs, False)
+    scope = (_globs, _globs, False, 0)
     contents, imports = convert_block(mod.body, scope)
     dct['contents'] = contents
     text = TEMPLATES['module'] % dct
@@ -152,14 +152,14 @@ def _assert(node, scope):
     text = '__builtins__.assert(%s, %s);\n' % (js, msg)
     return text, imports
 
-def deepleft(node, at, scope):
+def deepleft(node, at, scope, name='__pjs_tmp'):
     if isinstance(node, ast.Tuple):
         text = ''
         for i,n in enumerate(node.elts):
-            text += deepleft(n, at + [i], scope)
+            text += deepleft(n, at + [i], scope, name)
         return text
     else:
-        right = '__pjs_tmp' + ''.join('.__getitem__(%d)' % n for n in at)
+        right = name + ''.join('.__getitem__(%d)' % n for n in at)
         js, imp = do_left(node, scope)
         return '%s = %s;\n' % (js, right)
 
@@ -587,6 +587,40 @@ def _unaryop(node, scope):
 
 #TODO: while
 
+def _while(node, scope):
+    if node.orelse:
+        raise PJsException('while...else not implemented')
+    tpl = '''\
+while (%s) {
+%s
+}
+'''
+    test, imports = convert_node(node.test, scope)
+    body, imp = convert_block(node.body, scope)
+    return tpl % (test, body), imports + imp
+
+def _for(node, scope):
+    tpl = '''\
+var __pjs_iter%d = $b.foriter(%s);
+while (__pjs_iter%d.trynext()) {
+    %s
+%s
+}
+'''
+    ible, imports = convert_node(node.iter, scope)
+    inum = scope[3]
+    # need to fix for tuples...
+    if isinstance(node.target, ast.Name):
+        targ, imp = do_left(node.target, scope)
+        assign = '%s = __pjs_iter%d.value;\n' % (targ, inum)
+        imports += imp
+    else:
+        assign = deepleft(node.target, [], scope, '__pjs_iter%d.value' % inum).replace('\n', '\n    ')
+
+    body, imp = convert_block(node.body, scope[:3] + (scope[3]+1,))
+    imports += imp
+    return tpl % (inum, ible, inum, assign, body), imports
+
 #WONTFIX: with
 
 #TODO: Yield
@@ -636,32 +670,7 @@ load("%(dir)s/build/pjslib.js");
 '''
 
 do_run = '''
-try {
-    __module_cache['%s'].load('__main__');
-} catch (e) {
-    var stack = __builtins__._debug_stack;
-    var pf = __builtins__.print;
-    // if __builtins__.print is in the stack, don't use it here
-    for (var i=0;i<stack.length;i++) {
-        if (stack[1] == pf) {
-            print('using rhino\\'s print -- error printing pythony');
-            pf = print;
-            break;
-        }
-    }
-    pf('Traceback (most recent call last)');
-    for (var i=0;i<stack.length;i++){
-        var fn = stack[i][1];
-        var ost = fn.toString;
-        if (fn._to_String)
-            fn.toString = fn._old_toString;
-        pf('  ', stack[i][0]);
-    }
-    if (e.__class__)
-        pf('Python Error:', e);
-    else
-        print('Javascript Error:', e);
-}
+__builtins__.run_main('%s');
 '''
 
 def do_compile(filename):

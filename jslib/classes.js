@@ -55,6 +55,7 @@ function instancemethod(cls, fn) {
             return fn.apply(this, [self].concat(to_array(arguments)));
         };
         m2.__name__ = meta.__name__;
+        m2.__class__ = cls;
         m2.__type__ = instancemethod;
         m2.__wraps__ = fn;
         m2.__str__ = function(){
@@ -70,6 +71,7 @@ function instancemethod(cls, fn) {
                pos = [self].concat(pos);
             return fn.args(pos, kwd);
         };
+        m2.args.__name__ = meta.__name__;
         return m2;
     };
     return meta;
