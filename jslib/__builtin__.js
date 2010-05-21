@@ -708,8 +708,16 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return self.__cmd__(other) === -1;
         }),
         __getitem__: $m(function __getitem__(self, at) {
-            if (!_.isinstance(at, _._int))
-                _.raise(_.TypeError('need an int'));
+            if (_.isinstance(at, _.slice)) {
+                var sss = at.indices(self._data.length).as_js();
+                if (sss[2] === 1)
+                    return _.str(self._data.slice(sss[0],sss[1]));
+                var res = '';
+                for (var i=sss[0];i<sss[1];i+=sss[2])
+                    res += self._data[i];
+                return _.str(res);
+            } else if (!_.isinstance(at, _._int))
+                _.raise(_.TypeError('need an int in getitem...' + _.str(at)));
             if (at < 0)
                 at += self._data.length;
             if (at < 0 || at >= self._data.length)
@@ -1284,7 +1292,17 @@ format: __not_implemented__('str.format'),
     })());
     _.map = __not_implemented__("map");
     _.buffer = __not_implemented__("buffer");
-    _.max = __not_implemented__("max");
+    _.max = $m({}, true, function(args) {
+        if (_.len(args) === 1)
+            args = _.list(args.__getitem__(0));
+        args = _.js(args);
+        var m = null;
+        for (var i=0;i<args.length;i++) {
+            if (m === null || _.gt(args[i], m))
+                m = args[i];
+        }
+        return m;
+    });
     _.callable = __not_implemented__("callable");
     _.eval = __not_implemented__("eval");
     _.__debug__ = __not_implemented__("__debug__");
