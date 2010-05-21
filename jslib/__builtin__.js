@@ -208,6 +208,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             throw e;
         }
     });
+    _.add.__module__ = _.__name__;
     _.sub = $m(function sub(a, b) {
         try { return _.do_op('__sub__', '__rsub__', a, b); }
         catch(e) {
@@ -625,7 +626,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             } else if (item instanceof Function) {
                 if (!item.__name__) {
                     if (item.name)
-                        self._data = '<javascript function "' + item.name + "'>'";
+                        self._data = '<javascript function "' + item.name + '">';
                     else if (!item.__module__)
                         self._data = '<anonymous function...>';
                     else

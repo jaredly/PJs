@@ -96,7 +96,8 @@ def convert_module(mod, filename):
     dct['doc'] = multiline(ast.get_docstring(mod))
 
     _globs = ['__name__','__doc__','__file__']
-    scope = (_globs, _globs, False, 0)
+    scope = (_globs, _globs, False, 0, [])
+    ## globals, locals, explicitlocal, numiters, explicitglobals
     contents, imports = convert_block(mod.body, scope)
     dct['contents'] = contents
     text = TEMPLATES['module'] % dct
@@ -288,7 +289,7 @@ def _classdef(node, scope):
         dct['dec_front'] += js+'('
         dct['dec_back'] += ')'
 
-    scope = scope[0], [], True
+    scope = scope[0], [], True, 0, []
 
     dct['contents'], imp = convert_block(node.body, scope)
     imports += imp
@@ -308,7 +309,7 @@ def _compare(node, scope):
     imports += imp
     return tpl % (op, ljs, rjs), imports
 
-# TODO: comprehension, continue, 
+# TODO: comprehension
 
 def _continue(node, scope):
     return 'continue;\n', []
@@ -344,8 +345,6 @@ def _expr(node, scope):
 
 # TODO: extslice, floordiv (its a binop, no?)
 
-#TODO: for
-
 def _functiondef(node, scope):
     dct = {}
     dct['left'], imports = do_left(ast.Name(node.name, []), scope)
@@ -356,8 +355,6 @@ def _functiondef(node, scope):
         print scope
         raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
     args = list(n.id for n in node.args.args)
-    for n in node.args.args:
-        scope[1].append(n.id)
     defaults = []
     for d,k in zip(reversed(node.args.defaults), reversed(args)):
         js, imp = convert_node(d, scope)
@@ -387,13 +384,22 @@ def _functiondef(node, scope):
         dct['dec_front'] += js+'('
         dct['dec_back'] += ')'
 
-    scope = scope[0], scope[1]+args[:], False
+    # scope = scope[0], scope[1]+args[:], False
+    scope = (scope[0], [], False, scope[3], [])
+    for n in args:
+        scope[1].append(n)
     dct['contents'], imp = convert_block(node.body, scope)
     imports += imp
     text = TEMPLATES['function'] % dct
     return text, imports
 
 #TODO: genexp, global
+
+def _global(node, scope):
+    js = '// switching to global scope: %s\n' % ', '.join(node.names)
+    for name in node.names:
+        scope[4].append(name)
+    return js, []
 
 def _if(node, scope):
     dct = {}
@@ -485,7 +491,9 @@ reserved_words = open(localfile('js_reserved.txt')).read().split()
 def resolve(name, scope):
     if name in reserved_words:
         raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
-    if scope[0] is scope[1] and name in scope[0]:
+    if name in scope[4]:
+        return '_.%s' % name
+    elif scope[0] is scope[1] and name in scope[0]:
         return '_.%s' % name
     elif name in scope[1]:
         if scope[2]:
@@ -621,7 +629,7 @@ while (__pjs_iter%d.trynext()) {
     else:
         assign = deepleft(node.target, [], scope, '__pjs_iter%d.value' % inum).replace('\n', '\n    ')
 
-    body, imp = convert_block(node.body, scope[:3] + (scope[3]+1,))
+    body, imp = convert_block(node.body, scope[:3] + (scope[3]+1,) + ([],))
     imports += imp
     return tpl % (inum, ible, inum, assign, body), imports
 
@@ -644,6 +652,8 @@ def local_prefix(scope):
 def do_left(node, scope):
     if not isinstance(node, (ast.Name, ast.Attribute)):
         raise PJsException("unsupported left %s" % node)
+    if isinstance(node, ast.Name) and node.id in scope[4]:
+        return '_.%s' % node.id, []
     if scope[0] is scope[1]:
         if isinstance(node, ast.Name):
             if node.id not in scope[0]:
