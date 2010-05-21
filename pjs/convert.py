@@ -38,7 +38,7 @@ import sys
 
 pjs_modules = ['sys', 'os.path', '__builtin__']
 
-def convert_modules(filename):
+def convert_modules(filename, options):
     '''
     a function to cunvert python to javascript. uses python's ``ast`` module.
     returns (imports, js)
@@ -59,7 +59,11 @@ def convert_modules(filename):
         for imp in imports:
             if imp in pjs_modules:
                 continue
-            toimport.append(find_import(imp, fname))
+            try:
+                toimport.append(find_import(imp, fname))
+            except PJsException:
+                if not options.ignore_import_errors:
+                    raise
         modules[fname] = js
 
     return modules
@@ -729,9 +733,6 @@ def do_left(node, scope):
     else:
         return convert_node(node, scope)
 
-
-
-
 for_rhino = '''
 load("%(dir)s/build/pjslib.js");
 '''
@@ -740,8 +741,8 @@ do_run = '''
 $b.run_main('%s');
 '''
 
-def do_compile(filename):
-    mods = convert_modules(filename)
+def do_compile(filename, options):
+    mods = convert_modules(filename, options)
     text = for_rhino % {'dir':'.'}
     for fn in sorted(mods.keys()):
         text += mods[fn]+'\n\n'
