@@ -26,7 +26,7 @@ PY_JS_TEST := $(patsubst %.py,%.js,$(wildcard test/py/*.py))
 py-tests:$(PY_TEST)
 
 $(PY_TEST): pjs/convert.py jslib
-	@./build.py $@.py > $@.js
+	@./build.py $@.py -i > $@.js
 	@js $@.js > _js.log
 	@python $@.py > _py.log
 	@if [ `diff _py.log _js.log|wc -l` -eq 0 ]; \

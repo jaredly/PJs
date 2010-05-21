@@ -28,7 +28,7 @@ module('%(filename)s', function (%(scope)s) {
 %(rname)s.__name__ = "%(name)s";
 ''',
     'if':'''\
-if (%(test)s) {
+if ($b.bool(%(test)s) === true) {
 %(contents)s
 }%(more)s
 ''',
@@ -660,7 +660,7 @@ def _while(node, scope):
     if node.orelse:
         raise PJsException('while...else not implemented')
     tpl = '''\
-while (%s) {
+while ($b.bool(%s) === true) {
 %s
 }
 '''

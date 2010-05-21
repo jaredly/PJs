@@ -203,10 +203,18 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             _.raise(_.ValueError('do_ops requires an odd number of arguments'));
         allthem = _.js(allthem);
         for (var i=0;i<allthem.length-2;i+=2) {
-            if (undefined === ops[allthem[i+1]])
-                _.raise(_.ValueError('invalid op'));
-            if (!ops[allthem[i+1]](allthem[i], allthem[i+2]))
-                return false;
+            if (allthem[i+1] === '===') {
+                if (allthem[i] !== allthem[i+2])
+                    return false;
+            } else if (allthem[i+1] === '!==') {
+                if (allthem[i] === allthem[i+2])
+                    return false;
+            } else {
+                if (undefined === ops[allthem[i+1]])
+                    _.raise(_.ValueError('invalid op'));
+                if (!ops[allthem[i+1]](allthem[i], allthem[i+2]))
+                    return false;
+            }
         }
         return true;
     });
@@ -492,6 +500,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.bool = $m(function bool(what) {
         if (defined(what.__bool__))
             return what.__bool__();
+        else if (defined(what.__len__))
+            return _.len(what) !== 0;
         if (what)
             return true;
         return false;
@@ -1317,4 +1327,5 @@ __module_cache['<builtin>/os/path.py'].load('os.path');
 var __builtins__ = __module_cache['<builtin>/__builtin__.py'].load('__builtin__');
 var __import__ = __builtins__.__import__; // should I make this global?
 var $b = __builtins__;
+$b.__import__('sys').argv = $b.list(arguments);
 
