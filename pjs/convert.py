@@ -119,7 +119,10 @@ def convert_node(node, scope):
         return globals()['_'+node.__class__.__name__.lower()](node, scope)
     except KeyError, e:
         if not e.args[0].startswith('Node type'):
-            print vars(node)
+            if hasattr(node, '__dict__'):
+                print vars(node)
+            else:
+                print node
             e.args = ('Node type %s hasn\'t been implemented yet' % node, )
         raise
 
@@ -168,13 +171,21 @@ def _assign(node, scope):
     rest = ''
     imports = []
     target = node.targets[0]
-    assert len(node.targets) == 1, 'i guess this is always true'
     if isinstance(target, ast.Tuple):
         left = 'var __pjs_tmp'
         rest = deepleft(target, [], scope)
     else:
         left, imp = do_left(target, scope)
         imports += imp
+    for targ in node.targets[1:]:
+        var = left
+        if var.startswith('var '):
+            var = var[len('var '):]
+        if isinstance(targ, ast.Tuple):
+            rest += deepleft(targ, [], scope, var)
+        else:
+            mr, imp = do_left(targ, scope)
+            rest += mr + ' = ' + var + ';\n'
 
     js, imp = convert_node(node.value, scope)
     imports += imp
@@ -298,16 +309,26 @@ def _classdef(node, scope):
     return text, imports
 
 def _compare(node, scope):
+    ops = {ast.Gt:'>',ast.GtE:'>=',ast.Lt:'<',ast.LtE:'<=',ast.Eq:'==',ast.NotEq:'!=', ast.IsNot:'!==', ast.Is:'==='}
+    js, imports = convert_node(node.left, scope)
+    items = [js]
+    for op, val in zip(node.ops, node.comparators):
+        items.append("'%s'" % ops[op.__class__])
+        js, imp = convert_node(val, scope)
+        items.append(js)
+        imports += imp
+    return '$b.do_ops(%s)' % (', '.join(items)), imports
+    '''
     if len(node.ops) > 1:
         raise PJsException('sorry, multiple comparisons 1 > 2 > 3 is not supported.')
     tpl = '$b.%s(%s, %s)'
     op = node.ops[0].__class__.__name__.lower()
-    imports = []
     ljs, imp = convert_node(node.left, scope)
     imports += imp
     rjs, imp = convert_node(node.comparators[0], scope)
     imports += imp
     return tpl % (op, ljs, rjs), imports
+    '''
 
 # TODO: comprehension
 
@@ -539,6 +560,8 @@ def _raise(node, scope):
     return '$b.raise(%s(%s));\n' % (js, inner), imports
 
 def _return(node, scope):
+    if node.value is None:
+        return 'return;\n', []
     js, imp = convert_node(node.value, scope)
     return 'return %s;\n' % js, imp
 

@@ -21,5 +21,11 @@ a += 2
 b /= 1
 print a,b
 
+mult = iple = 4
+print mult
+print iple
+a,b = c = 3,4
+print [a,b,c]
+
 
 # vim: et sw=4 sts=4

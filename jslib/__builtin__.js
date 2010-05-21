@@ -197,6 +197,19 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }
         throw _.NotImplemented('Operator not implemented for ' + _.str(a) + ' and ' + _.str(b))
     });
+    _.do_ops = $m({}, true, function do_ops(allthem) {
+        var ops = {'<':_.lt,'>':_.gt,'<=':_.lte,'>=':_.gte,'==':_.eq,'!=':_.ne};
+        if (_.len(allthem) % 2 === 0)
+            _.raise(_.ValueError('do_ops requires an odd number of arguments'));
+        allthem = $.js(allthem);
+        for (var i=0;i<allthem.length-2;i+=2) {
+            if (undefined === ops[allthem[i+1]])
+                _.raise(_.ValueError('invalid op'));
+            if (!ops[allthem[i+1]](allthem[i], allthem[i+2]))
+                return false;
+        }
+        return true;
+    });
     _.add = $m(function add(a, b) {
         try {
             return _.do_op('__add__', '__radd__', a, b);
@@ -239,7 +252,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             throw e;
         }
     });
-    _.le = $m(function le(a, b) {
+    _.lte = $m(function le(a, b) {
         return !_.gt(a, b);
     });
     _.mod = $m(function mod(a, b) {
