@@ -1004,7 +1004,7 @@ format: __not_implemented__('str.format'),
 
     _.listreversediterator = Class('listreversediterator', [_.listiterator], {
         next: $m(function(self) {
-            if (self.at > self.lst._list.length)
+            if (self.at >= self.lst._list.length)
                 _.raise(_.StopIteration());
             var val = self.lst._list[self.lst._list.length-1-self.at];
             self.at += 1;
@@ -1227,6 +1227,12 @@ format: __not_implemented__('str.format'),
     _.StopIteration = Class('StopIteration', [_.Exception], {});
     _.NotImplemented = Class('NotImplemented', [_.Exception], {});
 
+
+    _.assertdefined = function assertdefined(x) {
+        if (x === undefined)
+            _.raise(_.NameError('undefined variable'));
+        return x;
+    };
     _.run_main = $m(function(filename){
         try {
             __module_cache[filename].load('__main__');
