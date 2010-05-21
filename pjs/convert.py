@@ -567,7 +567,7 @@ def _return(node, scope):
 
 def _subscript(node, scope):
     js, imports = convert_node(node.value, scope)
-    if isinstance(node.slice, ast.Slice) and node.slice.step is None:
+    if isinstance(node.slice, ast.Slice) and node.slice.step is None and node.slice.upper is not None:
         upper = convert_node(node.slice.upper, scope)[0]
         if node.slice.lower:
             lower = convert_node(node.slice.lower, scope)[0]
