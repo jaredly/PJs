@@ -1,4 +1,4 @@
-PJS
+PJs
 ===
 
 kinda like pyjamas...
@@ -31,6 +31,8 @@ Things you can do:
 
   - classmethod
   - staticmethod
+
+- operator magic; __add__, __mul__ etc.
 
 if you find a bug or something you don't like, feel free to file a ticket on
 github, or *even better*, fork the repo, fix your problem, and then pull
