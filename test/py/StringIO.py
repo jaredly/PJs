@@ -28,7 +28,6 @@ Notes:
   bytes that occupy space in the buffer.
 - There's a simple test set (see end of this file).
 """
-from __future__ import division
 try:
     from errno import EINVAL
 except ImportError:
@@ -329,10 +328,10 @@ def test():
     print 'File length =', f.tell()
     if f.tell() != length:
         raise RuntimeError, 'bad length'
-    f.truncate(length//2)
+    f.truncate(length/2)
     f.seek(0, 2)
     print 'Truncated length =', f.tell()
-    if f.tell() != length//2:
+    if f.tell() != length/2:
         raise RuntimeError, 'truncate did not adjust length'
     f.close()
 

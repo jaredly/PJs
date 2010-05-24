@@ -105,21 +105,6 @@ module('<builtin>/os/path.py', function os_path_module(_) {
     });
 });
 
-/**
-function pathresolve(path) {
-    if (path[-1] !== '/') path += '/';
-    if (path.find('/./') !== -1)
-        return pathresolve(path.replace('/./', '/'));
-    if (path.find('/../') !== -1)
-        return pathresolve(path.replace(/(\/[^\/]+\/)..\//, '\1'));
-    return path;
-}
-
-function dirname(path) {
-    return path.split('/').slice(0, -1).join('/');
-}
-**/
-
 module('<builtin>/__builtin__.py', function builting_module(_) {
 
     var sys = __module_cache['<builtin>/sys.py']._module;
@@ -297,7 +282,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         var val = _.do_op('__div__', '__rdiv__', a, b);
         if (val === _.NotImplemented) {
             if (typeof(a) === typeof(b) && typeof(a) === 'number')
-                return a / b;
+                return Math.floor(a / b);
             else
                 _.raise(_.TypeError('unsupported operand type(s) for /'));
         } else
@@ -511,6 +496,66 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         else
             _.raise(_.TypeError('can\'t coerce to int'));
     });
+    _._float = Class('float', [], {
+        __init__: $m({'what':0.0}, function __init__(self, what) {
+            self._data = what;
+        }),
+        as_js: $m(function(self){
+            return self._data;
+        }),
+        __str__: $m(function (self) {
+            return _.str('' + self._data);
+        }),
+        __div__: $m(function __div__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(self._data/_.js(other));
+            }
+            return _.NotImplemented;
+        }),
+        __rdiv__: $m(function __rdiv__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(_.js(other)/self._data);
+            }
+            return _.NotImplemented;
+        }),
+        __add__: $m(function __add__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(_.js(other) + self._data);
+            }
+            return _.NotImplemented;
+        }),
+        __radd__: $m(function __radd__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(_.js(other) + self._data);
+            }
+            return _.NotImplemented;
+        }),
+        __mul__: $m(function __mul__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(_.js(other) * self._data);
+            }
+            return _.NotImplemented;
+        }),
+        __rmul__: $m(function __rmul__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(_.js(other) * self._data);
+            }
+            return _.NotImplemented;
+        }),
+        __sub__: $m(function __sub__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(self._data - _.js(other));
+            }
+            return _.NotImplemented;
+        }),
+        __rsub__: $m(function __rsub__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== undefined) {
+                return _._float(_.js(other) - self._data);
+            }
+            return _.NotImplemented;
+        }),
+    });
+
 
     _.tuple = Class('tuple', [], {
         __init__: $m({'ible':[]}, function __init__(self, ible) {
@@ -627,7 +672,6 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     _.frozenset = __not_implemented__("frozenset");
     _.hash = __not_implemented__("hash");
-    _._float = __not_implemented__("float");
     _._long = __not_implemented__("long");
     _.basestring = __not_implemented__("basestring");
     _.floordiv = $m(function floordiv(a, b) {
@@ -1164,7 +1208,15 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     /** inheritence **/
 
-    _.type = type;
+    _.type = $m(function (what) {
+        if (typeof(what) === 'number')
+            return _._int;
+        if (what.__class__ !== undefined)
+            return what.__class__;
+        if (what.__type__ !== undefined)
+            return that.__type__;
+        return typeof(what);
+    });
     _.classmethod = classmethod;
     _.staticmethod = staticmethod;
 

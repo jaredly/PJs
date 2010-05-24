@@ -540,6 +540,8 @@ def resolve(name, scope):
             return '$b.assertdefined(%s)' % name
 
 def _num(node, scope):
+    if type(node.n) == float:
+        return '$b._float(%f)' % node.n, []
     return str(node.n), []
 
 def _pass(node, scope):
