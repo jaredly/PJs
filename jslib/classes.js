@@ -39,6 +39,7 @@ function instancemethod(cls, fn) {
     meta.__name__ = fn.__name__?fn.__name__:fn.name;
     meta.__type__ = instancemethod;
     meta.__wraps__ = fn;
+    fn.__wrapper__ = meta;
     meta.__str__ = function str(){
         return '<unbound method '+cls.__name__+'.'+meta.__name__+'>';
     };
@@ -58,6 +59,7 @@ function instancemethod(cls, fn) {
         m2.__class__ = cls;
         m2.__type__ = instancemethod;
         m2.__wraps__ = fn;
+        fn.__wraper__ = fn;
         m2.__str__ = function(){
             return '<bound method '+cls.__name__+'.'+meta.__name__+' of '+self.__str__()+'>';
         };

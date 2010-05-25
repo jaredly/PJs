@@ -709,6 +709,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                         self._data = '<anonymous function in module "' + item.__module__ + '">';
                 } else {
                     var name = item.__name__;
+                    while (item.__wrapper__)
+                      item = item.__wrapper__;
                     if (item.im_class)
                         name = item.im_class.__name__ + '.' + name;
                     if (item.__class__)
@@ -1273,7 +1275,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         for (var i=0;i<args._list.length;i++) {
             strs.push(_.str(args._list[i]));
         }
-        print(strs.join(' '));
+        console.log(strs.join(' '));
     });
     _.print.__name__ = 'print';
     _.assert = $m(function assert(bool, text) {
@@ -1333,10 +1335,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.compile = __not_implemented__("compile");
 
     _.repr = $m(function repr(item) {
+        if (item === null)
+            return _.str('None');
         if (typeof(item) === 'string') {
-            return "'" + item + "'";
+            return _.str("'" + item + "'");
         } else if (typeof(item) === 'number') {
-            return '' + item;
+            return _.str('' + item);
         } else if (defined(item.__repr__)) {
             return item.__repr__();
         } else return _.str(item);
@@ -1439,9 +1443,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.UnicodeWarning = Class('UnicodeWarning', [_.Warning], {});
     _.BytesWarning = Class('BytesWarning', [_.Warning], {});
 
-    _.assertdefined = function assertdefined(x) {
+    _.assertdefined = function assertdefined(x, name) {
         if (x === undefined)
-            _.raise(_.NameError('undefined variable'));
+            _.raise(_.NameError('undefined variable "' + name + '"'));
         return x;
     };
     _.run_main = $m(function(filename){
@@ -1453,8 +1457,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             // if __builtins__.print is in the stack, don't use it here
             for (var i=0;i<stack.length;i++) {
                 if (stack[1] == pf) {
-                    print('using rhino\'s print -- error printing pythony');
-                    pf = print;
+                    console.log('using rhino\'s print -- error printing pythony');
+                    pf = console.log;
                     break;
                 }
             }
@@ -1469,7 +1473,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (e.__class__)
                 pf('Python Error:', e);
             else
-                print('Javascript Error:', e);
+                console.log('Javascript Error:', e);
+            debugger;
         }
     });
 });
@@ -1479,5 +1484,4 @@ __module_cache['<builtin>/os/path.py'].load('os.path');
 var __builtins__ = __module_cache['<builtin>/__builtin__.py'].load('__builtin__');
 var __import__ = __builtins__.__import__; // should I make this global?
 var $b = __builtins__;
-$b.__import__('sys').argv = $b.list(arguments);
 

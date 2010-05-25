@@ -239,6 +239,7 @@ function $m() {
     meta.__wraps__ = func;
     meta.__type__ = func.__type__?func.__type__:'function';
     meta.__name__ = func.__name__?func.__name__:func.name;
+    func.__wrapper__ = meta;
     meta.args.__wraps__ = func;
     meta.args.__type__ = meta.__type__;
     meta.args.__name__ = meta.__name__;
