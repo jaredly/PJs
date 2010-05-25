@@ -14,8 +14,8 @@ Things you can't do:
 
 - python magic:
 
-  - __getattribute__
-  - __setattribute__
+  - __getattr__
+  - __setattr__
 
 These will have major performance implications; I imagine they might be
 enableable via a flag -- for most programs that level of control isn't

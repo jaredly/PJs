@@ -1,12 +1,8 @@
 
 default:
 	@echo "options: jslib, pylib, test-(js|py)"
-	@echo $(JSFILES)
 
 jslib: build/pjslib.js
-
-example:
-	./build.py test/example.py > test/example.js
 
 pylib:
 	@echo "this isn't supported ATM"
@@ -26,7 +22,7 @@ PY_JS_TEST := $(patsubst %.py,%.js,$(wildcard test/py/*.py))
 py-tests:$(PY_TEST)
 
 $(PY_TEST): pjs/convert.py jslib
-	@./build.py $@.py -i > $@.js
+	@./convert.py $@.py -i --rhino -l ./build/ $@.js
 	@js $@.js > _js.log
 	@python $@.py > _py.log
 	@if [ `diff _py.log _js.log|wc -l` -eq 0 ]; \
@@ -42,7 +38,4 @@ $(PY_TEST): pjs/convert.py jslib
 
 build/pjslib.js: jslib/*.js
 	@cat jslib/functions.js jslib/classes.js jslib/modules.js jslib/__builtin__.js > build/pjslib.js
-
-test/example.js: test/example.py jslib pjs/convert.py
-	@./build.py test/example.py > test/example.js
 
