@@ -532,16 +532,16 @@ def resolve(name, scope):
         return name
     elif name in scope[0]:
         return '_.%s' % name
-    elif name not in scope[0] and name in __builtins__:
+    elif name not in scope[0] and name in __builtins__ or name == 'js':
         return '$b.%s' % name
     else:
         ## for all we know, it's not defined....
         if scope[0] is scope[1]:
-            return '$b.assertdefined(_.%s)' % name
+            return '$b.assertdefined(_.%s, "%s")' % (name, name)
         elif scope[2]:
-            return '$b.assertdefined(__.%s)' % name
+            return '$b.assertdefined(__.%s, "%s")' % (name, name)
         else:
-            return '$b.assertdefined(%s)' % name
+            return '$b.assertdefined(%s, "%s")' % (name, name)
 
 def _num(node, scope):
     if type(node.n) == float:
@@ -773,7 +773,9 @@ rhino_out = '''\
 // from source file %(file)s
 
 load("%(lib)s");
+var console = {log:function(){print.apply(this, arguments);}};
 %(text)s
+__builtins__.__import__('sys').argv = __builtins__.list(arguments);
 __builtins__.run_main('%(file)s');
 '''
 
