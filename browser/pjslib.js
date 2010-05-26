@@ -280,7 +280,7 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 var to_array = function to_array(a){return Array.prototype.slice.call(a,0);};
 
 function instancemethod(cls, fn) {
-    var meta = function instancemethod() {
+    var meta = function $_instancemethod() {
         /*
         if (!__builtins__.isinstance(arguments[0], cls))
             throw new Error('TypeError: unbound method '+fn.__name__+'() must be called with '+cls.__name__+' instance as the first argument');
@@ -297,7 +297,7 @@ function instancemethod(cls, fn) {
     meta.im_class = cls;
     meta.im_func = fn;
     meta.im_self = null;
-    meta.__get__ = function get(self, cls) {
+    meta.__get__ = function $_get(self, cls) {
         cls = cls||self.__class__;
         /*
         if (!__builtins__.isinstance(self, cls))
