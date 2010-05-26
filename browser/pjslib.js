@@ -23,28 +23,6 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
  OTHER DEALINGS IN THE SOFTWARE.
 
 **/
-if (!Array.prototype.indexOf)
-{
-  Array.prototype.indexOf = function(elt /*, from*/)
-  {
-    var len = this.length >>> 0;
-
-    var from = Number(arguments[1]) || 0;
-    from = (from < 0)
-         ? Math.ceil(from)
-         : Math.floor(from);
-    if (from < 0)
-      from += len;
-
-    for (; from < len; from++)
-    {
-      if (from in this &&
-          this[from] === elt)
-        return from;
-    }
-    return -1;
-  };
-}
 
 /** python function madness =) **/
 
@@ -96,7 +74,7 @@ if (!Array.prototype.indexOf)
 **/
 
 var to_array = function(a){return Array.prototype.slice.call(a,0);};
-var fnrx = /function\s+\w*\s*\(([\w,\s]*)\)/;
+var fnrx = /function(?:\s+\w*)?\s*\(([\w,\s]*)\)/;
 
 function defined(x){
     return typeof(x) != 'undefined';
@@ -527,6 +505,30 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
  OTHER DEALINGS IN THE SOFTWARE.
 
 **/
+
+// dumb IE fix
+if (!Array.prototype.indexOf)
+{
+  Array.prototype.indexOf = function(elt /*, from*/)
+  {
+    var len = this.length >>> 0;
+
+    var from = Number(arguments[1]) || 0;
+    from = (from < 0)
+         ? Math.ceil(from)
+         : Math.floor(from);
+    if (from < 0)
+      from += len;
+
+    for (; from < len; from++)
+    {
+      if (from in this &&
+          this[from] === elt)
+        return from;
+    }
+    return -1;
+  };
+}
 
 /**
 Now you can import stuff...just like in python.
