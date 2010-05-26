@@ -112,6 +112,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.__doc__ = 'Javascript corrospondences to python builtin functions';
 
     _.js = $m(function(what) {
+        if (what === null) return what;
         if (_.isinstance(what, [_.list, _.tuple])) {
           var l = what.as_js();
           var res = [];
@@ -1243,7 +1244,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.staticmethod = staticmethod;
 
     _.isinstance = $m(function isinstance(inst, clsses) {
-        if (!defined(inst.__class__))
+        if (inst === null || !defined(inst.__class__))
             return false;
             // _.raise("PJs Error: isinstance only works on objects");
         return _.issubclass(inst.__class__, clsses);

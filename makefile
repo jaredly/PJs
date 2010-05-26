@@ -13,7 +13,7 @@ test-js: jslib
 test-py: py-tests
 
 clean:
-	rm -rf build/*
+	rm -rf build
 	rm -rf test/py/*.js
 
 PY_TEST := $(patsubst %.py,%,$(wildcard test/py/*.py))
@@ -37,5 +37,6 @@ $(PY_TEST): pjs/convert.py jslib
 
 
 build/pjslib.js: jslib/*.js
+	@mkdir build &> /dev/null || :
 	@cat jslib/functions.js jslib/classes.js jslib/modules.js jslib/__builtin__.js > build/pjslib.js
 
