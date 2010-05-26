@@ -74,7 +74,7 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 **/
 
 var to_array = function(a){return Array.prototype.slice.call(a,0);};
-var fnrx = /function\s+\w*\s*\(([\w,\s]*)\)/;
+var fnrx = /function(?:\s+\w*)?\s*\(([\w,\s]*)\)/;
 
 function defined(x){
     return typeof(x) != 'undefined';
