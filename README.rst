@@ -10,9 +10,66 @@ javascript's lazyness regarding undefined variables.
 PJs has the goal of generating readable, usable *robust* javascript code from
 python code, and of providing some libraries to make web development easier.
 
+Recent Addtions
+---------------
+
+- nested class support (full namespacing!!)
+- operator overloading
+- easy javascript embedding
+
+
+To make a javascript function call, prepend ``js.`` to the call (I'm reserving
+the name ``js``; I hope you don't mind). Any calls starting with ``window.``
+are treated as javascript calls as well. The difference is that the ``js``
+prefix is removed -- it is assumed that you are working with a local variable.
+
+::
+
+    jq = window.jQuery
+    def make_tabs(id):
+        js.jq(id).tabs()
+
+This is necessary because PJs wraps strings, tuples, lists, and dictionarys,
+so jQuery wouldn't know what to do with ``jq("hi")`` which
+otherwise would be translated to ``jq($b.str("hi"))``. As it is, the above
+code becomes::
+
+    _.jq = window.jQuery;
+    _.make_tabs = $m(function $_make_tabs(id) {
+      _.jq($b.js(id)).tabs();
+    });
+
+Now that might be a bit confusing, but the important thing is that PJs knows
+to convert ``id`` to a javascript type (the added builtin function ``js`` converts a
+python object to the corresponding javascript type).
+
+If you want to avoid that kind of magic, that's fine too, but you need to
+convert the function arguments yourself. In python, you'd have::
+
+    jq = window.jQuery
+    def make_tabs(id):
+      jq(js(id)).tabs()
+
+Not much different in this example, but for more complicated expressions such
+as ``foo(a, b, c, d).bar(e, f)`` it's much simpler to just put a ``js.`` at
+the very beginning.
+
+One thing for which you must rely on magic (sorry) is subscripting; in PJs, in
+order to allow for __get/setitem\__ manipulation, expressions such as
+``people[gender]`` are converted to ``people.__getitem__(gender)``. If you've
+got a javascript-style list, the magic ``js.`` prefix will preserve
+subscripts (and convert the argument back to javascript). So
+``js.people[gender]`` becomes ``people[$b.js(gender)]``. Slicing is also
+handled intelligently; ``js.people[start:end]`` comes out as
+``people.slice(start, end)``.
+       
+
+
+
+
 Things you can't do:
 
-- python magic:
+- python attribute magic:
 
   - __getattr__
   - __setattr__

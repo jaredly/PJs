@@ -1,117 +1,100 @@
- 'Assert',
- 'Assign',
- 'Attribute',
- 'AugAssign',
- 'AugLoad',
- 'AugStore',
- 'BinOp',
- 'BitAnd',
- 'BitOr',
- 'BitXor',
- 'BoolOp',
- 'Break',
- 'Call',
- 'ClassDef',
- 'Compare',
- 'Continue',
- 'Del',
- 'Delete',
- 'Dict',
- 'Div',
- 'Ellipsis',
- 'Eq',
- 'ExceptHandler',
- 'Exec',
- 'Expr',
- 'Expression',
- 'ExtSlice',
- 'FloorDiv',
- 'For',
- 'FunctionDef',
- 'GeneratorExp',
- 'Global',
- 'Gt',
- 'GtE',
- 'If',
- 'IfExp',
- 'Import',
- 'ImportFrom',
- 'In',
- 'Index',
- 'Interactive',
- 'Invert',
- 'Is',
- 'IsNot',
- 'LShift',
- 'Lambda',
- 'List',
- 'ListComp',
- 'Load',
- 'Lt',
- 'LtE',
- 'Mod',
- 'Module',
- 'Mult',
- 'Name',
- 'NodeTransformer',
- 'NodeVisitor',
- 'Not',
- 'NotEq',
- 'NotIn',
- 'Num',
- 'Or',
- 'Param',
- 'Pass',
- 'Pow',
- 'Print',
- 'PyCF_ONLY_AST',
- 'RShift',
- 'Raise',
- 'Repr',
- 'Return',
- 'Slice',
- 'Store',
- 'Str',
- 'Sub',
- 'Subscript',
- 'Suite',
- 'TryExcept',
- 'TryFinally',
- 'Tuple',
- 'UAdd',
- 'USub',
- 'UnaryOp',
- 'While',
- 'With',
- 'Yield',
- '__builtins__',
- '__doc__',
- '__file__',
- '__name__',
- '__package__',
- '__version__',
- 'alias',
- 'arguments',
- 'boolop',
- 'cmpop',
- 'comprehension',
- 'copy_location',
- 'dump',
- 'excepthandler',
- 'expr',
- 'expr_context',
- 'fix_missing_locations',
- 'get_docstring',
- 'increment_lineno',
- 'iter_child_nodes',
- 'iter_fields',
- 'keyword',
- 'literal_eval',
- 'mod',
- 'operator',
- 'parse',
- 'slice',
- 'stmt',
- 'unaryop',
- 'walk']
-
+Add
+alias
+And
+arguments
+Assert
+Assign
+AST
+Attribute
+AugAssign
+AugLoad
+AugStore
+BinOp
+BitAnd
+BitOr
+BitXor
+boolop
+BoolOp
+Break
+Call
+ClassDef
+cmpop
+Compare
+comprehension
+Continue
+Del
+Delete
+Dict
+Div
+Ellipsis
+Eq
+excepthandler
+ExceptHandler
+Exec
+expr
+Expr
+expr_context
+Expression
+ExtSlice
+FloorDiv
+For
+FunctionDef
+GeneratorExp
+Global
+Gt
+GtE
+If
+IfExp
+Import
+ImportFrom
+In
+Index
+Interactive
+Invert
+Is
+IsNot
+keyword
+Lambda
+List
+ListComp
+Load
+LShift
+Lt
+LtE
+mod
+Mod
+Module
+Mult
+Name
+Not
+NotEq
+NotIn
+Num
+operator
+Or
+Param
+Pass
+Pow
+Print
+Raise
+Repr
+Return
+RShift
+slice
+Slice
+stmt
+Store
+Str
+Sub
+Subscript
+Suite
+TryExcept
+TryFinally
+Tuple
+UAdd
+unaryop
+UnaryOp
+USub
+While
+With
+Yield

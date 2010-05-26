@@ -112,6 +112,22 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.__doc__ = 'Javascript corrospondences to python builtin functions';
 
     _.js = $m(function(what) {
+        if (_.isinstance(what, [_.list, _.tuple])) {
+          var l = what.as_js();
+          var res = [];
+          for (var i=0;i<l.length;i++) {
+            res.push(_.js(l[i]));
+          }
+          return res;
+        } else if (_.isinstance(what, _.dict)) {
+          var obj = {};
+          var k = what.keys().as_js();
+          var v = what.values().as_js();
+          for (var i=0;i<k.length;i++) {
+            obj[_.js(k[i])] = _.js(v[i]);
+          }
+          return obj;
+        }
         if (typeof(what) === 'object') {
           if (defined(what.as_js))
               return what.as_js();
@@ -472,7 +488,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             }
         }),
         values: $m(function values(self){
-            return __getitem__.list(self._values.slice());
+            return _.list(self._values.slice());
         }),
     });
 
@@ -1229,7 +1245,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.isinstance = $m(function isinstance(inst, clsses) {
         if (!defined(inst.__class__))
             return false;
-            // _.raise("PJs Error: isisntance only works on objects");
+            // _.raise("PJs Error: isinstance only works on objects");
         return _.issubclass(inst.__class__, clsses);
     });
 

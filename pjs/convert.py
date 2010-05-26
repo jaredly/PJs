@@ -206,6 +206,8 @@ def _attribute(node, scope):
     if node.attr in reserved_words:
         raise PJsException("Sorry, '%s' is a reserved word in javascript." % node.attr)
     js = convert_node(node.value, scope)
+    if js == 'js':
+        return 'js.%s' % (resolve(node.attr, scope))
     return "%s.%s" % (js, node.attr)
 
 def _augassign(node, scope):
@@ -282,6 +284,7 @@ def _call(node, scope):
     else:
         args = []
         for n in node.args:
+            ## TODO: check for literals
             js = convert_node(n, scope)
             if raw_js:
                 ## in a javascript call
@@ -510,6 +513,8 @@ reserved_words = open(localfile('js_reserved.txt')).read().split()
 def resolve(name, scope):
     if name == 'window':
         return name
+    elif name == 'js':
+        return name
     elif name in ('float', 'int'):
         name = '_' + name
     elif name in reserved_words:
@@ -567,18 +572,26 @@ def _return(node, scope):
     return 'return %s;\n' % js
 
 def _subscript(node, scope):
-    js = convert_node(node.value, scope)
+    left = convert_node(node.value, scope)
+    raw_js = left.startswith('js.') or left.startswith('window.')
+
+    if not scope['in atomic']:
+        scope = scope.copy()
+        scope['in atomic'] = True
+        if left.startswith('js.'):
+            left = left[3:]
+
     if isinstance(node.slice, ast.Slice) and node.slice.step is None:
-        if js.startswith('window.'):
+        if raw_js:
             if node.slice.lower:
                 lower = convert_node(node.slice.lower, scope)
             else:
                 lower = 0
             if node.slice.upper is None:
-                return '%s.slice(%s)' % (js, lower)
+                return '%s.slice(%s)' % (left, lower)
             else:
                 upper = convert_node(node.slice.upper, scope)
-                return '%s.slice(%s, %s)' % (js, lower, upper)
+                return '%s.slice(%s, %s)' % (left, lower, upper)
         
         if node.slice.upper is not None:
             upper = convert_node(node.slice.upper, scope)
@@ -586,16 +599,17 @@ def _subscript(node, scope):
                 lower = convert_node(node.slice.lower, scope)
             else:
                 lower = 0
-            return '%s.__getslice__(%s, %s)' % (js, lower, upper)
+            return '%s.__getslice__(%s, %s)' % (left, lower, upper)
     idex = convert_node(node.slice, scope)
 
-    if js.startswith('window.'):
+    if raw_js:
         if isinstance(node.slice, ast.Slice):
             raise PJsException('no steps in javascript slices')
         ## in javascript line
-        return '%s[$b.js(%s)]' % (js, idex)
+        # TODO check idex for literal
+        return '%s[$b.js(%s)]' % (left, idex)
 
-    return '%s.__getitem__(%s)' % (js, idex)
+    return '%s.__getitem__(%s)' % (left, idex)
 
 def _index(node, scope):
     return convert_node(node.value, scope)
