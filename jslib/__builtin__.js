@@ -112,10 +112,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.__doc__ = 'Javascript corrospondences to python builtin functions';
 
     _.js = $m(function(what) {
-        if (defined(what.as_js))
-            return what.as_js();
-        else if (what.__class__ || what.__type__)
-            _.raise(_.TypeError('cannot coerce to javascript'));
+        if (typeof(what) === 'object') {
+          if (defined(what.as_js))
+              return what.as_js();
+          else if (what.__class__ || what.__type__)
+              _.raise(_.TypeError('cannot coerce to javascript'));
+        }
         return what;
     });
     /** importing modules **/
@@ -680,7 +682,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     _.str = Class('str', [], {
         __init__: $m({'item':''}, function __init__(self, item) {
-            if (typeof(item) === 'string')
+            if (item === null)
+                self._data = 'None';
+              else if (typeof(item) === 'string')
                 self._data = item;
             else if (typeof(item) === 'number')
                 self._data = ''+item;
@@ -1474,7 +1478,6 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 pf('Python Error:', e);
             else
                 console.log('Javascript Error:', e);
-            debugger;
         }
     });
 });

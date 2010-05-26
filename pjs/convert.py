@@ -16,9 +16,9 @@ module('%(filename)s', function (%(scope)s) {
 ''',
     'class':'''\
 %(left)s = %(dec_front)sClass('%(name)s', [%(bases)s], (function(){
-    var __ = {};
+    var __%(lnum)s = {};
 %(contents)s
-    return __;
+    return __%(lnum)s;
 }()))%(dec_back)s;
 %(rname)s.__module__ = _.__name__;
 ''',
@@ -41,10 +41,11 @@ import sys
 pjs_modules = ['sys', 'os.path', '__builtin__']
 
 all_imports = []
+to_import = []
 
 def convert_modules(filename, options):
     '''
-    a function to cunvert python to javascript. uses python's ``ast`` module.
+    a function to convert python to javascript. uses python's ``ast`` module.
     returns (imports, js)
 
     - imports is a list of modules to be imported
@@ -52,7 +53,10 @@ def convert_modules(filename, options):
     '''
     modules = {}
     filename = os.path.abspath(filename)
-    all_imports.clear()
+    while len(all_imports):
+        all_imports.pop()
+    while len(to_import):
+        to_import.pop()
     all_imports.append(filename)
     while len(all_imports):
         fname = all_imports.pop()
@@ -61,7 +65,15 @@ def convert_modules(filename, options):
         text = open(fname).read()
         tree = ast.parse(text, fname)
         modules[fname] = convert_module(tree, fname)
-        modules[fname] = js
+        while len(to_import):
+            name = to_import.pop()
+            if name in pjs_modules:
+                continue
+            try:
+                all_imports.append(find_import(name, fname))
+            except PJsException:
+                if not options.ignore_import_errors:
+                    raise
 
     return modules
 
@@ -101,13 +113,14 @@ def convert_module(mod, filename):
         'globals':[],
         'locals':[],
         'exp globals':[],
-        'parent locals':[],
-        'exp locals':0,
+        'parent locals':(),
+        'exp locals':False,
         'num iters':0,
         'in atomic':0,
     }
+    scope['globals'] = scope['locals'] = _globs
     ## globals, locals, explicitlocal, numiters, explicitglobals
-    contents, imports = convert_block(mod.body, scope)
+    contents = convert_block(mod.body, scope)
     dct['contents'] = contents
     text = TEMPLATES['module'] % dct
     return text
@@ -170,6 +183,7 @@ def deepleft(node, at, scope, name='__pjs_tmp'):
 
 def _assign(node, scope):
     rest = ''
+    target = node.targets[0]
     if isinstance(target, ast.Tuple):
         left = 'var __pjs_tmp'
         rest = deepleft(target, [], scope)
@@ -277,6 +291,19 @@ def _call(node, scope):
     text = left + dct['right']
     return text
 
+def new_scope(scope):
+    scope = scope.copy()
+    old_locals = scope['locals']
+    scope['locals'] = []
+    scope['exp globals'] = []
+    if scope['exp locals']:
+        old_locals.insert(0, '__%d.' % scope['exp locals'])
+    else:
+        old_locals.insert(0, '')
+    if len(old_locals) > 1:
+        scope['parent locals'] = scope['parent locals'] + (tuple(old_locals), )
+    return scope
+
 def _classdef(node, scope):
     imports = []
     dct = {}
@@ -292,9 +319,11 @@ def _classdef(node, scope):
         dct['dec_front'] += js+'('
         dct['dec_back'] += ')'
 
-    scope = scope[0], [], True, 0, []
+    scope = new_scope(scope)
+    scope['exp locals'] = True
 
     dct['contents'] = convert_block(node.body, scope)
+    dct['lnum'] = len(scope['parent locals'])
 
     text = TEMPLATES['class'] % dct
     return text
@@ -377,10 +406,11 @@ def _functiondef(node, scope):
         dct['dec_front'] += js+'('
         dct['dec_back'] += ')'
 
-    # scope = scope[0], scope[1]+args[:], False
-    scope = (scope[0], [], False, scope[3], [])
+    scope = new_scope(scope)
+    scope['exp locals'] = False
+
     for n in args:
-        scope[1].append(n)
+        scope['locals'].append(n)
     dct['contents'] = convert_block(node.body, scope)
     text = TEMPLATES['function'] % dct
     return text
@@ -390,7 +420,7 @@ def _functiondef(node, scope):
 def _global(node, scope):
     js = '// switching to global scope: %s\n' % ', '.join(node.names)
     for name in node.names:
-        scope[4].append(name)
+        scope['exp globals'].append(name)
     return js
 
 def _if(node, scope):
@@ -431,7 +461,7 @@ all_import = '''if (__pjs_tmp_module.__all__ === undefined) {
 
 def _importfrom(node, scope):
     if node.module == '__future__':
-        return '',[]
+        return ''
     template = 'var __pjs_tmp_module = $b.__import__("%s", _.__name__, _.__file__);\n' % node.module
     prefix = local_prefix(scope)
     for alias in node.names:
@@ -440,37 +470,19 @@ def _importfrom(node, scope):
             break
         asname = alias.asname or alias.name
         template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
-    ## TODO yeah
-    for imp in imports:
-        if imp in pjs_modules:
-            continue
-        try:
-            toimport.append(find_import(imp, fname))
-        except PJsException:
-            if not options.ignore_import_errors:
-                raise
-    return template, [node.module]
+    to_import.append(node.module)
+    return template
 
 def _import(node, scope):
     tpl = '%s = $b.__import__("%s", _.__name__, _.__file__);\n'
     text = ''
-    #TODO yeah
-        for imp in imports:
-            if imp in pjs_modules:
-                continue
-            try:
-                toimport.append(find_import(imp, fname))
-            except PJsException:
-                if not options.ignore_import_errors:
-                    raise
-    imports = []
     for name in node.names:
         asname = name.name
         if name.asname:asname = name.asname
-        asname, imp = do_left(ast.Name(asname, {}), scope)
+        asname = do_left(ast.Name(asname, {}), scope)
         text += tpl % (asname, name.name)
-        imports.append(name.name)
-    return text, imports
+        to_import.append(name.name)
+    return text
 
 #TODO: lambda?
 
@@ -498,30 +510,28 @@ reserved_words = open(localfile('js_reserved.txt')).read().split()
 def resolve(name, scope):
     if name == 'window':
         return name
-    elif name == JS_PREFIX:
-        return 'window'
-    if name in ('float', 'int'):
+    elif name in ('float', 'int'):
         name = '_' + name
-    if name in reserved_words:
+    elif name in reserved_words:
         raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
-    if name in scope[4]:
+    elif name in scope['exp globals']:
         return '_.%s' % name
-    elif scope[0] is scope[1] and name in scope[0]:
-        return '_.%s' % name
-    elif name in scope[1]:
-        if scope[2]:
-            return '__.%s' % name
+    elif name in scope['locals']:
+        if scope['locals'] is scope['globals']:
+            return '_.%s' % name
+        elif scope['exp locals']:
+            return '__%d.%s' % (len(scope['parent locals']), name)
         return name
-    elif name in scope[0]:
+    elif name in scope['globals']:
         return '_.%s' % name
-    elif name not in scope[0] and name in __builtins__ or name == 'js':
+    elif name not in scope['globals'] and name in __builtins__:
         return '$b.%s' % name
     else:
         ## for all we know, it's not defined....
-        if scope[0] is scope[1]:
+        if scope['locals'] is scope['globals']:
             return '$b.assertdefined(_.%s, "%s")' % (name, name)
-        elif scope[2]:
-            return '$b.assertdefined(__.%s, "%s")' % (name, name)
+        elif scope['exp locals']:
+            return '$b.assertdefined(__%d.%s, "%s")' % (len(scope['parent locals']), name, name)
         else:
             return '$b.assertdefined(%s, "%s")' % (name, name)
 
@@ -546,13 +556,13 @@ def _print(node, scope):
 def _raise(node, scope):
     js = convert_node(node.type, scope)
     if node.inst is None:
-        return '$b.raise(%s);\n' % js, imports
+        return '$b.raise(%s);\n' % js
     inner = convert_node(node.inst, scope)
     return '$b.raise(%s(%s));\n' % (js, inner)
 
 def _return(node, scope):
     if node.value is None:
-        return 'return;\n', []
+        return 'return;\n'
     js = convert_node(node.value, scope)
     return 'return %s;\n' % js
 
@@ -680,7 +690,7 @@ while (__pjs_iter%d.trynext()) {
 }
 '''
     ible = convert_node(node.iter, scope)
-    inum = scope[3]
+    inum = scope['num iters']
     # need to fix for tuples...
     if isinstance(node.target, ast.Name):
         targ = do_left(node.target, scope)
@@ -688,7 +698,9 @@ while (__pjs_iter%d.trynext()) {
     else:
         assign = deepleft(node.target, [], scope, '__pjs_iter%d.value' % inum).replace('\n', '\n    ')
 
-    body = convert_block(node.body, scope[:3] + (scope[3]+1,) + ([],))
+    scope = scope.copy()
+    scope['num iters'] += 1
+    body = convert_block(node.body, scope)
     return tpl % (inum, ible, inum, assign, body)
 
 #WONTFIX: with
@@ -699,33 +711,31 @@ def _yield(node, scope):
     raise PJsException('Sorry, PJs doesn\'t work with generators, and probably won\'t for the forseeable future...generators are hard.')
 
 def local_prefix(scope):
-    if scope[0] is scope[1]:
+    if scope['globals'] is scope['locals']:
         return '_.'
-    elif isinstance(node, ast.Name):
-        if scope[2]:
-            return '__.'
-        return 'var '
+    if scope['exp locals']:
+        return '__%d.' % len(scope['parent locals'])
     return ''
 
 def do_left(node, scope):
     if not isinstance(node, (ast.Name, ast.Attribute)):
         raise PJsException("unsupported left %s" % node)
-    if isinstance(node, ast.Name) and node.id in scope[4]:
+    if isinstance(node, ast.Name) and node.id in scope['exp globals']:
         return '_.%s' % node.id
-    if scope[0] is scope[1]:
+    if scope['globals'] is scope['locals']:
         if isinstance(node, ast.Name):
-            if node.id not in scope[0]:
-                scope[0].append(node.id)
+            if node.id not in scope['globals']:
+                scope['globals'].append(node.id)
             return '_.%s' % node.id
         js = convert_node(node, scope)
         return '_.%s' % js
     elif isinstance(node, ast.Name):
-        if scope[2]:
-            if node.id not in scope[1]:
-                scope[1].append(node.id)
-            return '__.%s' % node.id
-        if node.id not in scope[1]:
-            scope[1].append(node.id)
+        if scope['exp locals']:
+            if node.id not in scope['locals']:
+                scope['locals'].append(node.id)
+            return '__%d.%s' % (len(scope['parent locals']), node.id)
+        if node.id not in scope['locals']:
+            scope['locals'].append(node.id)
             return 'var %s' % node.id
         else:
             return node.id

@@ -183,6 +183,7 @@ function $m() {
         var result = func.apply(null, args);
         if (__builtins__)
             __builtins__._debug_stack.pop();
+        if (result === undefined) result = null;
         return result;
     };
 
@@ -234,6 +235,7 @@ function $m() {
         var result = func.apply(null, args);
         if (__builtins__)
             __builtins__._debug_stack.pop();
+        if (result === undefined) result = null;
         return result;
     };
     meta.__wraps__ = func;
