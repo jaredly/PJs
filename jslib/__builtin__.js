@@ -414,7 +414,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             }
         }),
         as_js: $m(function as_js(self) {
-            var dct = {}
+            var dct = {};
             for (var i=0;i<self._keys.length;i++){
                 dct[self._keys[i]] = self._values[i];
             }

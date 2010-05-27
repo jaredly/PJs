@@ -239,11 +239,19 @@ def _call(node, scope):
     left = convert_node(node.func, scope)
     raw_js = left.startswith('js.') or left.startswith('window.')
 
+    if left == 'js':
+        left = '$b.js'
+
     if not scope['in atomic']:
         scope = scope.copy()
         scope['in atomic'] = True
         if left.startswith('js.'):
             left = left[3:]
+
+    if left == 'new':
+        if node.starargs or node.kwargs or node.keywords or len(node.args) != 1:
+            raise PJsException('the "new" function is reserved, and takes one argument')
+        return 'new ' + convert_node(node.args[0], scope)
 
     dct = {}
 
