@@ -530,6 +530,47 @@ if (!Array.prototype.indexOf)
   };
 }
 
+/** onboard console for dumb broswers (cough IE cough) who don't provide a console **/
+
+if (window.console === undefined || window.console.log === undefined) {
+    $(function (){
+        var consolediv = $('<div class="console-log"><div class="count"></div></div>').appendTo($('body')).css({
+            'background-color': 'black',
+            'opacity': 0.7,
+            'bottom': 0,
+            'left': 0,
+            'padding': '5px 0px',
+            'width':'100%',
+            'position': 'absolute',
+            'height': '30px',
+            'overflow':'scroll',
+            'color':'white'
+        });
+        consolediv.click(function () {
+            if (consolediv.height() === 200)
+                consolediv.css('height', '30px');
+            else
+                consolediv.css('height', '200px');
+            });
+        $('.count', consolediv).css({
+            'position': 'absolute',
+            'top': '5px',
+            'right': '5px',
+            'color': 'white',
+            'font-weight': 'bold'
+        });
+        var count = 0;
+        window.console = {log: function () {
+            var args = Array.prototype.slice.call(arguments);
+            $('<div class="log-item">' + args.join(' ') + '</div>').appendTo(consolediv).css({
+                'padding-left': '5px'
+            });
+            count++;
+            $('.count', consolediv).html(count);
+        }};
+    });
+}
+
 /**
 Now you can import stuff...just like in python.
 **/
@@ -996,7 +1037,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }),
         values: $m(function values(self){
             return _.list(self._values.slice());
-        }),
+        })
     });
 
     _.unicode = __not_implemented__("unicode");
@@ -1078,7 +1119,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 return _._float(_.js(other) - self._data);
             }
             return _.NotImplemented;
-        }),
+        })
     });
 
 
@@ -1192,7 +1233,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 return _.str('('+a[0]+',)');
             }
             return _.str('('+a.join(', ')+')');
-        }),
+        })
     });
 
     _.frozenset = __not_implemented__("frozenset");
@@ -1442,7 +1483,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         upper: $m(function(self) {
             return _.str(self._data.toUpperCase());
         }),
-        zfill: __not_implemented__('str.zfill'),
+        zfill: __not_implemented__('str.zfill')
     });
 
     _.slice = Class('slice', [], {
@@ -1484,7 +1525,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (stop < 0) stop = 0;
             if (stop > len) stop = len;
             return _.tuple([start, stop, step]);
-        }),
+        })
     });
 
     _.list = Class('list', [], {
@@ -1651,7 +1692,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 a.push(_.repr(self._list[i]));
             }
             return _.str('['+a.join(', ')+']');
-        }),
+        })
     });
 
     _.listiterator = Class('listiterator', [], {
@@ -1669,7 +1710,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             var val = self.lst._list[self.at];
             self.at += 1;
             return val;
-        }),
+        })
     });
 
     _.listreversediterator = Class('listreversediterator', [_.listiterator], {
@@ -1679,7 +1720,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             var val = self.lst._list[self.lst._list.length-1-self.at];
             self.at += 1;
             return val;
-        }),
+        })
     });
 
     _.tupleiterator = Class('tupleiterator', [_.listiterator], {});
@@ -1720,7 +1761,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 throw e;
             }
             return true;
-        }),
+        })
     });
 
     /** function progging **/
@@ -1893,7 +1934,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.execfile = __not_implemented__("execfile");
     _.any = __not_implemented__("any");
     _.NotImplemented = (Class('NotImplementedType', [], {
-        __str__:$m(function(self){return _.str('NotImplemented');}),
+        __str__:$m(function(self){return _.str('NotImplemented');})
     })());
     _.map = __not_implemented__("map");
     _.buffer = __not_implemented__("buffer");
@@ -1920,7 +1961,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (_.len(self.args) == 1)
                 return _.str(self.__class__.__name__+': '+_.str(self.args.__getitem__(0)));
             return _.str(self.__class__.__name__+': '+_.str(self.args));
-        }),
+        })
     });
     _.Exception = Class('Exception', [_.BaseException], {});
     _.StandardError = Class('StandardError', [_.Exception], {});
