@@ -49,7 +49,7 @@ if (!Array.prototype.indexOf)
 }
 
 /** onboard console for dumb broswers (cough IE cough) who don't provide a console **/
-
+try {
 if (window.console === undefined || window.console.log === undefined) {
     $(function (){
         var consolediv = $('<div class="console-log"><div class="count"></div></div>').appendTo($('body')).css({
@@ -88,6 +88,7 @@ if (window.console === undefined || window.console.log === undefined) {
         }};
     });
 }
+} catch (e) {}
 
 /**
 Now you can import stuff...just like in python.
