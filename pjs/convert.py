@@ -187,6 +187,10 @@ def _assign(node, scope):
     if isinstance(target, ast.Tuple):
         left = 'var __pjs_tmp'
         rest = deepleft(target, [], scope)
+    elif isinstance(target, ast.Subscript):
+        left = _subscript(target, scope, True)
+        if left.endswith(' '):
+            return left + convert_node(node.value, scope) + ');\n'
     else:
         left = do_left(target, scope)
     for targ in node.targets[1:]:
@@ -579,7 +583,7 @@ def _return(node, scope):
     js = convert_node(node.value, scope)
     return 'return %s;\n' % js
 
-def _subscript(node, scope):
+def _subscript(node, scope, onleft=False):
     left = convert_node(node.value, scope)
     raw_js = left.startswith('js.') or left.startswith('window.')
 
@@ -591,6 +595,8 @@ def _subscript(node, scope):
 
     if isinstance(node.slice, ast.Slice) and node.slice.step is None:
         if raw_js:
+            if onleft:
+                raise PJsException('Javascript doesn\'t support slice assignment')
             if node.slice.lower:
                 lower = convert_node(node.slice.lower, scope)
             else:
@@ -607,6 +613,8 @@ def _subscript(node, scope):
                 lower = convert_node(node.slice.lower, scope)
             else:
                 lower = 0
+            if onleft:
+                return '%s.__setslice__(%s, %s, ' % (left, lower, upper)
             return '%s.__getslice__(%s, %s)' % (left, lower, upper)
     idex = convert_node(node.slice, scope)
 
@@ -617,6 +625,8 @@ def _subscript(node, scope):
         # TODO check idex for literal
         return '%s[$b.js(%s)]' % (left, idex)
 
+    if onleft:
+        return '%s.__setitem__(%s, ' % (left, idex)
     return '%s.__getitem__(%s)' % (left, idex)
 
 def _index(node, scope):
