@@ -155,11 +155,14 @@ function $m() {
     var meta = function() {
         var name = func.__name__ || func.name;
         var args = to_array(arguments);
-        for (var i=0;i<args.length;i++)
-            if (!defined(args[i])) {
-                var an = func_args[i] || aflag && func_args.slice(-1)[0];
-                throw new Error("TypeError: you passed in something that was undefined to " + __builtins__.str(meta) + '() for argument ' + an);
+        if (!meta._accept_undefined) {
+            for (var i=0;i<args.length;i++) {
+                if (!defined(args[i])) {
+                    var an = func_args[i] || aflag && func_args.slice(-1)[0];
+                    throw new Error("TypeError: you passed in something that was undefined to " + __builtins__.str(meta) + '() for argument ' + an);
+                }
             }
+        }
         if (args.length > argnum) {
             if (!aflag)
                 throw new Error("TypeError: " + name + "() takes at most " + (argnum) + " arguments (" + args.length + " given)");

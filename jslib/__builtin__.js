@@ -177,7 +177,24 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     _.__doc__ = 'Javascript corrospondences to python builtin functions';
 
-    _.js = $m(function(what) {
+    _.py = $m(function py(what) {
+        if (what === null || what.__class__) return what;
+        if (what instanceof Array) {
+            return _.list(what);
+        } else if (typeof(what) === 'string') {
+            return _.str(what);
+        } else if (typeof(what) === 'number') {
+            if (what === Math.round(what)) {
+                return what; // int
+            } else {
+                return _._float(what);
+            }
+        } else {
+            return _.dict(what);
+        }
+    });
+
+    _.js = $m(function js(what) {
         if (what === null) return what;
         if (_.isinstance(what, [_.list, _.tuple])) {
           var l = what.as_js();
@@ -200,9 +217,26 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
               return what.as_js();
           else if (what.__class__ || what.__type__)
               _.raise(_.TypeError('cannot coerce to javascript'));
+        } else if (typeof(what) === 'function') {
+          var wrapper = function $_function_wrapper() {
+            try {
+              what.apply(this, arguments);
+            } catch (e) {
+              var stack = __builtins__._debug_stack;
+              _.output_exception(e, stack);
+              throw e;
+            }
+          };
+          wrapper.__name__ = what.__name__ || what.name;
+          wrapper.__class__ = what.__class__;
+          wrapper.__wraps__ = what;
+          what.__wrapped__ = wrapper;
+          return wrapper;
         }
         return what;
     });
+    _.js.__module__ = _.__name__;
+    _.js.__file__ = _.__file__;
     /** importing modules **/
     _.__import__ = $m({'file':'','from':''},
       function __import__(name, from, file) {
@@ -391,7 +425,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                     _.raise(_.ValueError('arg cannot be coerced to a dict'));
                 else {
                     for (var k in itable) {
-                        self.__setitem__(k, itable[k]);
+                        self.__setitem__(_.py(k), _.py(itable[k]));
                     }
                 }
             } else if (_.isinstance(itable, _.dict)) {
@@ -451,6 +485,18 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }),
         __format__: __not_implemented__('format'),
         __ge__: __not_implemented__('ge'),
+        __getitem__: $m(function __getitem__(self, key) {
+            var at = -1;
+            for (var i = 0; i < self._keys.length; i++) {
+                if (_.eq(self._keys[i], key)) {
+                    at = i;
+                }
+            }
+            if (at === -1) {
+                _.raise(_.KeyError(_.repr(key).as_js() + ' not in dictionary ' + _.repr(self._keys).as_js()));
+            }
+            return self._values[at];
+        }),
         __hash__: null,
         __iter__: $m(function __iter__(self) {
             return self.keys().__iter__();
@@ -818,13 +864,13 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 self._data = ''+item;
             }
         }),
-        __str__: $m(function(self) {
+        __str__: $m(function __str__(self) {
             return self;
         }),
-        __len__: $m(function(self) {
+        __len__: $m(function __len__(self) {
             return self._data.length;
         }),
-        __repr__: $m(function(self) {
+        __repr__: $m(function __repr__(self) {
             // TODO: implement string_escape
             return _.str("'" + self._data.replace('\n','\\n') + "'");
         }),
@@ -874,13 +920,13 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (j<0) j = 0;
             return _.str(self._data.slice(i,j));
         }),
-        toString: $m(function(self) {
+        toString: $m(function toString(self) {
             return self._data;
         }),
-        as_js: $m(function(self) {
+        as_js: $m(function as_js(self) {
             return self._data;
         }),
-        capitalize: $m(function(self) {
+        capitalize: $m(function capitalize(self) {
             var s = self._data[0].toUpperCase();
             return _.str(s + self._data.slice(1).toLowerCase());
         }),
@@ -1344,7 +1390,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.format = __not_implemented__("format");
     _.sorted = __not_implemented__("sorted");
     _.__package__ = __not_implemented__("__package__");
-    _.round = __not_implemented__("round");
+    _.round = $m(function round(what) {
+        what = _.js(what);
+        if (typeof(what) !== 'number')
+          _.raise(_.TypeError('round() requires a number'));
+        return _._float(Math.round(what));
+    });
     _.dir = __not_implemented__("dir");
     _.cmp = __not_implemented__("cmp");
     _.set = __not_implemented__("set");
@@ -1360,6 +1411,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.print = $m({}, true, function _print(args) {
         var strs = [];
         for (var i=0;i<args._list.length;i++) {
+            if (typeof(args._list[i]) === 'string')
+                strs.push(":'" + args._list[i] + "':");
             strs.push(_.str(args._list[i]));
         }
         console.log(strs.join(' '));
@@ -1425,7 +1478,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         if (item === null)
             return _.str('None');
         if (typeof(item) === 'string') {
-            return _.str("'" + item + "'");
+            return ':' + _.str("'" + item + "'") + ':';
         } else if (typeof(item) === 'number') {
             return _.str('' + item);
         } else if (defined(item.__repr__)) {
@@ -1535,34 +1588,44 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             _.raise(_.NameError('undefined variable "' + name + '"'));
         return x;
     };
+    _.output_exception = $m(function (e, stack) {
+        var pf = __builtins__.print;
+        // if __builtins__.print is in the stack, don't use it here
+        for (var i=0;i<stack.length;i++) {
+            if (stack[1] == pf) {
+                console.log('using rhino\'s print -- error printing pythony');
+                pf = console.log;
+                break;
+            }
+        }
+        pf('Traceback (most recent call last)');
+        for (var i=0;i<stack.length;i++){
+            var fn = stack[i][1];
+            var ost = fn.toString;
+            if (fn._to_String)
+                fn.toString = fn._old_toString;
+            pf('  ', stack[i][1]);
+        }
+        if (e.__class__)
+            pf('Python Error:', e);
+        else
+            console.log('Javascript Error:', e);
+
+     });
     _.run_main = $m(function(filename){
         try {
             __module_cache[filename].load('__main__');
         } catch (e) {
             var stack = __builtins__._debug_stack;
-            var pf = __builtins__.print;
-            // if __builtins__.print is in the stack, don't use it here
-            for (var i=0;i<stack.length;i++) {
-                if (stack[1] == pf) {
-                    console.log('using rhino\'s print -- error printing pythony');
-                    pf = console.log;
-                    break;
-                }
-            }
-            pf('Traceback (most recent call last)');
-            for (var i=0;i<stack.length;i++){
-                var fn = stack[i][1];
-                var ost = fn.toString;
-                if (fn._to_String)
-                    fn.toString = fn._old_toString;
-                pf('  ', stack[i][1]);
-            }
-            if (e.__class__)
-                pf('Python Error:', e);
-            else
-                console.log('Javascript Error:', e);
+            _.output_exception(e, stack);
+            throw e;
         }
     });
+
+    _.definedor = function (what, or) {
+      if (!defined(what)) return or;
+      return what;
+    };
 });
 
 __module_cache['<builtin>/sys.py'].load('sys'); // must be loaded for importing to work.

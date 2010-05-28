@@ -236,6 +236,11 @@ def _break(node, scope):
     return 'break;\n'
     
 def _call(node, scope):
+    if isinstance(node.func, ast.Name) and node.func.id == 'new':
+        if node.starargs or node.kwargs or node.keywords or len(node.args) != 1:
+            raise PJsException('the "new" function is reserved, and takes one argument')
+        return 'new ' + convert_node(node.args[0], scope)
+
     left = convert_node(node.func, scope)
     raw_js = left.startswith('js.') or left.startswith('window.')
 
@@ -247,11 +252,6 @@ def _call(node, scope):
         scope['in atomic'] = True
         if left.startswith('js.'):
             left = left[3:]
-
-    if left == 'new':
-        if node.starargs or node.kwargs or node.keywords or len(node.args) != 1:
-            raise PJsException('the "new" function is reserved, and takes one argument')
-        return 'new ' + convert_node(node.args[0], scope)
 
     dct = {}
 
@@ -524,7 +524,7 @@ def resolve(name, scope):
     elif name == 'js':
         return name
     elif name in ('float', 'int'):
-        name = '_' + name
+        return '$b._' + name
     elif name in reserved_words:
         raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
     elif name in scope['exp globals']:
@@ -537,7 +537,7 @@ def resolve(name, scope):
         return name
     elif name in scope['globals']:
         return '_.%s' % name
-    elif name not in scope['globals'] and name in __builtins__:
+    elif name not in scope['globals'] and name in __builtins__.keys() + ['definedor']:
         return '$b.%s' % name
     else:
         ## for all we know, it's not defined....
