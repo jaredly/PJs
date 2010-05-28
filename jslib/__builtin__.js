@@ -419,6 +419,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (!itable.__class__) {
                 if (itable instanceof Array) {
                     for (var i=0;i<itable.length;i++) {
+                        if (itable[i].length !== 2) {
+                            _.raise(_.ValueError('invalid list passed to dict'));
+                        }
                         self.__setitem__(itable[i][0], itable[i][1]);
                     }
                 } else if (!(itable instanceof Object))
@@ -429,9 +432,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                     }
                 }
             } else if (_.isinstance(itable, _.dict)) {
-                var keys = itable.keys();
-                for (var i=0;i<keys.__len__();i++){
-                    self.__setitem__(key, itable.__getitem__(keys.__getitem__(i)));
+                var keys = itable.keys().as_js();
+                for (var i=0;i<keys.length;i++){
+                    self.__setitem__(keys[i], itable.__getitem__(keys[i]));
                 }
             } else {
                 var args = _.iter(itable);
@@ -458,7 +461,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             _.raise(_.AttributeError('not yet implemented'));
         }),
         __contains__: $m(function __contains__(self, key){
-            return self._keys.indexOf(key) !== -1;
+            return self.keys().__contains__(key);
         }),
         __delitem__: $m(function __delattr__(self, key){
             var i = self._keys.indexOf(key);
@@ -486,15 +489,10 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         __format__: __not_implemented__('format'),
         __ge__: __not_implemented__('ge'),
         __getitem__: $m(function __getitem__(self, key) {
-            var at = -1;
-            for (var i = 0; i < self._keys.length; i++) {
-                if (_.eq(self._keys[i], key)) {
-                    at = i;
-                }
-            }
-            if (at === -1) {
+            if (!self.keys().__contains__(key)) {
                 _.raise(_.KeyError(_.repr(key).as_js() + ' not in dictionary ' + _.repr(self._keys).as_js()));
             }
+            var at = self.keys().index(key);
             return self._values[at];
         }),
         __hash__: null,
@@ -508,8 +506,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return self.__str__();
         }),
         __setitem__: $m(function __setitem__(self, key, value){
-            var i = self._keys.indexOf(key);
-            if (i !== -1) {
+            if (self.keys().__contains__(key)) {
+                var i = self.keys().index(key);
                 self._values[i] = value;
             } else {
                 self._keys.push(key);
@@ -715,7 +713,14 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return _.tuple(self._list.concat(other._list));
         }),
         __contains__: $m(function __contains__(self, one){
-            return self._list.indexOf(one) !== -1;
+            var at = -1;
+            for (var i = 0; i < self._list.length; i++) {
+                if (_.eq(one, self._list[i])) {
+                    at = i;
+                    break;
+                }
+            }
+            return at !== -1;
         }),
         __doc__: 'javascript equivalent of the python builtin tuble class',
         __eq__: $m(function __eq__(self, other){
@@ -1116,7 +1121,14 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return _.list(self._list.concat(other._list));
         }),
         __contains__: $m(function __contains__(self, one){
-            return self._list.indexOf(one) !== -1;
+            var at = -1;
+            for (var i = 0; i < self._list.length; i++) {
+                if (_.eq(one, self._list[i])) {
+                    at = i;
+                    break;
+                }
+            }
+            return at !== -1;
         }),
         __delitem__: $m(function __delitem__(self, i) {
             self._list = self._list.slice(0, i).concat(self._list.slice(i+1));
