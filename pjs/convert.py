@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import ast
+import os
+from utils import localfile, new_scope, resolve, multiline, local_prefix, reserved_words
 
 JS_PREFIX = '_'
 
@@ -34,6 +36,41 @@ if ($b.bool(%(test)s) === true) {
 %(contents)s
 }%(more)s
 ''',
+    'while': '''\
+while ($b.bool(%s) === true) {
+%s
+}
+''',
+    'for': '''\
+var __pjs_iter%d = $b.foriter(%s);
+while (__pjs_iter%d.trynext()) {
+    %s
+%s
+}
+''',
+    'try': '''try {
+%s
+} catch (__pjs_err) {
+    %s
+}
+''',
+    'import *': '''if (__pjs_tmp_module.__all__ === undefined) {
+    for (var __pjs_k in __pjs_tmp_module) {
+        if (__pjs_k.indexOf('__') !== 0)
+            eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
+    }
+    delete __pjs_k;
+} else {
+    var __pjs_a = __pjs_tmp_module.__all__.as_js();
+    for (var __pjs_i=0; __pjs_i<__pjs_a.length; __pjs_i++) {
+        var __pjs_k = __pjs_a[__pjs_i];
+        eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
+    }
+    delete __pjs_a;
+    delete __pjs_i;
+    delete __pjs_k;
+}
+'''
 }
 
 import sys
@@ -96,13 +133,6 @@ def find_import(iname, fname):
                 return fn
     raise PJsException('module not found: %s' % iname)
 
-def multiline(text):
-    if text is None:
-        return '""';
-    lines = text.split('\n')
-    return ''.join("'%s\\n' +\n" % line.encode('string_escape') for line\
-            in lines[:-1]) + "'%s'" % lines[-1].encode('string_escape')
-
 def convert_module(mod, filename):
     dct = {'scope':'_', 'filename':os.path.abspath(filename)}
     dct['doc'] = multiline(ast.get_docstring(mod))
@@ -143,11 +173,11 @@ def convert_node(node, scope):
             print node.__dict__
         raise PJsException('Node type %s hasn\'t been implemented yet' % node)
 
-# Add, Sub, Mult, 
+# @group expression-stuff
 
-# alias only in import
-
-# and, or
+def _expr(node, scope):
+    js = convert_node(node.value, scope)
+    return js+';\n'
 
 def _boolop(node, scope):
     bools = {
@@ -159,57 +189,33 @@ def _boolop(node, scope):
     rjs = convert_node(node.values[1], scope)
     return '$b.bool(%s) %s $b.bool(%s)' % (ljs, op, rjs)
 
-#arugments -- in funcdef
+def _binop(node, scope):
+    tpl = '$b.%s(%s, %s)'
+    op = node.op.__class__.__name__.lower()
+    ljs = convert_node(node.left, scope)
+    rjs = convert_node(node.right, scope)
+    return tpl % (op, ljs, rjs)
 
-def _assert(node, scope):
-    js = convert_node(node.test, scope)
-    if node.msg:
-        msg = convert_node(node.msg, scope)
-    else:
-        msg = "'%s'" % js.encode('string_escape')
-    text = '$b.assert(%s, %s);\n' % (js, msg)
-    return text
+def _compare(node, scope):
+    ops = {ast.In:'in', ast.NotIn:'not in', ast.Gt:'>',ast.GtE:'>=',ast.Lt:'<',ast.LtE:'<=',ast.Eq:'==',ast.NotEq:'!=', ast.IsNot:'!==', ast.Is:'==='}
+    js = convert_node(node.left, scope)
+    items = [js]
+    for op, val in zip(node.ops, node.comparators):
+        items.append("'%s'" % ops[op.__class__])
+        js = convert_node(val, scope)
+        items.append(js)
+    return '$b.do_ops(%s)' % (', '.join(items))
 
-def deepleft(node, at, scope, name='__pjs_tmp'):
-    if isinstance(node, ast.Tuple):
-        text = ''
-        for i,n in enumerate(node.elts):
-            text += deepleft(n, at + [i], scope, name)
-        return text
-    else:
-        right = name + ''.join('.__getitem__(%d)' % n for n in at)
-        if isinstance(node, ast.Subscript):
-            left = _subscript(node, scope, True)
-            if left.endswith(' '):
-                return left + right + ');\n'
-        else:
-            left = do_left(node, scope)
-        return '%s = %s;\n' % (left, right)
+def _unaryop(node, scope):
+    js = convert_node(node.operand, scope)
+    jss = {ast.Not:'!$b.bool(%s)',
+           ast.UAdd:'+%s',
+           ast.USub:'-%s'}
+    return jss[node.op.__class__] % js
 
-def _assign(node, scope):
-    rest = ''
-    target = node.targets[0]
-    if isinstance(target, ast.Tuple):
-        left = 'var __pjs_tmp'
-        rest = deepleft(target, [], scope)
-    elif isinstance(target, ast.Subscript):
-        left = _subscript(target, scope, True)
-        if left.endswith(' '):
-            return left + convert_node(node.value, scope) + ');\n'
-    else:
-        left = do_left(target, scope)
-    for targ in node.targets[1:]:
-        var = left
-        if var.startswith('var '):
-            var = var[len('var '):]
-        if isinstance(targ, ast.Tuple):
-            rest += deepleft(targ, [], scope, var)
-        else:
-            mr = do_left(targ, scope)
-            rest += mr + ' = ' + var + ';\n'
-    js = convert_node(node.value, scope)
-    line = '%s = %s;\n' % (left, js)
-    return line + rest
+# @end
+
+# @group atomic
 
 def _attribute(node, scope):
     if node.attr in reserved_words:
@@ -219,36 +225,6 @@ def _attribute(node, scope):
         return 'js.%s' % (resolve(node.attr, scope))
     return "%s.%s" % (js, node.attr)
 
-def _augassign(node, scope):
-    tpl = '%s = $b.%s(%s, %s);\n'
-    op = node.op.__class__.__name__.lower()
-    ljs = convert_node(node.target, scope)
-    rjs = convert_node(node.value, scope)
-    if isinstance(node.target, ast.Subscript):
-        left = _subscript(node.target, scope, True)
-        if left.endswith(' '):
-            return left + convert_node(node.value, scope) + ');\n'
-    else:
-        left = do_left(node.target, scope)
-    return tpl % (left, op, ljs, rjs)
-
-def _augload(node, scope):
-    raise Exception('i don\'t know what "AugLoad" is. if you see this, please email jared@jaredforsyth.com w/ code...')
-
-def _augstore(node, scope):
-    raise Exception('i don\'t know what "AugStore" is. if you see this, please email jared@jaredforsyth.com w/ code...')
-
-def _binop(node, scope):
-    tpl = '$b.%s(%s, %s)'
-    op = node.op.__class__.__name__.lower()
-    ljs = convert_node(node.left, scope)
-    rjs = convert_node(node.right, scope)
-    return tpl % (op, ljs, rjs)
-
-#TODO: break
-def _break(node, scope):
-    return 'break;\n'
-    
 def _call(node, scope):
     if isinstance(node.func, ast.Name) and node.func.id == 'new':
         if node.starargs or node.kwargs or node.keywords or len(node.args) != 1:
@@ -316,18 +292,273 @@ def _call(node, scope):
     text = left + dct['right']
     return text
 
-def new_scope(scope):
-    scope = scope.copy()
-    old_locals = scope['locals']
-    scope['locals'] = []
-    scope['exp globals'] = []
-    if scope['exp locals']:
-        old_locals.insert(0, '__%d.' % scope['exp locals'])
+def _subscript(node, scope, onleft=False):
+    left = convert_node(node.value, scope)
+    raw_js = left.startswith('js.') or left.startswith('window.')
+
+    if not scope['in atomic']:
+        scope = scope.copy()
+        scope['in atomic'] = True
+        if left.startswith('js.'):
+            left = left[3:]
+
+    if isinstance(node.slice, ast.Slice) and node.slice.step is None:
+        if raw_js:
+            if onleft:
+                raise PJsException('Javascript doesn\'t support slice assignment')
+            if node.slice.lower:
+                lower = convert_node(node.slice.lower, scope)
+            else:
+                lower = 0
+            if node.slice.upper is None:
+                return '%s.slice(%s)' % (left, lower)
+            else:
+                upper = convert_node(node.slice.upper, scope)
+                return '%s.slice(%s, %s)' % (left, lower, upper)
+        
+        if node.slice.upper is not None:
+            upper = convert_node(node.slice.upper, scope)
+            if node.slice.lower:
+                lower = convert_node(node.slice.lower, scope)
+            else:
+                lower = 0
+            if onleft:
+                return '%s.__setslice__(%s, %s, ' % (left, lower, upper)
+            return '%s.__getslice__(%s, %s)' % (left, lower, upper)
+    idex = convert_node(node.slice, scope)
+
+    if raw_js:
+        if isinstance(node.slice, ast.Slice):
+            raise PJsException('no steps in javascript slices')
+        ## in javascript line
+        # TODO check idex for literal
+        return '%s[$b.js(%s)]' % (left, idex)
+
+    if onleft:
+        return '%s.__setitem__(%s, ' % (left, idex)
+    return '%s.__getitem__(%s)' % (left, idex)
+
+# @end
+
+# @group declared types
+
+def _dict(node, scope):
+    elts = []
+    for k,v in zip(node.keys, node.values):
+        js = convert_node(k, scope)
+        j2 = convert_node(v, scope)
+        elts.append('[%s, %s]' % (js, j2))
+    text = '$b.dict([%s])' % ', '.join(elts)
+    return text
+
+def _list(node, scope):
+    elts = []
+    for sub in node.elts:
+        js = convert_node(sub, scope)
+        elts.append(js)
+    text = '$b.list([%s])' % ', '.join(elts)
+    return text
+
+def _num(node, scope):
+    if type(node.n) == float:
+        return '$b._float(%f)' % node.n
+    return str(node.n)
+
+def _str(node, scope):
+    return '$b.str(%s)' % multiline(node.s)
+
+def _tuple(node, scope):
+    elts = []
+    imports = []
+    for sub in node.elts:
+        js = convert_node(sub, scope)
+        elts.append(js)
+    text = '$b.tuple([%s])' % ', '.join(elts)
+    return text
+
+# @end
+
+# @group special statements
+
+def _assert(node, scope):
+    js = convert_node(node.test, scope)
+    if node.msg:
+        msg = convert_node(node.msg, scope)
     else:
-        old_locals.insert(0, '')
-    if len(old_locals) > 1:
-        scope['parent locals'] = scope['parent locals'] + (tuple(old_locals), )
-    return scope
+        msg = "'%s'" % js.encode('string_escape')
+    text = '$b.assert(%s, %s);\n' % (js, msg)
+    return text
+
+# @group jumps
+
+def _break(node, scope):
+    return 'break;\n'
+    
+
+def _pass(node, scope):
+    return ''
+
+def _continue(node, scope):
+    return 'continue;\n'
+
+def _return(node, scope):
+    if node.value is None:
+        return 'return;\n'
+    js = convert_node(node.value, scope)
+    return 'return %s;\n' % js
+
+def _raise(node, scope):
+    js = convert_node(node.type, scope)
+    if node.inst is None:
+        return '$b.raise(%s);\n' % js
+    inner = convert_node(node.inst, scope)
+    return '$b.raise(%s(%s));\n' % (js, inner)
+
+def _yield(node, scope):
+    raise PJsException('Sorry, PJs doesn\'t work with generators, and probably won\'t for the forseeable future...generators are hard.')
+
+# @end
+
+def _delete(node, scope):
+    t = []
+    for tag in node.targets:
+        js = convert_node(tag, scope)
+        t.append('delete %s' % js)
+    return '\n'.join(t)+'\n'
+
+def _global(node, scope):
+    js = '// switching to global scope: %s\n' % ', '.join(node.names)
+    for name in node.names:
+        scope['exp globals'].append(name)
+    return js
+
+def _importfrom(node, scope):
+    if node.module == '__future__':
+        return ''
+    template = 'var __pjs_tmp_module = $b.__import__("%s", _.__name__, _.__file__);\n' % node.module
+    prefix = local_prefix(scope)
+    for alias in node.names:
+        if alias.name == '*':
+            template += TEMPLATES['import *'] % (prefix, prefix)
+            break
+        asname = alias.asname or alias.name
+        template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
+    to_import.append(node.module)
+    return template
+
+def _import(node, scope):
+    tpl = '%s = $b.__import__("%s", _.__name__, _.__file__);\n'
+    text = ''
+    for name in node.names:
+        asname = name.name
+        if name.asname:asname = name.asname
+        asname = do_left(ast.Name(asname, {}), scope)
+        text += tpl % (asname, name.name)
+        to_import.append(name.name)
+    return text
+
+def _print(node, scope):
+    if node.dest:
+        raise PJsException('print>> is not yet supported')
+    values = []
+    for child in node.values:
+        js = convert_node(child, scope)
+        values.append(js)
+    text = '$b.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
+    return text 
+
+# @end
+
+# @group assign
+
+def do_left(node, scope):
+    if not isinstance(node, (ast.Name, ast.Attribute)):
+        raise PJsException("unsupported left %s" % node)
+    if isinstance(node, ast.Name) and node.id in scope['exp globals']:
+        return '_.%s' % node.id
+    if scope['globals'] is scope['locals']:
+        if isinstance(node, ast.Name):
+            if node.id not in scope['globals']:
+                scope['globals'].append(node.id)
+            return '_.%s' % node.id
+        js = convert_node(node, scope)
+        return '_.%s' % js
+    elif isinstance(node, ast.Name):
+        if scope['exp locals']:
+            if node.id not in scope['locals']:
+                scope['locals'].append(node.id)
+            return '__%d.%s' % (len(scope['parent locals']), node.id)
+        if node.id not in scope['locals']:
+            scope['locals'].append(node.id)
+            return 'var %s' % node.id
+        else:
+            return node.id
+    elif isinstance(node, ast.Tuple):
+        raise PJsException("tuple left assignments not yet supported")
+    else:
+        return convert_node(node, scope)
+
+def deepleft(node, at, scope, name='__pjs_tmp'):
+    if isinstance(node, ast.Tuple):
+        text = ''
+        for i,n in enumerate(node.elts):
+            text += deepleft(n, at + [i], scope, name)
+        return text
+    else:
+        right = name + ''.join('.__getitem__(%d)' % n for n in at)
+        if isinstance(node, ast.Subscript):
+            left = _subscript(node, scope, True)
+            if left.endswith(' '):
+                return left + right + ');\n'
+        else:
+            left = do_left(node, scope)
+        return '%s = %s;\n' % (left, right)
+
+def _assign(node, scope):
+    rest = ''
+    target = node.targets[0]
+    if isinstance(target, ast.Tuple):
+        left = 'var __pjs_tmp'
+        rest = deepleft(target, [], scope)
+    elif isinstance(target, ast.Subscript):
+        left = _subscript(target, scope, True)
+        if left.endswith(' '):
+            return left + convert_node(node.value, scope) + ');\n'
+    else:
+        left = do_left(target, scope)
+    for targ in node.targets[1:]:
+        var = left
+        if var.startswith('var '):
+            var = var[len('var '):]
+        if isinstance(targ, ast.Tuple):
+            rest += deepleft(targ, [], scope, var)
+        else:
+            mr = do_left(targ, scope)
+            rest += mr + ' = ' + var + ';\n'
+    js = convert_node(node.value, scope)
+    line = '%s = %s;\n' % (left, js)
+    return line + rest
+
+def _augassign(node, scope):
+    tpl = '%s = $b.%s(%s, %s);\n'
+    op = node.op.__class__.__name__.lower()
+    ljs = convert_node(node.target, scope)
+    rjs = convert_node(node.value, scope)
+    if isinstance(node.target, ast.Subscript):
+        left = _subscript(node.target, scope, True)
+        if left.endswith(' '):
+            return left + convert_node(node.value, scope) + ');\n'
+    else:
+        left = do_left(node.target, scope)
+    return tpl % (left, op, ljs, rjs)
+
+def _augload(node, scope):
+    raise Exception('i don\'t know what "AugLoad" is. if you see this, please email jared@jaredforsyth.com w/ code...')
+
+def _augstore(node, scope):
+    raise Exception('i don\'t know what "AugStore" is. if you see this, please email jared@jaredforsyth.com w/ code...')
+
+# @end
 
 def _classdef(node, scope):
     imports = []
@@ -353,46 +584,10 @@ def _classdef(node, scope):
     text = TEMPLATES['class'] % dct
     return text
 
-def _compare(node, scope):
-    ops = {ast.In:'in', ast.NotIn:'not in', ast.Gt:'>',ast.GtE:'>=',ast.Lt:'<',ast.LtE:'<=',ast.Eq:'==',ast.NotEq:'!=', ast.IsNot:'!==', ast.Is:'==='}
-    js = convert_node(node.left, scope)
-    items = [js]
-    for op, val in zip(node.ops, node.comparators):
-        items.append("'%s'" % ops[op.__class__])
-        js = convert_node(val, scope)
-        items.append(js)
-    return '$b.do_ops(%s)' % (', '.join(items))
-
 # TODO: comprehension
-
-def _continue(node, scope):
-    return 'continue;\n'
-
-def _delete(node, scope):
-    t = []
-    for tag in node.targets:
-        js = convert_node(tag, scope)
-        t.append('delete %s' % js)
-    return '\n'.join(t)+'\n'
-
-def _dict(node, scope):
-    elts = []
-    for k,v in zip(node.keys, node.values):
-        js = convert_node(k, scope)
-        j2 = convert_node(v, scope)
-        elts.append('[%s, %s]' % (js, j2))
-    text = '$b.dict([%s])' % ', '.join(elts)
-    return text
-
 #TODO: ellipsis
-
 #TODO: exec...or not. I don't think I'll implement exec
-
-def _expr(node, scope):
-    js = convert_node(node.value, scope)
-    return js+';\n'
-
-# TODO: extslice, floordiv (its a binop, no?)
+# TODO: extslice
 
 def _functiondef(node, scope):
     dct = {}
@@ -440,86 +635,12 @@ def _functiondef(node, scope):
     text = TEMPLATES['function'] % dct
     return text
 
-#TODO: genexp, global
+#TODO: genexp (a for a in b if a!=c)
 
-def _global(node, scope):
-    js = '// switching to global scope: %s\n' % ', '.join(node.names)
-    for name in node.names:
-        scope['exp globals'].append(name)
-    return js
-
-def _if(node, scope):
-    dct = {}
-    dct['test'] = convert_node(node.test, scope)
-    dct['contents'] = convert_block(node.body, scope)
-    if node.orelse:
-        if len(node.orelse) == 1:
-            js = convert_node(node.orelse[0], scope)
-            dct['more'] = ' else ' + js
-        else:
-            js = convert_block(node.orelse, scope)
-            dct['more'] = ' else {\n%s\n}' % js
-    else:
-        dct['more'] = ''
-    text = TEMPLATES['if'] % dct
-    return text
-
-#TODO: ifexp
-
-all_import = '''if (__pjs_tmp_module.__all__ === undefined) {
-    for (var __pjs_k in __pjs_tmp_module) {
-        if (__pjs_k.indexOf('__') !== 0)
-            eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
-    }
-    delete __pjs_k;
-} else {
-    var __pjs_a = __pjs_tmp_module.__all__.as_js();
-    for (var __pjs_i=0; __pjs_i<__pjs_a.length; __pjs_i++) {
-        var __pjs_k = __pjs_a[__pjs_i];
-        eval('%s'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
-    }
-    delete __pjs_a;
-    delete __pjs_i;
-    delete __pjs_k;
-}
-'''
-
-def _importfrom(node, scope):
-    if node.module == '__future__':
-        return ''
-    template = 'var __pjs_tmp_module = $b.__import__("%s", _.__name__, _.__file__);\n' % node.module
-    prefix = local_prefix(scope)
-    for alias in node.names:
-        if alias.name == '*':
-            template += all_import % (prefix, prefix)
-            break
-        asname = alias.asname or alias.name
-        template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
-    to_import.append(node.module)
-    return template
-
-def _import(node, scope):
-    tpl = '%s = $b.__import__("%s", _.__name__, _.__file__);\n'
-    text = ''
-    for name in node.names:
-        asname = name.name
-        if name.asname:asname = name.asname
-        asname = do_left(ast.Name(asname, {}), scope)
-        text += tpl % (asname, name.name)
-        to_import.append(name.name)
-    return text
+#TODO: ifexp e.g. 3 if True else 5
 
 #TODO: lambda?
-
-def _list(node, scope):
-    elts = []
-    for sub in node.elts:
-        js = convert_node(sub, scope)
-        elts.append(js)
-    text = '$b.list([%s])' % ', '.join(elts)
-    return text
-
-#TODO: listcomp
+#TODO: listcomp [a for a in b if a!=c]
 
 def _name(node, scope):
     try:
@@ -527,117 +648,6 @@ def _name(node, scope):
     except PJsNameError, e:
         print scope
         raise PJsException('UndefinedNameError: %s on line %d' % (e, node.lineno))
-
-import os
-localfile = lambda x:os.path.join(os.path.dirname(__file__), x)
-reserved_words = open(localfile('js_reserved.txt')).read().split()
-
-def resolve(name, scope):
-    if name == 'window':
-        return name
-    elif name == 'js':
-        return name
-    elif name in ('float', 'int'):
-        return '$b._' + name
-    elif name in reserved_words:
-        raise PJsException("Sorry, '%s' is a reserved word in javascript." % name)
-    elif name in scope['exp globals']:
-        return '_.%s' % name
-    elif name in scope['locals']:
-        if scope['locals'] is scope['globals']:
-            return '_.%s' % name
-        elif scope['exp locals']:
-            return '__%d.%s' % (len(scope['parent locals']), name)
-        return name
-    elif name in scope['globals']:
-        return '_.%s' % name
-    elif name not in scope['globals'] and name in __builtins__.keys() + ['definedor']:
-        return '$b.%s' % name
-    else:
-        ## for all we know, it's not defined....
-        if scope['locals'] is scope['globals']:
-            return '$b.assertdefined(_.%s, "%s")' % (name, name)
-        elif scope['exp locals']:
-            return '$b.assertdefined(__%d.%s, "%s")' % (len(scope['parent locals']), name, name)
-        else:
-            return '$b.assertdefined(%s || _.%s, "%s")' % (name, name, name)
-
-def _num(node, scope):
-    if type(node.n) == float:
-        return '$b._float(%f)' % node.n
-    return str(node.n)
-
-def _pass(node, scope):
-    return ''
-
-def _print(node, scope):
-    if node.dest:
-        raise PJsException('print>> is not yet supported')
-    values = []
-    for child in node.values:
-        js = convert_node(child, scope)
-        values.append(js)
-    text = '$b.print(%s);//, %s\n' % (', '.join(values), str(node.nl).lower())
-    return text 
-
-def _raise(node, scope):
-    js = convert_node(node.type, scope)
-    if node.inst is None:
-        return '$b.raise(%s);\n' % js
-    inner = convert_node(node.inst, scope)
-    return '$b.raise(%s(%s));\n' % (js, inner)
-
-def _return(node, scope):
-    if node.value is None:
-        return 'return;\n'
-    js = convert_node(node.value, scope)
-    return 'return %s;\n' % js
-
-def _subscript(node, scope, onleft=False):
-    left = convert_node(node.value, scope)
-    raw_js = left.startswith('js.') or left.startswith('window.')
-
-    if not scope['in atomic']:
-        scope = scope.copy()
-        scope['in atomic'] = True
-        if left.startswith('js.'):
-            left = left[3:]
-
-    if isinstance(node.slice, ast.Slice) and node.slice.step is None:
-        if raw_js:
-            if onleft:
-                raise PJsException('Javascript doesn\'t support slice assignment')
-            if node.slice.lower:
-                lower = convert_node(node.slice.lower, scope)
-            else:
-                lower = 0
-            if node.slice.upper is None:
-                return '%s.slice(%s)' % (left, lower)
-            else:
-                upper = convert_node(node.slice.upper, scope)
-                return '%s.slice(%s, %s)' % (left, lower, upper)
-        
-        if node.slice.upper is not None:
-            upper = convert_node(node.slice.upper, scope)
-            if node.slice.lower:
-                lower = convert_node(node.slice.lower, scope)
-            else:
-                lower = 0
-            if onleft:
-                return '%s.__setslice__(%s, %s, ' % (left, lower, upper)
-            return '%s.__getslice__(%s, %s)' % (left, lower, upper)
-    idex = convert_node(node.slice, scope)
-
-    if raw_js:
-        if isinstance(node.slice, ast.Slice):
-            raise PJsException('no steps in javascript slices')
-        ## in javascript line
-        # TODO check idex for literal
-        return '%s[$b.js(%s)]' % (left, idex)
-
-    if onleft:
-        return '%s.__setitem__(%s, ' % (left, idex)
-    return '%s.__getitem__(%s)' % (left, idex)
 
 def _index(node, scope):
     return convert_node(node.value, scope)
@@ -657,17 +667,51 @@ def _slice(node, scope):
         step = '1'
     return '$b.slice(%s, %s, %s)' % (lower, upper, step)
 
-def _str(node, scope):
-    return '$b.str(%s)' % multiline(node.s)
+#TODO: tryfinally
+
+#unaryop
+
+# @group non scoping blocks
+
+def _while(node, scope):
+    if node.orelse:
+        raise PJsException('while...else not implemented')
+    test = convert_node(node.test, scope)
+    body = convert_block(node.body, scope)
+    return TEMPLATES['while'] % (test, body)
+
+def _for(node, scope):
+    ible = convert_node(node.iter, scope)
+    inum = scope['num iters']
+    if isinstance(node.target, ast.Name):
+        targ = do_left(node.target, scope)
+        assign = '%s = __pjs_iter%d.value;\n' % (targ, inum)
+    else:
+        assign = deepleft(node.target, [], scope, '__pjs_iter%d.value' % inum).replace('\n', '\n    ')
+
+    scope = scope.copy()
+    scope['num iters'] += 1
+    body = convert_block(node.body, scope)
+    return TEMPLATES['for'] % (inum, ible, inum, assign, body)
+
+def _if(node, scope):
+    dct = {}
+    dct['test'] = convert_node(node.test, scope)
+    dct['contents'] = convert_block(node.body, scope)
+    if node.orelse:
+        if len(node.orelse) == 1:
+            js = convert_node(node.orelse[0], scope)
+            dct['more'] = ' else ' + js
+        else:
+            js = convert_block(node.orelse, scope)
+            dct['more'] = ' else {\n%s\n}' % js
+    else:
+        dct['more'] = ''
+    text = TEMPLATES['if'] % dct
+    return text
 
 def _tryexcept(node, scope):
     imports = []
-    template = '''try {
-%s
-} catch (__pjs_err) {
-    %s
-}
-'''
     single = '''%s{
     %s
     }'''
@@ -688,141 +732,16 @@ def _tryexcept(node, scope):
             top = ''
 
         subs.append(single % (top, eb))
-    text = template % (body, ' else '.join(subs))
+    text = TEMPLATES['try'] % (body, ' else '.join(subs))
     return text
 
-#TODO: tryfinally
-
-def _tuple(node, scope):
-    elts = []
-    imports = []
-    for sub in node.elts:
-        js = convert_node(sub, scope)
-        elts.append(js)
-    text = '$b.tuple([%s])' % ', '.join(elts)
-    return text
-
-#unaryop
-
-def _unaryop(node, scope):
-    js = convert_node(node.operand, scope)
-    jss = {ast.Not:'!$b.bool(%s)',
-           ast.UAdd:'+%s',
-           ast.USub:'-%s'}
-    return jss[node.op.__class__] % js
-
-def _while(node, scope):
-    if node.orelse:
-        raise PJsException('while...else not implemented')
-    tpl = '''\
-while ($b.bool(%s) === true) {
-%s
-}
-'''
-    test = convert_node(node.test, scope)
-    body = convert_block(node.body, scope)
-    return tpl % (test, body)
-
-def _for(node, scope):
-    tpl = '''\
-var __pjs_iter%d = $b.foriter(%s);
-while (__pjs_iter%d.trynext()) {
-    %s
-%s
-}
-'''
-    ible = convert_node(node.iter, scope)
-    inum = scope['num iters']
-    # need to fix for tuples...
-    if isinstance(node.target, ast.Name):
-        targ = do_left(node.target, scope)
-        assign = '%s = __pjs_iter%d.value;\n' % (targ, inum)
-    else:
-        assign = deepleft(node.target, [], scope, '__pjs_iter%d.value' % inum).replace('\n', '\n    ')
-
-    scope = scope.copy()
-    scope['num iters'] += 1
-    body = convert_block(node.body, scope)
-    return tpl % (inum, ible, inum, assign, body)
+# @end
 
 #WONTFIX: with
 
-#TODO: Yield
-
-def _yield(node, scope):
-    raise PJsException('Sorry, PJs doesn\'t work with generators, and probably won\'t for the forseeable future...generators are hard.')
-
-def local_prefix(scope):
-    if scope['globals'] is scope['locals']:
-        return '_.'
-    if scope['exp locals']:
-        return '__%d.' % len(scope['parent locals'])
-    return ''
-
-def do_left(node, scope):
-    if not isinstance(node, (ast.Name, ast.Attribute)):
-        raise PJsException("unsupported left %s" % node)
-    if isinstance(node, ast.Name) and node.id in scope['exp globals']:
-        return '_.%s' % node.id
-    if scope['globals'] is scope['locals']:
-        if isinstance(node, ast.Name):
-            if node.id not in scope['globals']:
-                scope['globals'].append(node.id)
-            return '_.%s' % node.id
-        js = convert_node(node, scope)
-        return '_.%s' % js
-    elif isinstance(node, ast.Name):
-        if scope['exp locals']:
-            if node.id not in scope['locals']:
-                scope['locals'].append(node.id)
-            return '__%d.%s' % (len(scope['parent locals']), node.id)
-        if node.id not in scope['locals']:
-            scope['locals'].append(node.id)
-            return 'var %s' % node.id
-        else:
-            return node.id
-    elif isinstance(node, ast.Tuple):
-        raise PJsException("tuple left assignments not yet supported")
-    else:
-        return convert_node(node, scope)
-
-html_out = '''\
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-    <!-- File generated by PJs http://jaredforsyth.com/projects/pjs -->
-    <head>
-        <title>Auto PJs output for %(file)s</title>
-        <script src="%(lib)s"></script>
-    </head>
-    <body>
-        <script>
-%(text)s
-__builtins__.run_main('%(file)s');
-        </script>
-
-    </body>
-</html>'''
-
-js_out = '''\
-/*** File generated by PJs http://jaredforsyth.com/projects/pjs ***/
-
-// from source file %(file)s
-
-%(text)s
-__builtins__.run_main('%(file)s');
-'''
-
-rhino_out = '''\
-/*** File generated by PJs http://jaredforsyth.com/projects/pjs ***/
-
-// from source file %(file)s
-
-load("%(lib)s");
-var console = {log:function(){print.apply(this, arguments);}};
-%(text)s
-__builtins__.__import__('sys').argv = __builtins__.list(arguments);
-__builtins__.run_main('%(file)s');
-'''
+html_out = open(localfile('template.html')).read()
+js_out = open(localfile('template.js')).read()
+rhino_out = open(localfile('template.ss.js')).read()
 
 def do_compile(filename, fmt, options):
     modules = convert_modules(filename, options)
@@ -836,6 +755,5 @@ def do_compile(filename, fmt, options):
     else:
         template = js_out
     return template % data
-
 
 # vim: et sw=4 sts=4
