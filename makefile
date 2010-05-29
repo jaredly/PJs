@@ -22,6 +22,7 @@ PY_JS_TEST := $(patsubst %.py,%.js,$(wildcard test/py/*.py))
 py-tests:$(PY_TEST)
 
 $(PY_TEST): pjs/convert.py jslib
+	@echo "testing $@"
 	@./convert.py $@.py -i --rhino -l ./build/ $@.js
 	@js $@.js > _js.log
 	@python $@.py > _py.log
@@ -34,7 +35,6 @@ $(PY_TEST): pjs/convert.py jslib
 		exit; \
 	fi; \
 	rm -f _py.log _js.log;
-
 
 build/pjslib.js: jslib/*.js
 	@if [ -d build ];then :;else mkdir build;fi
