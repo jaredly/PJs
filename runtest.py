@@ -29,6 +29,7 @@ def compare(fname):
         print diff(o, jo)
         return
     print 'PASSED %s' % fname
+    os.unlink(jsname)
 
 from tempfile import NamedTemporaryFile as ntf
 
@@ -44,12 +45,16 @@ def diff(a, b):
     os.unlink(bf.name)
     return o
 
-files = glob.glob('test/py/*.py')
 
-execute(['make', 'jslib'])
-
-for fname in files:
-    compare(fname)
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) > 1:
+        files = sys.argv[1:]
+    else:
+        files = glob.glob('test/py/*.py')
+    execute(['make', 'jslib'])
+    for fname in files:
+        compare(fname)
 
 
 
