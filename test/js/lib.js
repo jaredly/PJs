@@ -308,7 +308,7 @@ describe('pjs-builtins.js', function() {
         });
         it('lists', function(){
             expect(_.str(_.list([3]))._data).toBe('[3]');
-            expect(_.str(_.list([1,'2']))._data).toBe('[1, \'2\']');
+            expect(_.str(_.list([1,_.str('2')]))._data).toBe('[1, \'2\']');
         });
     });
     describe('module-imports', function(){
