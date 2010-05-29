@@ -284,19 +284,19 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     /** operators **/
     _.do_op = $m(function do_op(op, rop, a, b) {
         var val;
-        if (a[op]) {
+        if (a[op] && (a[op].__type__ !== instancemethod || a[op].im_self)) {
             val = a[op](b);
             if (val !== _.NotImplemented)
                 return val;
         }
-        if (b[rop]) {
+        if (b[rop] && (b[op].__type__ !== instancemethod || b[op].im_self)) {
             return b[rop](a);
         }
         return _.NotImplemented;
 
     });
     _.do_ops = $m({}, true, function do_ops(allthem) {
-        var ops = {'in':_._in, '<':_.lt,'>':_.gt,'<=':_.lte,'>=':_.gte,'==':_.eq,'!=':_.ne};
+        var ops = {'in':_._in, 'not in':_.not_in, '<':_.lt,'>':_.gt,'<=':_.lte,'>=':_.gte,'==':_.eq,'!=':_.ne};
         if (_.len(allthem) % 2 === 0)
             _.raise(_.ValueError('do_ops requires an odd number of arguments'));
         allthem = allthem.as_js();
@@ -321,6 +321,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             _.raise(_.TypeError(_.str(b).as_js() + ' has no method __contains__'));
         }
         return b.__contains__(a);
+    });
+    _.not_in = $m(function not_in(a, b) {
+        return !_._in(a, b);
     });
     _.add = $m(function add(a, b) {
         var val = _.do_op('__add__', '__radd__', a, b);
@@ -557,7 +560,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return def;
         }),
         has_key: $m(function has_key(self, key){
-            return self._keys.indexOf(key) !== -1;
+            return self.__contains__(key);
         }),
         items: $m(function items(self){
             var items = [];
@@ -1368,7 +1371,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return what.__class__;
         if (what.__type__ !== undefined)
             return that.__type__;
-        return typeof(what);
+        return _.str(typeof(what));
     });
     _.classmethod = classmethod;
     _.staticmethod = staticmethod;
@@ -1499,7 +1502,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return ':' + _.str("'" + item + "'") + ':';
         } else if (typeof(item) === 'number') {
             return _.str('' + item);
-        } else if (defined(item.__repr__)) {
+        } else if (defined(item.__repr__) && (item.__repr__.__type__ !== instancemethod || item.__repr__.im_self)) {
             return item.__repr__();
         } else return _.str(item);
     });

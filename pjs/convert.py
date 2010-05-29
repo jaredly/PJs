@@ -354,7 +354,7 @@ def _classdef(node, scope):
     return text
 
 def _compare(node, scope):
-    ops = {ast.In:'in', ast.Gt:'>',ast.GtE:'>=',ast.Lt:'<',ast.LtE:'<=',ast.Eq:'==',ast.NotEq:'!=', ast.IsNot:'!==', ast.Is:'==='}
+    ops = {ast.In:'in', ast.NotIn:'not in', ast.Gt:'>',ast.GtE:'>=',ast.Lt:'<',ast.LtE:'<=',ast.Eq:'==',ast.NotEq:'!=', ast.IsNot:'!==', ast.Is:'==='}
     js = convert_node(node.left, scope)
     items = [js]
     for op, val in zip(node.ops, node.comparators):
@@ -560,7 +560,7 @@ def resolve(name, scope):
         elif scope['exp locals']:
             return '$b.assertdefined(__%d.%s, "%s")' % (len(scope['parent locals']), name, name)
         else:
-            return '$b.assertdefined(%s, "%s")' % (name, name)
+            return '$b.assertdefined(%s || _.%s, "%s")' % (name, name, name)
 
 def _num(node, scope):
     if type(node.n) == float:

@@ -6,6 +6,8 @@ thevalue = 20
 
 import imports
 
+print type('some') == str
+
 print __name__
 
 
