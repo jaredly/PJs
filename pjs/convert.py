@@ -178,8 +178,13 @@ def deepleft(node, at, scope, name='__pjs_tmp'):
         return text
     else:
         right = name + ''.join('.__getitem__(%d)' % n for n in at)
-        js = do_left(node, scope)
-        return '%s = %s;\n' % (js, right)
+        if isinstance(node, ast.Subscript):
+            left = _subscript(node, scope, True)
+            if left.endswith(' '):
+                return left + right + ');\n'
+        else:
+            left = do_left(node, scope)
+        return '%s = %s;\n' % (left, right)
 
 def _assign(node, scope):
     rest = ''
