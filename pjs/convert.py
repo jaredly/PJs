@@ -27,7 +27,7 @@ module('%(filename)s', function (%(scope)s) {
 %(contents)s
 })%(dec_back)s;
 %(rname)s.__module__ = _.__name__;
-%(rname)s.__name__ = "%(name)s";
+%(rname)s.__name__ = $b.str("%(name)s");
 ''',
     'if':'''\
 if ($b.bool(%(test)s) === true) {
@@ -219,8 +219,13 @@ def _augassign(node, scope):
     op = node.op.__class__.__name__.lower()
     ljs = convert_node(node.target, scope)
     rjs = convert_node(node.value, scope)
-    js = do_left(node.target, scope)
-    return tpl % (js, op, ljs, rjs)
+    if isinstance(node.target, ast.Subscript):
+        left = _subscript(node.target, scope, True)
+        if left.endswith(' '):
+            return left + convert_node(node.value, scope) + ');\n'
+    else:
+        left = do_left(node.target, scope)
+    return tpl % (left, op, ljs, rjs)
 
 def _augload(node, scope):
     raise Exception('i don\'t know what "AugLoad" is. if you see this, please email jared@jaredforsyth.com w/ code...')
