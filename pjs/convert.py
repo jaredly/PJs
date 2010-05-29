@@ -354,7 +354,7 @@ def _classdef(node, scope):
     return text
 
 def _compare(node, scope):
-    ops = {ast.Gt:'>',ast.GtE:'>=',ast.Lt:'<',ast.LtE:'<=',ast.Eq:'==',ast.NotEq:'!=', ast.IsNot:'!==', ast.Is:'==='}
+    ops = {ast.In:'in', ast.Gt:'>',ast.GtE:'>=',ast.Lt:'<',ast.LtE:'<=',ast.Eq:'==',ast.NotEq:'!=', ast.IsNot:'!==', ast.Is:'==='}
     js = convert_node(node.left, scope)
     items = [js]
     for op, val in zip(node.ops, node.comparators):

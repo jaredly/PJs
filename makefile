@@ -39,5 +39,4 @@ $(PY_TEST): pjs/convert.py jslib
 build/pjslib.js: jslib/*.js
 	@if [ -d build ];then :;else mkdir build;fi
 	@cat jslib/functions.js jslib/classes.js jslib/modules.js jslib/__builtin__.js > build/pjslib.js
-	@cp build/pjslib.js test/pjslib.js
 

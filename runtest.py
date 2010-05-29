@@ -23,6 +23,7 @@ def compare(fname):
     jo, je = execute(['js', jsname])
     if je:
         print 'FAILED %s javascript error:\n%s' % (fname, je)
+        print jo
         return
     if o != jo:
         print 'FAILED %s different output:\n' % fname
