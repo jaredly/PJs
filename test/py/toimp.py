@@ -3,7 +3,9 @@
 '''this is a module to bge imported'''
 
 thevalue = 20
-import example
+
+import imports
+
 print __name__
 
 

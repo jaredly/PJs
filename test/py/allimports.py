@@ -8,7 +8,7 @@ from os.path import *
 from toimp import *
 
 print thevalue
-print dirname(example.__file__)
+print dirname(imports.__file__)
 
 
 # vim: et sw=4 sts=4
