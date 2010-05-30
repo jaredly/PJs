@@ -26,7 +26,7 @@ build.cmd('jstest', ('js', 'test/runtests.js'), depends='@jslib', always=True)
 
 build.clean('build', 'test/py/*.js')
 
-@build.target(depends='@jslib', always=True)
+@build.target(depends='@jslib', always=True, completion=glob.glob('test/py/*.py'))
 def pytest(one=None):
     if one is not None:
         files = [one]
