@@ -25,7 +25,7 @@ module('%(filename)s', function (%(scope)s) {
 %(rname)s.__module__ = _.__name__;
 ''',
     'function':'''\
-%(left)s = %(dec_front)s$m(%(special)sfunction (%(args)s) {
+%(left)s = %(dec_front)s$m(%(special)sfunction (%(args)s) { // %(lineno)d
 %(contents)s
 })%(dec_back)s;
 %(rname)s.__module__ = _.__name__;
@@ -111,7 +111,6 @@ def convert_modules(filename, options):
             except PJsException:
                 if not options.ignore_import_errors:
                     raise
-
     return modules
 
 def find_import(iname, fname):
@@ -593,6 +592,7 @@ def _functiondef(node, scope):
     dct = {}
     dct['left'] = do_left(ast.Name(node.name, []), scope)
     dct['name'] = node.name
+    dct['lineno'] = node.lineno
     try:
         dct['rname'] = resolve(node.name, scope);
     except PJsNameError, e:
