@@ -8,8 +8,8 @@ def multiline(text):
     if text is None:
         return '""';
     lines = text.split('\n')
-    return ''.join("'%s\\n' +\n" % line.encode('string_escape') for line\
-            in lines[:-1]) + "'%s'" % lines[-1].encode('string_escape')
+    return (''.join("'%s\\n' +\n" % line.encode('string_escape') for line\
+            in lines[:-1]) + "'%s'" % lines[-1].encode('string_escape')).replace('&', '&amp;').replace(':', '&coln;')
 
 def new_scope(scope):
     scope = scope.copy()
@@ -54,6 +54,9 @@ def resolve(name, scope):
     elif name not in scope['globals'] and name in builtin_words:
         return '$b.%s' % name
     else:
+        pref = local_prefix(scope)
+        # TODO: do some checking for import *
+        return '{:undef:%s:%s:}' % (name, pref)
         ## for all we know, it's not defined....
         if scope['locals'] is scope['globals']:
             return '$b.assertdefined(_.%s, "%s")' % (name, name)

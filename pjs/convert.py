@@ -44,12 +44,13 @@ def convert_modules(filename, options):
                     raise
     return modules
 
+import re
+
 def convert_module(mod, filename):
     dct = {'scope':'_', 'filename':os.path.abspath(filename)}
     dct['doc'] = multiline(ast.get_docstring(mod))
 
     _globs = ['__name__','__doc__','__file__']
-    # scope = (_globs, _globs, False, 0, [])
     scope = {
         'globals':[],
         'locals':[],
@@ -60,10 +61,14 @@ def convert_module(mod, filename):
         'in atomic':0,
     }
     scope['globals'] = scope['locals'] = _globs
-    ## globals, locals, explicitlocal, numiters, explicitglobals
     contents = convert_block(mod.body, scope)
     dct['contents'] = contents
     text = TEMPLATES['module'] % dct
+    prefix = local_prefix(scope)
+    for name in scope['locals']:
+        text = re.sub('{:undef:' + name + ':[^:]*:}', prefix + name, text)
+    text = re.sub('{:undef:(\w+):([^:]*):}', '$b.assertdefined(\\2\\1)', text)
+    text = text.replace('&coln;', ':').replace('&amp;', '&')
     return text
 
 def convert_block(nodes, scope):
@@ -353,7 +358,9 @@ def _importfrom(node, scope):
             template += TEMPLATES['import *'] % (prefix, prefix)
             break
         asname = alias.asname or alias.name
-        template += '%s%s = __pjs_tmp_module.%s;\n' % (prefix, asname, alias.name)
+        # scope['locals'].append(asname)
+        left = do_left(ast.Name(asname, []), scope)
+        template += '%s = __pjs_tmp_module.%s;\n' % (left, alias.name)
     to_import.append(node.module)
     return template
 
@@ -489,7 +496,11 @@ def _classdef(node, scope):
     scope = new_scope(scope)
     scope['exp locals'] = True
 
-    dct['contents'] = convert_block(node.body, scope)
+    text = convert_block(node.body, scope)
+    prefix = local_prefix(scope)
+    for name in scope['locals']:
+        text = re.sub('{:undef:' + name + ':[^:]*:}', prefix + name, text)
+    dct['contents'] = text
     dct['lnum'] = len(scope['parent locals'])
 
     text = TEMPLATES['class'] % dct
@@ -499,6 +510,8 @@ def _classdef(node, scope):
 #TODO: ellipsis
 #TODO: exec...or not. I don't think I'll implement exec
 # TODO: extslice
+
+# @group scoping blocks
 
 def _functiondef(node, scope):
     dct = {}
@@ -543,7 +556,14 @@ def _functiondef(node, scope):
 
     for n in args:
         scope['locals'].append(n)
-    dct['contents'] = convert_block(node.body, scope)
+    text = convert_block(node.body, scope)
+    prefix = local_prefix(scope)
+    for name in scope['locals']:
+        text = re.sub('{:undef:' + name + ':[^:]*:}', prefix + name, text)
+    #if isinstance(text, Chunks):
+    #    text.resolve(local_prefix(scope), scope['locals'])
+    #    text.levelUp()
+    dct['contents'] = text
     text = TEMPLATES['function'] % dct
     return text
 
