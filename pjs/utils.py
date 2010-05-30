@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import os
+import sys
+from errors import PJsException
+
 def multiline(text):
     if text is None:
         return '""';
@@ -20,7 +24,6 @@ def new_scope(scope):
         scope['parent locals'] = scope['parent locals'] + (tuple(old_locals), )
     return scope
 
-import os
 localfile = lambda x:os.path.join(os.path.dirname(__file__), x)
 reserved_words = open(localfile('js_reserved.txt')).read().split()
 
@@ -66,5 +69,23 @@ def local_prefix(scope):
         return '__%d.' % len(scope['parent locals'])
     return ''
 
+def find_import(iname, fname):
+    base = os.path.dirname(fname)
+    cd = os.getcwd()
+    for dr in sys.path:
+        if dr == cd:
+            dr = base
+        fn = os.path.join(base, dr)
+        bad = False
+        for part in iname.split('.')[:-1]:
+            if not os.path.exists(os.path.join(fn, part, '__init__.py')):
+                bad = True
+                break
+            fn = os.path.join(fn, part)
+        if not bad:
+            fn = os.path.join(fn, iname.split('.')[-1]+'.py')
+            if os.path.exists(fn):
+                return fn
+    raise PJsException('module not found: %s' % iname)
 
 # vim: et sw=4 sts=4
