@@ -37,21 +37,21 @@ def pytest(one=None):
 
 def compare(fname):
     jsname = fname.replace('.py', '.js')
-    o,e = cmd('python', fname)
+    o,e = cmd('python', os.path.basename(fname), cwd = os.path.dirname(fname))
     if e:
-        print 'FAILED %s python error:\n%s' % (fname, e)
+        print 'FAILED %s :: python error:\n%s' % (fname, e)
         return
     co, ce = cmd('./convert.py', fname, jsname, '--rhino')
     if ce:
-        print 'FAILED %s conversion error:\n%s' % (fname, ce)
+        print 'FAILED %s :: conversion error:\n%s' % (fname, ce)
         return
     jo, je = cmd('js', jsname)
     if je:
-        print 'FAILED %s javascript error:\n%s' % (fname, je)
+        print 'FAILED %s :: javascript error:\n%s' % (fname, je)
         print jo
         return
     if o != jo:
-        print 'FAILED %s different output:\n' % fname
+        print 'FAILED %s :: different output:\n' % fname
         print diff(o, jo)
         return
     print 'PASSED %s' % fname

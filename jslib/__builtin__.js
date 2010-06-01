@@ -113,6 +113,10 @@ module('<builtin>/sys.py', function sys_module(_) {
     });
 });
 
+module('<builtin>/os/__init__.py', function os_module(_) {
+
+});
+
 module('<builtin>/os/path.py', function os_path_module(_) {
     _.__doc__ = "a module for dealing with paths";
     _.join = $m({}, true, function join(first, args) {
@@ -240,10 +244,15 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     /** importing modules **/
     _.__import__ = $m({'file':'','from':''},
       function __import__(name, from, file) {
+        name = $b.js(name);
+        if (defined(sys.modules[$b.py(name)]))
+            return sys.modules[$b.py(name)];
+        var parent_mod = null;
+        if (name.split('.').length > 1) {
+            parent_mod = _.__import__(name.split('.').slice(0, -1).join('.'), from, file);
+        }
         from = $b.js(from);
         file = $b.js(file);
-        if (defined(sys.modules[name]))
-            return sys.modules[name];
         var path = __module_cache['<builtin>/os/path.py']._module;
         var relflag = false;
         var foundat = null;
@@ -254,9 +263,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 var dname = $b.js(path.normpath(path.join(path.dirname(file), syspath[i])));
             else
                 var dname = $b.js(syspath[i]);
-            var fname = $b.js(path.join(dname, $b.js(name).replace('.', '/')+'.py'));
-            if (defined(__module_cache[fname])) {
-                foundat = fname;
+            var fname = $b.js(path.join(dname, $b.js(name).replace('.', '/')));
+            if (defined(__module_cache[fname+'.py'])) {
+                foundat = fname+'.py';
+                break;
+            } else if (defined(__module_cache[fname+'/__init__.py'])) {
+                foundat = fname + '/__init__.py';
                 break;
             }
         }
@@ -270,6 +282,17 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         if (!defined(sys.modules[mname])) {
             sys.modules[mname] = {}
             __module_cache[foundat].load(mname, sys.modules[mname]);
+        }
+        if (parent_mod !== null) {
+            var name_parts = name.split('.');
+            var direct_parent = parent_mod;
+            for (var i=1;i<name_parts.length - 1;i++){
+                // print(name_parts, i, direct_parent.__name__);
+                direct_parent = direct_parent[name_parts[i]];
+            }
+            direct_parent[name_parts[name_parts.length-1]] = sys.modules[mname];
+            // parent_mod[name.split('.').slice(1, -1).join('.')] = sys.modules[mname];
+            return parent_mod;
         }
         return sys.modules[mname];
     });
@@ -837,6 +860,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 self._data = item.__str__()._data;
             else if (item.__type__ === 'type')
                 self._data = "<class '" + item.__module__ + '.' + item.__name__ + "'>";
+            else if (item.__type__ === 'module')
+                self._data = "<module '" + item.__name__ + "' from '" + item.__file__ + "'>";
             else if (item.__class__)
                 self._data = '<' + item.__class__.__module__ + '.' + item.__class__.__name__
                                 + ' instance at 0xbeaded>';

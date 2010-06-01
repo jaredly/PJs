@@ -40,7 +40,7 @@ def convert_modules(filename, options):
             try:
                 all_imports.append(find_import(name, fname))
             except PJsException:
-                if not options.ignore_import_errors:
+                if not options.get('ignore_import_errors', False):
                     raise
     return modules
 
@@ -352,6 +352,10 @@ def _importfrom(node, scope):
     if node.module == '__future__':
         return ''
     template = 'var __pjs_tmp_module = $b.__import__("%s", _.__name__, _.__file__);\n' % node.module
+    base_name = node.module.split('.')[0]
+    subs_name = '.'.join(node.module.split('.')[1:])
+    if subs_name:
+        subs_name += '.'
     prefix = local_prefix(scope)
     for alias in node.names:
         if alias.name == '*':
@@ -360,7 +364,7 @@ def _importfrom(node, scope):
         asname = alias.asname or alias.name
         # scope['locals'].append(asname)
         left = do_left(ast.Name(asname, []), scope)
-        template += '%s = __pjs_tmp_module.%s;\n' % (left, alias.name)
+        template += '%s = __pjs_tmp_module.%s;\n' % (left, subs_name + alias.name)
     to_import.append(node.module)
     return template
 
@@ -368,8 +372,10 @@ def _import(node, scope):
     tpl = '%s = $b.__import__("%s", _.__name__, _.__file__);\n'
     text = ''
     for name in node.names:
-        asname = name.name
-        if name.asname:asname = name.asname
+        asname = name.name.split('.')[0]
+        if name.asname:
+            raise PJsException('import x as y not yet supported')
+            asname = name.asname
         asname = do_left(ast.Name(asname, {}), scope)
         text += tpl % (asname, name.name)
         to_import.append(name.name)
@@ -678,11 +684,11 @@ rhino_out = open(localfile('template.ss.js')).read()
 def do_compile(filename, fmt, options):
     modules = convert_modules(filename, options)
     text = '\n'.join(modules[filen] for filen in sorted(modules.keys()))
-    lib = os.path.join(options.lib_dir, 'pjslib.js')
+    lib = os.path.join(options.get('lib_dir', '.'), 'pjslib.js')
     data = {'file':os.path.abspath(filename), 'text':text, 'lib':lib}
-    if options.rhino:
+    if options.get('rhino', False):
         template = rhino_out
-    elif options.html:
+    elif options.get('html', False):
         template = html_out
     else:
         template = js_out

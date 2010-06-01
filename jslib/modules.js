@@ -40,6 +40,7 @@ function module(filename, fn) {
         mod.__file__ = that.__file__;
         if (__builtins__) mod.__file__ = __builtins__.str(that.__file__);
         mod.__dict__ = mod;
+        mod.__type__ = 'module';
         that._module = mod;
         fn(mod);
         return mod;

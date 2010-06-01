@@ -86,9 +86,11 @@ def find_import(iname, fname):
                 break
             fn = os.path.join(fn, part)
         if not bad:
-            fn = os.path.join(fn, iname.split('.')[-1]+'.py')
-            if os.path.exists(fn):
-                return fn
+            fn = os.path.join(fn, iname.split('.')[-1])
+            if os.path.exists(fn + '.py'):
+                return fn + '.py'
+            if os.path.exists(os.path.join(fn, '__init__.py')):
+                return os.path.join(fn, '__init__.py')
     raise PJsException('module not found: %s' % iname)
 
 # vim: et sw=4 sts=4

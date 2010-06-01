@@ -42,7 +42,7 @@ if __name__ == '__main__':
         print 'Invalid format "%s". Defaulting to js' % fmt
         fmt = 'js'
 
-    text = pjs.convert.do_compile(pos[0], fmt, opts)
+    text = pjs.convert.do_compile(pos[0], fmt, vars(opts))
     if len(pos) == 2:
         open(pos[1], 'w').write(text)
     else:
