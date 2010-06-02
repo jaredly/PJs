@@ -33,7 +33,7 @@ function module(filename, fn) {
     var that = {};
     that.__file__ = filename;
     that.__init__ = fn;
-    that.load = $m({'mod':null}, function load_module(name, mod) {
+    that.load = $def({'mod':null}, function load_module(name, mod) {
         if (mod === null) mod = {};
         mod.__name__ = name;
         if (__builtins__) mod.__name__ = __builtins__.str(name);

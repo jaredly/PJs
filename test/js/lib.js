@@ -112,36 +112,36 @@ beforeEach(function(){
 });
 
 describe('pjs-functions.js', function () {
-    describe('invalid-$m-calls', function(){
+    describe('invalid-$def-calls', function(){
         it('invalid args', function() {
-            expect($m).toThrowWith([]);
-            expect($m).not.toThrowWith([function(){}]);
-            expect($m).toThrowWith([{},false,false,false,function(){}]);
-            expect($m).toThrowWith([{},false]);
+            expect($def).toThrowWith([]);
+            expect($def).not.toThrowWith([function(){}]);
+            expect($def).toThrowWith([{},false,false,false,function(){}]);
+            expect($def).toThrowWith([{},false]);
         });
         it('functions', function() {
-            expect($m).toThrowWith([{'a':1},function(){}], /^ArgumentError/);
-            expect($m).toThrowWith([{'a':3},function(c){}], /^ArgumentError/);
-            expect($m).toThrowWith([{'a':3},function(a,b){}]);
-            expect($m).toThrowWith([{},true,function(){}],/^SyntaxError/);
-            expect($m).toThrowWith([{},true,true,function(onlyone){}],/^SyntaxError/);
+            expect($def).toThrowWith([{'a':1},function(){}], /^ArgumentError/);
+            expect($def).toThrowWith([{'a':3},function(c){}], /^ArgumentError/);
+            expect($def).toThrowWith([{'a':3},function(a,b){}]);
+            expect($def).toThrowWith([{},true,function(){}],/^SyntaxError/);
+            expect($def).toThrowWith([{},true,true,function(onlyone){}],/^SyntaxError/);
         });
     });
     describe('arg-checking', function(){
         it('takes no args', function () {
-            var noargs = $m(function () {});
+            var noargs = $def(function () {});
             expect(noargs).toThrowWith(['too many args']);
             expect(noargs).not.toThrowWith([]);
         });
         it('takes some regular args', function(){
-            var someargs = $m(function (a, b) {});
+            var someargs = $def(function (a, b) {});
             expect(someargs).toThrowWith(['too few args'], __builtins__.TypeError);
             expect(someargs).not.toThrowWith(['right number','of args']);
             expect(someargs.args).toThrowWith([[1, 2], {'kw':'args'}]);
             expect(someargs.args).not.toThrowWith([['just ', 'positional args'],{}]);
         });
         it('takes default args', function(){
-            var dargs = $m({'c':10}, function(a, b, c) {});
+            var dargs = $def({'c':10}, function(a, b, c) {});
             expect(dargs).toThrowWith([2]);
             expect(dargs).toThrowWith([2,3,4,5]);
             expect(dargs).not.toThrowWith([1,2]);
@@ -154,19 +154,19 @@ describe('pjs-functions.js', function () {
             expect(dargs.args).not.toThrowWith([[2, 4, 5], {}]);
         });
         it('catches all', function(){
-            var cargs = $m({}, true, function(all){});
+            var cargs = $def({}, true, function(all){});
             expect(cargs).not.toThrowWith([]);
             expect(cargs).not.toThrowWith([1,2,3,4]);
             expect(cargs.args).toThrowWith([[], {'some':'kwarg'}]);
         });
         it('catches kwargs', function(){
-            var kargs = $m({}, false, true, function(all){});
+            var kargs = $def({}, false, true, function(all){});
             expect(kargs).toThrowWith([1]);
             expect(kargs).not.toThrowWith([]);
             expect(kargs.args).not.toThrowWith([[],{'some':'karg'}]);
         });
         it('everything', function(){
-            var every = $m({'c':4}, true, true, function(a, b, c, args, kargs) {});
+            var every = $def({'c':4}, true, true, function(a, b, c, args, kargs) {});
             expect(every).toThrowWith([]);
             expect(every).not.toThrowWith([1, 2]);
             expect(every).not.toThrowWith([1, 2, 3, 4, 5, 6]);
@@ -175,11 +175,11 @@ describe('pjs-functions.js', function () {
     });
     describe('behavior', function(){
         it('arguments', function(){
-            var fn = $m(function(a, b, c){return a+b;});
+            var fn = $def(function(a, b, c){return a+b;});
             expect(fn(1,2,23)).toEqual(3);
         });
         it('defaults', function(){
-            var fn = $m({'c':4,'d':2}, function(a,b,c,d){
+            var fn = $def({'c':4,'d':2}, function(a,b,c,d){
                 return [a+b, c+d];
             });
             expect(fn(1,2)).toEqual([3, 6]);
@@ -187,14 +187,14 @@ describe('pjs-functions.js', function () {
             expect(fn.args([1],{'b':5,'d':12})).toEqual([6, 16]);
         });
         it('catchargs', function(){
-            var fn = $m({}, true, function(a, b, c){
+            var fn = $def({}, true, function(a, b, c){
                 return $b.tuple([a+b, c]);
             });
             expect(fn(4,5,6,7,8)).toPjEqual($b.tuple([9,__builtins__.tuple([6,7,8])]));
             expect(fn(2,3)).toPjEqual($b.tuple([5,__builtins__.tuple([])]));
         });
         it('naming', function(){
-            var fn = $m(function abc(){});
+            var fn = $def(function abc(){});
             expect(fn.__name__).toEqual('abc');
         });
     });
@@ -218,10 +218,10 @@ describe('pjs-classes.js', function(){
     });
     it('w/ functions', function(){
         var Abc = Class('Abc', [], {
-            __init__:$m(function(self, a){
+            __init__:$def(function(self, a){
                 self.g = a;
             }),
-            bar:$m(function(self, a){
+            bar:$def(function(self, a){
                 return a+self.g;
             }),
         });
@@ -233,10 +233,10 @@ describe('pjs-classes.js', function(){
     });
     it('inheritence', function(){
         var Parent = Class('Parent', [], {
-            __init__:$m(function __init__(self){
+            __init__:$def(function __init__(self){
                 self.x = 3;
             }),
-            bar:$m(function bar(self, inc){
+            bar:$def(function bar(self, inc){
                 self.x += inc;
                 return self.x;
             }),
@@ -245,11 +245,11 @@ describe('pjs-classes.js', function(){
         expect(Parent.__init__.__type__).toEqual(instancemethod);
         expect(Parent.__init__.im_class).toEqual(Parent);
         var Child = Class('Child', [Parent], {
-            __init__:$m(function __init__(self){
+            __init__:$def(function __init__(self){
                 Parent.__init__(self);
                 self.y = 5;
             }),
-            baz:$m(function baz(self){
+            baz:$def(function baz(self){
                 return self.x+self.y;
             }),
         });
@@ -271,7 +271,7 @@ describe('pjs-classes.js', function(){
     it('classmethod',function(){
         var Abc = Class('Abc', [], {
             a:12,
-            man:classmethod($m(function(cls, a){
+            man:classmethod($def(function(cls, a){
                 cls.a += a;
                 return cls.a;
             })),
@@ -284,7 +284,7 @@ describe('pjs-classes.js', function(){
     });
     it('staticmethod', function(){
         var Abc = Class('Abc', [], {
-            foo:staticmethod($m(function(a,b,c){
+            foo:staticmethod($def(function(a,b,c){
                 return [a+b, c];
             })),
         });
@@ -320,7 +320,7 @@ describe('pjs-builtins.js', function() {
         module('/one.py', function($) {
             $.__doc__ = 'a simple module';
             $.a = 4;
-            $.b = $m(function(r){
+            $.b = $def(function(r){
                 return r + $.a;
             });
             numimports += 1;

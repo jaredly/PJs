@@ -15,7 +15,7 @@ module('%(filename)s', function (%(scope)s) {
 %(rname)s.__module__ = _.__name__;
 ''',
     'function':'''\
-%(left)s = %(dec_front)s$m(%(special)sfunction (%(args)s) { // %(lineno)d
+%(left)s = %(dec_front)s$def(%(special)sfunction (%(args)s) { // %(lineno)d
 %(contents)s
 })%(dec_back)s;
 %(rname)s.__module__ = _.__name__;

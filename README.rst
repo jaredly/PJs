@@ -35,7 +35,7 @@ otherwise would be translated to ``jq($b.str("hi"))``. As it is, the above
 code becomes::
 
     _.jq = window.jQuery;
-    _.make_tabs = $m(function $_make_tabs(id) {
+    _.make_tabs = $def(function $_make_tabs(id) {
       _.jq($b.js(id)).tabs();
     });
 
@@ -100,11 +100,11 @@ Pythonic Functions
 
 Here's a bit from the top of the functions.js, which allows for pythonic function in javascript!
 
-(pjs provides the function $m for creating pythonic functions)
+(pjs provides the function $def for creating pythonic functions)
 
 How to use:
 
-- $m([defaults], [aflag], [kflag], fn);
+- $def([defaults], [aflag], [kflag], fn);
 - defaults, aflag, and kflag are all optional, but required to be in that
   order to avoid ambiguity.
 - defaults = an associative array of key, value pairs; the key is the arg
@@ -120,7 +120,7 @@ Here's an example that uses all of these:
 
 ::
 
-    var foo = $m({c:null, d:10}, true, true, function foo(a, b, c, d, args, kwargs) {
+    var foo = $def({c:null, d:10}, true, true, function foo(a, b, c, d, args, kwargs) {
         // only a and b are required, and excess positional and dictionary
         // arguments will be captured.
         console.log([a, b, c, d, args, kwargs]);

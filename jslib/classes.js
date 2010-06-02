@@ -85,7 +85,7 @@ function _set_name(fn, name) {
         fn.__name__ = name;
 }
 
-var type = $m(function type(name, bases, namespace) {
+var type = $def(function type(name, bases, namespace) {
     var cls = function $_type() {
         var self = {};
         self.__init__ = instancemethod(cls, function(){}).__get__(self);
@@ -109,7 +109,7 @@ var type = $m(function type(name, bases, namespace) {
         return self;
     };
     var ts = cls.toString;
-    var __setattr__ = $m(function class_setattr(key, val) {
+    var __setattr__ = $def(function class_setattr(key, val) {
         if (val && val.__type__ === 'function' ||
                 (val && !val.__type__ && typeof(val)==='function')) {
             cls[key] = instancemethod(cls, val);

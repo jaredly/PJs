@@ -29,7 +29,7 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 /**
  * How to use:
 
-    $m([defaults], [aflag], [kflag], fn);
+    $def([defaults], [aflag], [kflag], fn);
 
     defaults, aflag, and kflag are all optional, but required to be in that
         order to avoid ambiguity.
@@ -48,7 +48,7 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 
     Here's an example that uses all of these:
 
-    var foo = $m({c:null, d:10}, true, true, function foo(a, b, c, d, args, kwargs) {
+    var foo = $def({c:null, d:10}, true, true, function foo(a, b, c, d, args, kwargs) {
         // only a and b are required, and excess positional and dictionary
         // arguments will be captured.
         console.log([a, b, c, d, args, kwargs]);
@@ -111,21 +111,21 @@ function check_defaults(func_args, defaults, argnum) {
     return true;
 }
 
-function $m() {
+function $def() {
     var args = Array.prototype.slice.call(arguments);
     if (!args.length)
-        throw new Error("JS Error: $m requires at least one argument.");
+        throw new Error("JS Error: $def requires at least one argument.");
     var func = args.pop();
     var name = func.__name__ || func.name;
     if (typeof(func) !== 'function')
-        throw new Error("JS Error: $m requires a function as the last argument");
+        throw new Error("JS Error: $def requires a function as the last argument");
     var func_args = get_fn_args(func);
     var defaults = args.length?args.shift():{};
     if (!(defaults instanceof Object))
         throw new Error("the defaults argument must be an object");
     var aflag = args.length?args.shift():false;
     var kflag = args.length?args.shift():false;
-    if (args.length) throw new Error("JS Error: $m takes at most 4 arguments. (" + (4+args.length) + " given)");
+    if (args.length) throw new Error("JS Error: $def takes at most 4 arguments. (" + (4+args.length) + " given)");
 
     var argnum = func_args.length;
     if (aflag) argnum--;
@@ -192,7 +192,7 @@ function $m() {
 
     meta.args = function(args, dict) {
         if (!defined(dict))
-            throw new Error('TypeError: $m(fn).args must be called with both arguments.');
+            throw new Error('TypeError: $def(fn).args must be called with both arguments.');
         if (args.__class__) {
             if (!__builtins__.isinstance(args, [__builtins__.tuple, __builtins__.list])) {
                 throw new Error('can only pass a list or tuple to .args()');
