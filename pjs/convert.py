@@ -686,6 +686,7 @@ def do_compile(filename, fmt, options):
     text = '\n'.join(modules[filen] for filen in sorted(modules.keys()))
     lib = os.path.join(options.get('lib_dir', '.'), 'pjslib.js')
     data = {'file':os.path.abspath(filename), 'text':text, 'lib':lib}
+    data['path'] = sys.path
     if options.get('rhino', False):
         template = rhino_out
     elif options.get('html', False):

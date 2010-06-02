@@ -107,7 +107,7 @@ module('<builtin>/sys.py', function sys_module(_) {
     _.modules = {'sys':_}; // sys and __builtin__ won't be listed
                              // it doesn't make sense for them to be
                              // reloadable.
-    _.path = ['.', '<builtin>'];
+    _.path = []; //'.', '<builtin>'];
     _.exit = $m({'code':0}, function exit(code) {
         _.raise("SystemExit: sys.exit() was called with code "+code);
     });
@@ -256,7 +256,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         var path = __module_cache['<builtin>/os/path.py']._module;
         var relflag = false;
         var foundat = null;
-        var syspath = $b.js(sys.path);
+        var syspath = ['.', '<builtin>'].concat($b.js(sys.path));
         for (var i=0;i<syspath.length;i++) {
             relflag = syspath[i][0] !== '/' && syspath[i].indexOf('<builtin>') !== 0;
             if (relflag)
@@ -1658,7 +1658,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             console.log('Javascript Error:', e);
 
      });
-    _.run_main = $m(function(filename){
+    _.run_main = $m({'path':[]}, function(filename, path){
+        var sys = _.__import__('sys');
+        sys.path = _.py(path);
         try {
             __module_cache[filename].load('__main__');
         } catch (e) {

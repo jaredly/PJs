@@ -6,5 +6,5 @@ load("%(lib)s");
 var console = {log:function(){print.apply(this, arguments);}};
 %(text)s
 __builtins__.__import__('sys').argv = __builtins__.list(arguments);
-__builtins__.run_main('%(file)s');
+__builtins__.run_main('%(file)s', %(path)s);
 

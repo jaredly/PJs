@@ -370,7 +370,7 @@ describe('pjs-builtins.js', function() {
     });
 
     describe('os/path.py', function() {
-        var path = __builtins__.__import__('os.path');
+        var path = __builtins__.__import__('os.path').path;
         it('join', function(){
             expect(path.join).toReturnGiven([
                 [['a','b'],$b.str('a/b')],
