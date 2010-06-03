@@ -1578,7 +1578,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         return res;
     });
     _.BaseException = __not_implemented__("BaseException");
-    _.pow = __not_implemented__("pow");
+    _.pow = $def(function pow(a, b) {
+        return Math.pow(_.js(a), _.js(b));
+    });
     _.globals = __not_implemented__("globals");
     _.divmod = __not_implemented__("divmod");
     _.enumerate = __not_implemented__("enumerate");
