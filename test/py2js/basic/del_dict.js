@@ -13,7 +13,7 @@ module('/home/jared/clone/pjs/test/py2js/basic/del_dict.py', function (_) {
     $b.print(_.mydict.__getitem__($b.str('abc')));//, true
     $b.print(_.mydict.__getitem__($b.str('def')));//, true
     $b.print(_.mydict.__getitem__($b.str('xyz')));//, true
-    delete _.mydict.__getitem__($b.str('def'))
+    _.mydict.__delitem__($b.str('def'))
     if ($b.bool($b.do_ops($b.str('abc'), 'in', _.mydict)) === true) {
         $b.print($b.str('abc in mydict'));//, true
     } else $b.print($b.str('abc not in mydict'));//, true

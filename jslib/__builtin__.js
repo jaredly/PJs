@@ -1549,6 +1549,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     });
     _._debug_stack = [];
     _.raise = $def(function raise(obj) {
+        if (obj.__type__ === 'type') {
+            obj = obj();
+        }
         obj.stack = _._debug_stack.slice();
         throw obj;
     });
