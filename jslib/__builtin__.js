@@ -1578,7 +1578,10 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.hex = __not_implemented__("hex");
     _.next = __not_implemented__("next");
     _.chr = __not_implemented__("chr");
-    _.xrange = __not_implemented__("xrange");
+    // dirty hack
+    _.xrange = $def({'end':null, 'step':1}, function xrange(start, end, step) {
+        return _.iter(_.range(start, end, step));
+    });
 
     _.reversed = __not_implemented__("reversed");
     _.hasattr = __not_implemented__("hasattr");
