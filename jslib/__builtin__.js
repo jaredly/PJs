@@ -509,12 +509,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             return self.keys().__contains__(key);
         }),
         __delitem__: $def(function __delattr__(self, key){
-            var i = self._keys.indexOf(key);
-            if (i !== -1) {
-                self._keys = self._keys.slice(0, i).concat(self._keys.slice(i+1));
-                self._values = self._values.slice(0, i).concat(self._values.slice(i+1));
-            } else
-                _.raise(_.KeyError(key+' not found'));
+            if (!self.keys().__contains__(key)) {
+                _.raise(_.KeyError(_.repr(key).as_js() + ' not in dictionary ' + _.repr(self._keys).as_js()));
+            }
+            var at = self.keys().index(key);
+            self._keys = self._keys.slice(0, at).concat(self._keys.slice(at+1));
+            self._values = self._values.slice(0, at).concat(self._values.slice(at+1));
         }),
         __delattr__: $def(function __delitem__(self, key){
             _.raise(_.KeyError('doesnt make sense'));
