@@ -318,12 +318,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     /** operators **/
     _.do_op = $def(function do_op(op, rop, a, b) {
         var val;
-        if (a[op] && (a[op].__type__ !== instancemethod || a[op].im_self)) {
+        if (a && a[op] && (a[op].__type__ !== instancemethod || a[op].im_self)) {
             val = a[op](b);
             if (val !== _.NotImplemented)
                 return val;
         }
-        if (b[rop] && (b[op].__type__ !== instancemethod || b[op].im_self)) {
+        if (b && b[rop] && (b[op].__type__ !== instancemethod || b[op].im_self)) {
             return b[rop](a);
         }
         return _.NotImplemented;
