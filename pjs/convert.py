@@ -427,7 +427,7 @@ def do_left(node, scope):
                 scope['globals'].append(node.id)
             return '_.%s' % node.id
         js = convert_node(node, scope)
-        return '_.%s' % js
+        return js#'_.%s' % js
     elif isinstance(node, ast.Name):
         if scope['exp locals']:
             if node.id not in scope['locals']:

@@ -28,6 +28,15 @@ print iple
 a,b = c = 3,4
 print [a,b,c]
 
+class F:pass
+
+F.r, F.g = 2,3
+
+F.r = 3
+e = F()
+e.t = 7
+print e.r,e.t
+
 # subscript assign
 f = {}
 f[4]=r
