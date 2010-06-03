@@ -667,17 +667,30 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     });
 
     _._int = $def(function _int(what) {
-        if (typeof(what) === 'string')
+        if (typeof(what) === 'string' || _.isinstance(what, _.str)) {
+            what = _.js(what);
+            if (what.indexOf('.') !== -1 || isNaN(parseInt(what))) {
+                _.raise(_.ValueError('can\'t coerce to an int'));
+            }
             return parseInt(what);
-        else if (typeof(what) === 'number') return what;
-        else if (what && what.__class__ == _._float) {
+        } else if (typeof(what) === 'number'){
+            return Math.floor(what);
+        } else if (what && what.__class__ == _._float) {
             return parseInt(what._data);
         } else
-            _.raise(_.TypeError('can\'t coerce to int'));
+            _.raise(_.ValueError('can\'t coerce to int'));
     });
     _._float = Class('float', [], {
         __init__: $def({'what':0.0}, function __init__(self, what) {
-            self._data = what;
+            if (typeof(what) == 'string') {
+                self._data = parseFloat(what);
+            } else if (typeof(what) == 'number') {
+                self._data = what;
+            } else if (what && _.isinstance(what, _._float)) {
+                self._data = what._data;
+            } else {
+                _.raise(_.ValueError('can\'t coerce to float'));
+            }
         }),
         as_js: $def(function(self){
             return self._data;
@@ -989,6 +1002,26 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (i<0) i = 0;
             if (j<0) j = 0;
             return _.str(self._data.slice(i,j));
+        }),
+        __mod__: $def(function __mod__(self, other) {
+            if (!_.isinstance(other, [_.tuple, _.dict])) {
+                other = [other];
+            } else {
+                other = other.as_js();
+            }
+            var at = 0;
+            if (other instanceof Array) {
+                var ino = 0;
+                while (ino < other.length) {
+                    var next = self._data.indexOf('%', at)
+                    var farg = self._data[next+1];
+                    if (farg === '%') {
+                        continue;
+                    }
+                }
+            } else { // dict
+
+            }
         }),
         toString: $def(function toString(self) {
             return self._data;

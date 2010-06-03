@@ -4,5 +4,5 @@
 *.sess
 test/py/*.js
 build/
-test/jasmine
+test/js/jasmine
 test/browser/css

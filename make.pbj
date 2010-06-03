@@ -15,6 +15,7 @@ def get_lineno(text):
 
 @build.file('build/pjslib.js', depends='jslib/*.js')
 def lib(name):
+    print 'Javascript  Tests'
     files = ('jslib/functions.js', 'jslib/classes.js', 'jslib/modules.js', 'jslib/__builtin__.js')
     text = '\n'.join(open(fname).read() for fname in files)
     text = re.sub('function(\s+[$\w-]+)?\s*\(([$\w_]+,\s*)*[$\w_]*\s*\)\s*{\s*\n', get_lineno(text), text)
@@ -28,6 +29,7 @@ build.clean('build', 'test/py/*.js')
 
 @build.target(depends='@lib', always=True, completion=glob.glob('test/pjs/*.py'))
 def pjstest(fname='test/pjs/*.py'):
+    print 'PJs Tests'
     files = glob.glob(fname)
     for fname in files:
         justjs(fname)
@@ -35,12 +37,27 @@ def pjstest(fname='test/pjs/*.py'):
 
 @build.target(depends='@lib', always=True, completion=glob.glob('test/py/*.py'))
 def pytest(one=None):
+    print 'Python Tests'
     if one is not None:
         files = [one]
     else:
         files = glob.glob('test/py/*.py')
     for fname in files:
         compare(fname)
+
+py2js_files = glob.glob('test/py2js/*.py') + glob.glob('test/py2js/*/*.py') + glob.glob('test/py2js/*/*/*.py')
+
+@build.target(depends='@lib', always=True, completion=py2js_files)
+def py2jstest(one=None, full=False):
+    if one is not None:
+        if os.path.isdir(one):
+            files = glob.glob(os.path.join(one, '*.py'))
+        else:
+            files = [one]
+    else:
+        files = py2js_files
+    for fname in files:
+        compare(fname, full)
 
 def justjs(fname):
     jsname = fname.replace('.py', '.js')
@@ -56,7 +73,7 @@ def justjs(fname):
     print 'PASSED %s' % fname
     os.unlink(jsname)
 
-def compare(fname):
+def compare(fname, full=False):
     jsname = fname.replace('.py', '.js')
     o,e = cmd('python', os.path.basename(fname), cwd = os.path.dirname(fname))
     if e:
@@ -73,10 +90,19 @@ def compare(fname):
         return
     if o != jo:
         print 'FAILED %s :: different output:\n' % fname
+        if full:
+            print o
+            print '-'*20
+            print jo
+            print '-'*20
         print diff(o, jo)
         return
     print 'PASSED %s' % fname
     os.unlink(jsname)
+
+@build.target(depends=('@jstest', '@pytest', '@pjstest'), always=True)
+def test():
+    pass
 
 from tempfile import NamedTemporaryFile as ntf
 
