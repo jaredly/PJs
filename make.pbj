@@ -22,7 +22,7 @@ def lib(name):
         os.mkdir('build')
     open('build/pjslib.js', 'w').write(text)
 
-build.cmd('jstest', ('js', 'test/runtests.js'), depends='@jslib', always=True)
+build.cmd('jstest', ('js', 'test/runtests.js'), depends='@lib', always=True)
 
 build.clean('build', 'test/py/*.js')
 
