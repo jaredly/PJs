@@ -334,6 +334,8 @@ def _return(node, scope):
     return 'return %s;\n' % js
 
 def _raise(node, scope):
+    if node.type is None:
+        return 'throw __pjs_err;\n'
     js = convert_node(node.type, scope)
     if node.inst is None:
         return '$b.raise(%s);\n' % js
