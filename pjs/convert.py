@@ -248,7 +248,9 @@ def _subscript(node, scope, onleft=False):
                 lower = convert_node(node.slice.lower, scope)
             else:
                 lower = 0
-            if onleft:
+            if onleft == 'delete':
+                return '%s.__delslice__(%s, %s)' % (left, lower, upper)
+            elif onleft:
                 return '%s.__setslice__(%s, %s, ' % (left, lower, upper)
             return '%s.__getslice__(%s, %s)' % (left, lower, upper)
     idex = convert_node(node.slice, scope)
@@ -260,7 +262,9 @@ def _subscript(node, scope, onleft=False):
         # TODO check idex for literal
         return '%s[$b.js(%s)]' % (left, idex)
 
-    if onleft:
+    if onleft == 'delete':
+        return '%s.__delitem__(%s)' % (left, idex)
+    elif onleft:
         return '%s.__setitem__(%s, ' % (left, idex)
     return '%s.__getitem__(%s)' % (left, idex)
 
@@ -350,8 +354,13 @@ def _yield(node, scope):
 def _delete(node, scope):
     t = []
     for tag in node.targets:
-        js = convert_node(tag, scope)
-        t.append('delete %s' % js)
+        if isinstance(tag, ast.Subscript):
+            # TODO: fix this is hacky
+            js = _subscript(tag, scope, 'delete')
+            t.append(js)
+        else:
+            js = convert_node(tag, scope)
+            t.append('delete %s' % js)
     return '\n'.join(t)+'\n'
 
 def _global(node, scope):
