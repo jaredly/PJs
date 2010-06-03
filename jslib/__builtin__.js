@@ -692,6 +692,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 _.raise(_.ValueError('can\'t coerce to float'));
             }
         }),
+        __bool__: $def(function(self){
+            return self._data !== 0.0;
+        }),
         as_js: $def(function(self){
             return self._data;
         }),
