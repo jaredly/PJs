@@ -950,6 +950,13 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 self._data = ''+item;
             }
         }),
+        __iter__: $def(function __iter__(self) {
+            var lst = _.list();
+            for (var i=0;i<self._data.length;i++) {
+                lst.append(_.str(self._data[i]));
+            }
+            return _.iter(lst);
+        }),
         __str__: $def(function __str__(self) {
             return self;
         }),
@@ -1363,7 +1370,11 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             for (var i=ol.length-1;i>=0;i--)
                 self._list.push(ol[i]);
         }),
-        sort: __not_implemented__('sort'),
+        sort: $def({'cmp':null}, function(self, cmp) {
+            if (cmp !== null)
+                _.raise(_.NotImplementedError('sorting is not yet fully supported'));
+            self._list.sort();
+        }),
         __str__: $def(function __str__(self) {
             var a = [];
             for (var i=0;i<self._list.length;i++) {
