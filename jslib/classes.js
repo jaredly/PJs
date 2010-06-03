@@ -99,8 +99,9 @@ var type = $def(function type(name, bases, namespace) {
             if (val && val.__type__ == instancemethod && !val.im_self) {
                 self[attr] = val.__get__(self, cls);
                 _set_name(self[attr], attr);
-            } else
+            } else {
                 self[attr] = val;
+            }
         }
         self.__init__.apply(null, arguments);
         self._old_toString = self.toString;
@@ -173,7 +174,13 @@ function classmethod(method){
 function staticmethod(method){
     var obj = {};
     obj.__type__ = staticmethod;
-    obj.__get__ = function(){return method;}
+    var blessed = function() {
+        return method.apply(null, arguments);
+    };
+    blessed.__type__ = 'blessed_static';
+    obj.__get__ = function(){
+        return blessed;
+    };
     obj.__str__ = function(){return '<staticmethod object at 0x10beef01>';};
     return obj;
 }
