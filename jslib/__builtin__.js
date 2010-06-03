@@ -184,7 +184,11 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.py = $def(function py(what) {
         if (what === null || what.__class__) return what;
         if (what instanceof Array) {
-            return _.list(what);
+            var nw = [];
+            for (var i = 0; i < what.length; i++) {
+                nw.push(_.py(what[i]));
+            }
+            return _.list(nw);
         } else if (typeof(what) === 'string') {
             return _.str(what);
         } else if (typeof(what) === 'number') {
@@ -194,7 +198,11 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 return _._float(what);
             }
         } else {
-            return _.dict(what);
+            var dct = {};
+            for (var k in what) {
+                dct[k] = _.py(what[k]);
+            }
+            return _.dict(dct);
         }
     });
 
@@ -223,13 +231,16 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
               _.raise(_.TypeError('cannot coerce to javascript'));
         } else if (typeof(what) === 'function') {
           var wrapper = function $_function_wrapper() {
+            _._debug_stack.push(['wrapper', '[from javascript call]']);
             try {
-              what.apply(this, arguments);
+              var res = what.apply(this, arguments);
             } catch (e) {
               var stack = __builtins__._debug_stack;
               _.output_exception(e, stack);
               throw e;
             }
+            _._debug_stack.pop();
+            return res;
           };
           wrapper.__name__ = what.__name__ || what.name;
           wrapper.__class__ = what.__class__;
@@ -353,8 +364,10 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         if (val === _.NotImplemented) {
             if (typeof(a) === typeof(b) && typeof(a) === 'number')
                 return a + b;
+            else if (typeof(a) === typeof(b) && typeof(a) === 'string')
+                return a + b;
             else
-                _.raise(_.TypeError('unsupported operand type(s) for %'));
+                _.raise(_.TypeError('unsupported operand type(s) for + ' + _.str(_.type(a)) + ' and ' + _.str(_.type(b))));
         } else
             return val;
     });
@@ -641,6 +654,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.complex = __not_implemented__("complex");
 
     _.bool = $def(function bool(what) {
+        if (what === null) {
+            return false;
+        }
         if (defined(what.__bool__))
             return what.__bool__();
         else if (defined(what.__len__))
@@ -654,7 +670,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         if (typeof(what) === 'string')
             return parseInt(what);
         else if (typeof(what) === 'number') return what;
-        else
+        else if (what && what.__class__ == _._float) {
+            return parseInt(what._data);
+        } else
             _.raise(_.TypeError('can\'t coerce to int'));
     });
     _._float = Class('float', [], {
@@ -846,6 +864,16 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         return Math.floor(a/b);
     });
 
+    _._get_function_name = function (fn) {
+        var inner = fn;
+        var name = fn.__name__;
+        while (fn.__wraps__) {
+            fn = fn.__wraps__;
+            if (!name) name = fn.__name__;
+        }
+        return name;
+    };
+
     _.str = Class('str', [], {
         __init__: $def({'item':''}, function __init__(self, item) {
             if (item === null)
@@ -853,9 +881,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
               else if (typeof(item) === 'string')
                 self._data = item;
             else if (typeof(item) === 'number')
-                self._data = ''+item;
+                self._data = '' + item;
             else if (typeof(item) === 'boolean')
-                self._data = _.str(''+item).title()._data;
+                self._data = _.str('' + item).title()._data;
             else if (defined(item.__str__) && item.__str__.im_self)
                 self._data = item.__str__()._data;
             else if (item.__type__ === 'type')
@@ -867,11 +895,15 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                                 + ' instance at 0xbeaded>';
             else if (item instanceof Array) {
                 var m = [];
-                for (var i=0;i<item.length;i++) {
+                for (var i = 0; i<item.length; i++) {
                     m.push(_.repr(item[i]));
                 }
-                self._data = '[:'+m.join(', ')+':]';
+                self._data = '[:' + m.join(', ') + ':]';
             } else if (item instanceof Function) {
+                var _name = _._get_function_name(item);
+                while (item.__wraps__) {
+                    item = item.__wraps__;
+                }
                 if (!item.__name__) {
                     if (item.name)
                         self._data = '<javascript function "' + item.name + '">';
@@ -888,7 +920,6 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                     if (item.__class__)
                         name = item.__class__.__name__ + '.' + name;
                     if (!item.__module__)
-                        
                         self._data = '<function '+ name +'>';
                     else
                         self._data = '<function '+ name +' from module '+item.__module__+'>';
@@ -896,7 +927,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             } else if (typeof(item) === 'object') {
                 var m = [];
                 for (var a in item) {
-                    m.push("'"+a+"': "+_.repr(item[a]));
+                    m.push("'"+a+"': "+item[a]); //_.repr(item[a]));
                 }
                 self._data = '{: '+m.join(', ')+' :}';
             } else {
@@ -973,7 +1004,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         count: __not_implemented__('str.count'),
         decode: __not_implemented__('str.decode'),
         encode: __not_implemented__('str.encode'),
-        endswith: $def(function(self, what) {
+        endswith: $def(function endswith(self, what) {
             if (!_.isinstance(what, [_.tuple, _.list]))
                 what = [what]
             else
@@ -1006,7 +1037,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         isspace: __not_implemented__('str.isspace'),
         istitle: __not_implemented__('str.istitle'),
         isupper: __not_implemented__('str.isupper'),
-        join: $def(function(self, ible) {
+        join: $def(function join(self, ible) {
             var __ = _.foriter(ible);
             var res = [];
             var v;
@@ -1050,7 +1081,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             res.append(_.str(rest));
             return res;
         }),
-        splitlines: $def({'keepends':false}, function(self, keepends) {
+        splitlines: $def({'keepends':false}, function splitlines(self, keepends) {
             var res = self._data.split(/\n/g);
             var l = _.list();
             for (var i=0;i<res.length-1;i++) {
@@ -1061,7 +1092,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             l.append(_.str(res[res.length-1]));
             return l;
         }),
-        startswith: $def({'start':null, 'end':null}, function(self, sub, start, end) {
+        startswith: $def({'start':null, 'end':null}, function startswith(self, sub, start, end) {
             if (!_.isinstance(sub, [_.tuple, _.list]))
                 sub = [sub]
             else
@@ -1076,7 +1107,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         }),
         strip: __not_implemented__('str.strip'),
         swapcase: __not_implemented__('str.swapcase'),
-        title: $def(function (self) {
+        title: $def(function title(self) {
             var parts = self.split(' ');
             for (var i=0;i<parts._list.length;i++) {
                 parts._list[i] = parts._list[i].capitalize();
@@ -1639,23 +1670,23 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         // if __builtins__.print is in the stack, don't use it here
         for (var i=0;i<stack.length;i++) {
             if (stack[1] == pf) {
-                console.log('using rhino\'s print -- error printing pythony');
+                console.log('using console.log -- error printing pythony');
                 pf = console.log;
                 break;
             }
         }
-        pf('Traceback (most recent call last)');
+        pf(_.str('Traceback (most recent call last)'));
         for (var i=0;i<stack.length;i++){
             var fn = stack[i][1];
             var ost = fn.toString;
             if (fn._to_String)
                 fn.toString = fn._old_toString;
-            pf('  ', stack[i][1]);
+            pf(_.str('  '), stack[i][1]);
         }
         if (e.__class__)
-            pf('Python Error:', e);
+            pf(_.str('Python Error:'), e);
         else
-            console.log('Javascript Error:', e);
+            console.log(_.str('Javascript Error:'), e);
 
      });
     _.run_main = $def({'path':[]}, function(filename, path){

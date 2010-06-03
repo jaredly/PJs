@@ -74,7 +74,7 @@ Copyright 2010 Jared Forsyth <jared@jareforsyth.com>
 **/
 
 var to_array = function(a){return Array.prototype.slice.call(a,0);};
-var fnrx = /function(?:\s+\w*)?\s*\(([\w,\s]*)\)/;
+var fnrx = /function(?:\s+[\w_$]*)?\s*\(([\w,\s]*)\)/;
 
 function defined(x){
     return typeof(x) != 'undefined';
@@ -152,7 +152,7 @@ function $def() {
             if (!defined(defaults[func_args[i]]))
                 throw new Error('SyntaxError: non-default argument follows default argument');
 
-    var meta = function() {
+    var meta = function $def_meta() {
         var name = func.__name__ || func.name;
         var args = to_array(arguments);
         if (!meta._accept_undefined) {
@@ -181,16 +181,20 @@ function $def() {
         }
         if (kflag)
             args.push(__builtins__.dict());
-        if (__builtins__)
+        if (__builtins__) {
+            var pre_stack = __builtins__._debug_stack.slice();
             __builtins__._debug_stack.push([name, meta, args]);
+        }
         var result = func.apply(null, args);
-        if (__builtins__)
-            __builtins__._debug_stack.pop();
+        if (__builtins__) {
+            //var oft = __builtins__._debug_stack.pop();
+            __builtins__._debug_stack = pre_stack;
+        }
         if (result === undefined) result = null;
         return result;
     };
 
-    meta.args = function(args, dict) {
+    meta.args = function $def_meta_args(args, dict) {
         if (!defined(dict))
             throw new Error('TypeError: $def(fn).args must be called with both arguments.');
         if (args.__class__) {
@@ -233,11 +237,15 @@ function $def() {
         else
             for (var kname in dict)
                 throw new Error("TypeError: " + name + '() got unexpected keyword argument: ' + kname);
-        if (__builtins__)
+        if (__builtins__) {
+            var pre_stack = __builtins__._debug_stack.slice();
             __builtins__._debug_stack.push([name, func, [args, dict]]);
+        }
         var result = func.apply(null, args);
-        if (__builtins__)
-            __builtins__._debug_stack.pop();
+        if (__builtins__) {
+            // var oft = __builtins__._debug_stack.pop();
+            __builtins__._debug_stack = pre_stack;
+        }
         if (result === undefined) result = null;
         return result;
     };

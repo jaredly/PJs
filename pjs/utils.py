@@ -37,6 +37,8 @@ def resolve(name, scope):
         return name
     elif name == 'js':
         return name
+    elif name == 'py':
+        return '$b.py'
     elif name in ('float', 'int'):
         return '$b._' + name
     elif name in reserved_words:

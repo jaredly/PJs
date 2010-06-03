@@ -147,17 +147,21 @@ def _call(node, scope):
             raise PJsException('the "new" function is reserved, and takes one argument')
         return 'new ' + convert_node(node.args[0], scope)
 
+    aflag = False
+    if not scope['in atomic']:
+        aflag = True
+        scope = scope.copy()
+        scope['in atomic'] = True
+
     left = convert_node(node.func, scope)
     raw_js = left.startswith('js.') or left.startswith('window.')
 
-    if left == 'js':
-        left = '$b.js'
-
-    if not scope['in atomic']:
-        scope = scope.copy()
-        scope['in atomic'] = True
+    if aflag:
         if left.startswith('js.'):
             left = left[3:]
+
+    if left == 'js':
+        left = '$b.js'
 
     dct = {}
 
@@ -200,6 +204,8 @@ def _call(node, scope):
         for n in node.args:
             ## TODO: check for literals
             js = convert_node(n, scope)
+            if js.startswith('js.'):
+                js = js[3:]
             if raw_js:
                 ## in a javascript call
                 js = '$b.js(%s)' % js
@@ -209,12 +215,16 @@ def _call(node, scope):
     return text
 
 def _subscript(node, scope, onleft=False):
+    aflag = False
+    if not scope['in atomic']:
+        aflag = True
+        scope = scope.copy()
+        scope['in atomic'] = True
+    
     left = convert_node(node.value, scope)
     raw_js = left.startswith('js.') or left.startswith('window.')
 
-    if not scope['in atomic']:
-        scope = scope.copy()
-        scope['in atomic'] = True
+    if aflag:
         if left.startswith('js.'):
             left = left[3:]
 
