@@ -64,6 +64,7 @@ def justjs(fname):
     co, ce = cmd('./convert.py', fname, jsname, '--rhino')
     if ce:
         print 'FAILED %s :: conversion error:\n%s' % (fname, ce)
+        print co
         return
     jo, je = cmd('js', jsname)
     if je:
@@ -82,6 +83,7 @@ def compare(fname, full=False):
     co, ce = cmd('./convert.py', fname, jsname, '--rhino')
     if ce:
         print 'FAILED %s :: conversion error:\n%s' % (fname, ce)
+        print co
         return
     jo, je = cmd('js', jsname)
     if je:

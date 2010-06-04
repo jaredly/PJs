@@ -508,7 +508,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         __contains__: $def(function __contains__(self, key){
             return self.keys().__contains__(key);
         }),
-        __delitem__: $def(function __delattr__(self, key){
+        __delitem__: $def(function __delitem__(self, key){
             if (!self.keys().__contains__(key)) {
                 _.raise(_.KeyError(_.repr(key).as_js() + ' not in dictionary ' + _.repr(self._keys).as_js()));
             }
@@ -516,7 +516,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             self._keys = self._keys.slice(0, at).concat(self._keys.slice(at+1));
             self._values = self._values.slice(0, at).concat(self._values.slice(at+1));
         }),
-        __delattr__: $def(function __delitem__(self, key){
+        __delattr__: $def(function __delattr__(self, key){
             _.raise(_.KeyError('doesnt make sense'));
         }),
         __doc__: 'builtin dictionary type',
@@ -676,7 +676,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         } else if (typeof(what) === 'number'){
             return Math.floor(what);
         } else if (what && what.__class__ == _._float) {
-            return parseInt(what._data);
+            return Math.floor(what._data);
         } else
             _.raise(_.ValueError('can\'t coerce to int'));
     });
