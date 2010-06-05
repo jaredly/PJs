@@ -7,7 +7,6 @@ def atomic(fn):
         aflag = False
         if not scope.atomic:
             aflag = True
-            # scope = scope.copy()
             scope.atomic = True
         text = fn(conv, node, scope, *args, **kwargs)
         if aflag:
@@ -53,6 +52,8 @@ def call_args(conv, node, scope, raw_js=False):
     args = []
     for n in node.args:
         js = conv.convert_node(n, scope)
+        if js.startswith('js.'):
+            js = js[3:]
         if raw_js:
             ## in a javascript call
             js = '$b.js(%s)' % js

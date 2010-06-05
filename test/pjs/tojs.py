@@ -16,6 +16,9 @@ assert js.z[0].__wraps__ == m
 
 assert js.z[0]([1]) == 1
 
+ham = js([[1,2,3], [2,3,4]])
+assert m(js.ham[0])
+
 def a():
     def b(a):
         assert js.a[1] == 2
