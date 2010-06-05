@@ -378,7 +378,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (typeof(a) === typeof(b) && typeof(a) === 'number')
                 return a - b;
             else
-                _.raise(_.TypeError('unsupported operand type(s) for %'));
+                _.raise(_.TypeError('unsupported operand type(s) for -'));
         } else
             return val;
     });
@@ -388,7 +388,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (typeof(a) === typeof(b) && typeof(a) === 'number')
                 return a > b;
             else
-                _.raise(_.TypeError('unsupported operand type(s) for %'));
+                _.raise(_.TypeError('unsupported operand type(s) for >'));
         } else
             return val;
     });
@@ -401,7 +401,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (typeof(a) === typeof(b) && typeof(a) === 'number')
                 return a >= b;
             else
-                _.raise(_.TypeError('unsupported operand type(s) for %'));
+                _.raise(_.TypeError('unsupported operand type(s) for >='));
         } else
             return val;
     });
@@ -748,7 +748,31 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 return _._float(_.js(other) - self._data);
             }
             return _.NotImplemented;
-        })
+        }),
+        __gt__: $def(function __gt__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== -1) {
+                return _.js(other) > self._data;
+            }
+            return _.NotImplemented;
+        }),
+        __ge__: $def(function __ge__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== -1) {
+                return _.js(other) >= self._data;
+            }
+            return _.NotImplemented;
+        }),
+        __lt__: $def(function __lt__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== -1) {
+                return _.js(other) < self._data;
+            }
+            return _.NotImplemented;
+        }),
+        __le__: $def(function __le__(self, other) {
+            if ([_._int, _._float].indexOf(_.type(other)) !== -1) {
+                return _.js(other) <= self._data;
+            }
+            return _.NotImplemented;
+        }) 
     });
 
 
@@ -1310,7 +1334,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             }
             _.raise(_.TypeError('only can multiply by a number'));
         }),
-        __ne__: __not_implemented__(''),
+        __ne__: $def(function __ne__(self, other) {
+            return !self.__eq__(other);
+        }),
         __repr__: $def(function __repr__(self) { return self.__str__(); }),
         __reversed__: $def(function __reversed__(self) {
             return _.listreversediterator(self);

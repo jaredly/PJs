@@ -30,7 +30,7 @@ def assign(conv, node, scope):
         else:
             rest += '%s = %s;\n' % (conv.convert_node(targ, scope), var)
     js = conv.convert_node(node.value, scope)
-    line = '%s = %s; // %s \n' % (left, js, str(vars(scope)))
+    line = '%s = %s;\n' % (left, js)
     return line + rest
 
 @converts(ast.AugAssign)

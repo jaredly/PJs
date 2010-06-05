@@ -3,7 +3,7 @@ from converter import register as converts, PJsNotImplemented
 
 @converts(ast.Expr)
 def expr(conv, node, scope):
-    return conv.convert_node(node.value, scope) + '; // %s\n' % str(vars(scope))
+    return conv.convert_node(node.value, scope) + ';\n'
 
 @converts(ast.BoolOp)
 def boolop(conv, node, scope):
