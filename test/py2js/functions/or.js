@@ -2,7 +2,7 @@
 
 // from source file /home/jared/clone/pjs/test/py2js/functions/or.py
 
-load("./build/pjslib.js");
+load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
 module('/home/jared/clone/pjs/test/py2js/functions/or.py', function (_) {
     _.__doc__ = "";
@@ -18,9 +18,9 @@ module('/home/jared/clone/pjs/test/py2js/functions/or.py', function (_) {
     });
     _.pp.__module__ = _.__name__;
     _.pp.__name__ = $b.str("pp");
-    var __pjs_iter0 = $b.foriter(_.tests);
-    while (__pjs_iter0.trynext()) {
-        _.t = __pjs_iter0.value;
+    var __pjs_iter_1 = $b.foriter(_.tests);
+    while (__pjs_iter_1.trynext()) {
+        _.t = __pjs_iter_1.value;
     
         var __pjs_tmp = _.t;
         _.b1 = __pjs_tmp.__getitem__(0);

@@ -2,7 +2,7 @@
 
 // from source file /home/jared/clone/pjs/test/py2js/modules/from_import.py
 
-load("./build/pjslib.js");
+load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
 module('/home/jared/clone/pjs/test/py2js/modules/from_import.py', function (_) {
     _.__doc__ = "";
@@ -13,8 +13,9 @@ module('/home/jared/clone/pjs/test/py2js/modules/from_import.py', function (_) {
     var __pjs_tmp_module = $b.__import__("imported.modulec", _.__name__, _.__file__);
     if (__pjs_tmp_module.__all__ === undefined) {
         for (var __pjs_k in __pjs_tmp_module) {
-            if (__pjs_k.indexOf('__') !== 0)
-                eval('_.'+__pjs_k+' = __pjs_tmp_module.'+__pjs_k+';');
+            if (__pjs_k.indexOf('__') !== 0) {
+                eval('_.' + __pjs_k + ' = __pjs_tmp_module.' + __pjs_k + ';');
+            }
         }
         delete __pjs_k;
     } else {
@@ -32,6 +33,11 @@ module('/home/jared/clone/pjs/test/py2js/modules/from_import.py', function (_) {
     $b.assertdefined(_.foo)();
 });
 
+module('/home/jared/clone/pjs/test/py2js/modules/imported/__init__.py', function (_) {
+    _.__doc__ = "";
+    
+});
+
 module('/home/jared/clone/pjs/test/py2js/modules/imported/modulea.py', function (_) {
     _.__doc__ = "";
     _.modulea_fn = $def(function $_modulea_fn() { // 2
@@ -40,18 +46,18 @@ module('/home/jared/clone/pjs/test/py2js/modules/imported/modulea.py', function 
     _.modulea_fn.__module__ = _.__name__;
     _.modulea_fn.__name__ = $b.str("modulea_fn");
     _.modulea_class = Class('modulea_class', [$b.object], (function(){
-        var __1 = {};
-        __1.__init__ = $def(function $___init__(self) { // 8
+        var __0 = {};
+        __0.__init__ = $def(function $___init__(self) { // 8
             
         });
-        __1.__init__.__module__ = _.__name__;
-        __1.__init__.__name__ = $b.str("__init__");
-        __1.msg = $def(function $_msg(self, val) { // 11
+        __0.__init__.__module__ = _.__name__;
+        __0.__init__.__name__ = $b.str("__init__");
+        __0.msg = $def(function $_msg(self, val) { // 11
             return $b.add($b.str('modulea_class:'), $b.str(val));
         });
-        __1.msg.__module__ = _.__name__;
-        __1.msg.__name__ = $b.str("msg");
-        return __1;
+        __0.msg.__module__ = _.__name__;
+        __0.msg.__name__ = $b.str("msg");
+        return __0;
     }()));
     _.modulea_class.__module__ = _.__name__;
 });
@@ -69,18 +75,18 @@ module('/home/jared/clone/pjs/test/py2js/modules/imported/moduleb.py', function 
     _.moduleb_fn.__module__ = _.__name__;
     _.moduleb_fn.__name__ = $b.str("moduleb_fn");
     _.moduleb_class = Class('moduleb_class', [$b.object], (function(){
-        var __1 = {};
-        __1.__init__ = $def(function $___init__(self) { // 10
+        var __0 = {};
+        __0.__init__ = $def(function $___init__(self) { // 10
             
         });
-        __1.__init__.__module__ = _.__name__;
-        __1.__init__.__name__ = $b.str("__init__");
-        __1.msg = $def(function $_msg(self, val) { // 13
+        __0.__init__.__module__ = _.__name__;
+        __0.__init__.__name__ = $b.str("__init__");
+        __0.msg = $def(function $_msg(self, val) { // 13
             return $b.add($b.str('moduleb_class:'), $b.str(val));
         });
-        __1.msg.__module__ = _.__name__;
-        __1.msg.__name__ = $b.str("msg");
-        return __1;
+        __0.msg.__module__ = _.__name__;
+        __0.msg.__name__ = $b.str("msg");
+        return __0;
     }()));
     _.moduleb_class.__module__ = _.__name__;
 });
@@ -94,6 +100,11 @@ module('/home/jared/clone/pjs/test/py2js/modules/imported/modulec.py', function 
     });
     _.foo.__module__ = _.__name__;
     _.foo.__name__ = $b.str("foo");
+});
+
+module('/home/jared/clone/pjs/test/py2js/modules/imported/submodules/__init__.py', function (_) {
+    _.__doc__ = "";
+    
 });
 
 module('/home/jared/clone/pjs/test/py2js/modules/imported/submodules/submodulea.py', function (_) {

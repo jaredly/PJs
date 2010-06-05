@@ -2,7 +2,7 @@
 
 // from source file /home/jared/clone/pjs/test/py2js/functions/sort23.py
 
-load("./build/pjslib.js");
+load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
 module('/home/jared/clone/pjs/test/py2js/functions/sort23.py', function (_) {
     _.__doc__ = "";

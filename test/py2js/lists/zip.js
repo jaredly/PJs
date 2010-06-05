@@ -2,7 +2,7 @@
 
 // from source file /home/jared/clone/pjs/test/py2js/lists/zip.py
 
-load("./build/pjslib.js");
+load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
 module('/home/jared/clone/pjs/test/py2js/lists/zip.py', function (_) {
     _.__doc__ = "";
@@ -10,14 +10,14 @@ module('/home/jared/clone/pjs/test/py2js/lists/zip.py', function (_) {
     _.l2 = $b.list([5, 4, 3, 2, 1]);
     _.l3 = $b.list([4, 4, 4, 4]);
     _.l4 = $b.zip(_.l1, _.l2, _.l3);
-    var __pjs_iter0 = $b.foriter(_.l4);
-    while (__pjs_iter0.trynext()) {
-        _.item = __pjs_iter0.value;
+    var __pjs_iter_1 = $b.foriter(_.l4);
+    while (__pjs_iter_1.trynext()) {
+        _.item = __pjs_iter_1.value;
     
         $b.print($b.str('---'));//, true
-        var __pjs_iter1 = $b.foriter(_.item);
-        while (__pjs_iter1.trynext()) {
-            _.val = __pjs_iter1.value;
+        var __pjs_iter_2 = $b.foriter(_.item);
+        while (__pjs_iter_2.trynext()) {
+            _.val = __pjs_iter_2.value;
         
             $b.print(_.val);//, true
         }

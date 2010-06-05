@@ -2,7 +2,7 @@
 
 // from source file /home/jared/clone/pjs/test/py2js/lists/map.py
 
-load("./build/pjslib.js");
+load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
 module('/home/jared/clone/pjs/test/py2js/lists/map.py', function (_) {
     _.__doc__ = "";
@@ -13,9 +13,9 @@ module('/home/jared/clone/pjs/test/py2js/lists/map.py', function (_) {
     _.foo.__name__ = $b.str("foo");
     _.y = $b.list([1, 2, 3, 4, 5]);
     _.z = $b.map(_.foo, _.y);
-    var __pjs_iter0 = $b.foriter(_.z);
-    while (__pjs_iter0.trynext()) {
-        _.val = __pjs_iter0.value;
+    var __pjs_iter_1 = $b.foriter(_.z);
+    while (__pjs_iter_1.trynext()) {
+        _.val = __pjs_iter_1.value;
     
         $b.print(_.val);//, true
     }
