@@ -4,6 +4,10 @@ from pbj import Builder, cmd, PBJFailed
 import os
 import glob
 import re
+import traceback
+
+import pjs
+from pjs import PJsNotImplemented
 
 build = Builder('PJs')
 
@@ -34,7 +38,6 @@ def pjstest(fname='test/pjs/*.py'):
     for fname in files:
         justjs(fname)
 
-
 @build.target(depends='@lib', always=True, completion=glob.glob('test/py/*.py'))
 def pytest(one=None):
     print 'Python Tests'
@@ -61,11 +64,17 @@ def py2jstest(one=None, full=False):
 
 def justjs(fname):
     jsname = fname.replace('.py', '.js')
-    co, ce = cmd('./convert.py', fname, jsname, '--rhino')
-    if ce:
-        print 'FAILED %s :: conversion error:\n%s' % (fname, ce)
-        print co
+
+    try:
+        open(jsname, 'w').write(pjs.compile(fname, 'js', lib_dir='build', rhino=True))
+    except PJsNotImplemented, e:
+        print 'XFAIL %s :: %s' % (fname, e)
         return
+    except Exception, e:
+        print 'FAILED %s :: conversion error:' % fname
+        print traceback.format_exc()
+        return
+
     jo, je = cmd('js', jsname)
     if je:
         print 'FAILED %s :: javascript error:\n%s' % (fname, je)
@@ -80,11 +89,17 @@ def compare(fname, full=False):
     if e:
         print 'FAILED %s :: python error:\n%s' % (fname, e)
         return
-    co, ce = cmd('./convert.py', fname, jsname, '--rhino')
-    if ce:
-        print 'FAILED %s :: conversion error:\n%s' % (fname, ce)
-        print co
+
+    try:
+        open(jsname, 'w').write(pjs.compile(fname, 'js', lib_dir='build', rhino=True))
+    except (PJsNotImplemented, SyntaxError), e:
+        print 'XFAIL %s :: %s' % (fname, e)
         return
+    except Exception, e:
+        print 'FAILED %s :: conversion error:' % fname
+        print traceback.format_exc()
+        return
+
     jo, je = cmd('js', jsname)
     if je:
         print 'FAILED %s :: javascript error:\n%s' % (fname, je)
@@ -99,7 +114,7 @@ def compare(fname, full=False):
             print '-'*20
         print diff(o, jo)
         return
-    print 'PASSED %s' % fname
+    #print 'PASSED %s' % fname
     os.unlink(jsname)
 
 @build.target(depends=('@jstest', '@pytest', '@pjstest'), always=True)

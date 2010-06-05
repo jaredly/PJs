@@ -29,6 +29,7 @@ a,b = c = 3,4
 print [a,b,c]
 
 class F:pass
+o = F
 
 F.r, F.g = 2,3
 

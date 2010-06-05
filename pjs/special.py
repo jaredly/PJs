@@ -33,8 +33,7 @@ def _return(conv, node, scope):
 @converts(ast.Raise)
 def _raise(conv, node, scope):
     if node.type is None:
-        raise PJsNotImplemented('fix here -- empty raise')
-        return 'throw __pjs_err;\n'
+        return 'throw %s' % conv.current_temp('err')
     js = conv.convert_node(node.type, scope)
     if node.inst is None:
         return '$b.raise(%s);\n' % js
@@ -51,7 +50,7 @@ def _delete(conv, node, scope):
     for tag in node.targets:
         if isinstance(tag, ast.Subscript):
             ## TODO: doesn't handle "delete js.some[3]"
-            js = subscript(conv, tag, scope, 'delete')
+            js = conv.get_converter(tag)(conv, tag, scope, 'delete')
             t.append(js)
         else:
             js = conv.convert_node(tag, scope)

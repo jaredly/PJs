@@ -2,75 +2,75 @@
 
 // from source file /home/jared/clone/pjs/test/py2js/basic/oo_diamond.py
 
-load("./build/pjslib.js");
+load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
 module('/home/jared/clone/pjs/test/py2js/basic/oo_diamond.py', function (_) {
     _.__doc__ = "";
     _.foobar = Class('foobar', [$b.object], (function(){
-        var __1 = {};
-        __1.m1 = $def(function $_m1(self) { // 4
+        var __0 = {};
+        __0.m1 = $def(function $_m1(self) { // 4
             $b.print($b.str('foobar.m1'));//, true
         });
-        __1.m1.__module__ = _.__name__;
-        __1.m1.__name__ = $b.str("m1");
-        __1.m2 = $def(function $_m2(self) { // 7
+        __0.m1.__module__ = _.__name__;
+        __0.m1.__name__ = $b.str("m1");
+        __0.m2 = $def(function $_m2(self) { // 7
             $b.print($b.str('foobar.m2'));//, true
         });
-        __1.m2.__module__ = _.__name__;
-        __1.m2.__name__ = $b.str("m2");
-        __1.m3 = $def(function $_m3(self) { // 10
+        __0.m2.__module__ = _.__name__;
+        __0.m2.__name__ = $b.str("m2");
+        __0.m3 = $def(function $_m3(self) { // 10
             $b.print($b.str('foobar.m3'));//, true
         });
-        __1.m3.__module__ = _.__name__;
-        __1.m3.__name__ = $b.str("m3");
-        __1.m4 = $def(function $_m4(self) { // 13
+        __0.m3.__module__ = _.__name__;
+        __0.m3.__name__ = $b.str("m3");
+        __0.m4 = $def(function $_m4(self) { // 13
             $b.print($b.str('foobar.m4'));//, true
         });
-        __1.m4.__module__ = _.__name__;
-        __1.m4.__name__ = $b.str("m4");
-        return __1;
+        __0.m4.__module__ = _.__name__;
+        __0.m4.__name__ = $b.str("m4");
+        return __0;
     }()));
     _.foobar.__module__ = _.__name__;
     _.foo = Class('foo', [_.foobar], (function(){
-        var __1 = {};
-        __1.m2 = $def(function $_m2(self) { // 19
+        var __0 = {};
+        __0.m2 = $def(function $_m2(self) { // 19
             $b.print($b.str('foo.m2'));//, true
         });
-        __1.m2.__module__ = _.__name__;
-        __1.m2.__name__ = $b.str("m2");
-        __1.m4 = $def(function $_m4(self) { // 22
+        __0.m2.__module__ = _.__name__;
+        __0.m2.__name__ = $b.str("m2");
+        __0.m4 = $def(function $_m4(self) { // 22
             $b.print($b.str('foo.m4'));//, true
         });
-        __1.m4.__module__ = _.__name__;
-        __1.m4.__name__ = $b.str("m4");
-        return __1;
+        __0.m4.__module__ = _.__name__;
+        __0.m4.__name__ = $b.str("m4");
+        return __0;
     }()));
     _.foo.__module__ = _.__name__;
     _.bar = Class('bar', [_.foobar], (function(){
-        var __1 = {};
-        __1.m3 = $def(function $_m3(self) { // 27
+        var __0 = {};
+        __0.m3 = $def(function $_m3(self) { // 27
             $b.print($b.str('bar.m3'));//, true
         });
-        __1.m3.__module__ = _.__name__;
-        __1.m3.__name__ = $b.str("m3");
-        return __1;
+        __0.m3.__module__ = _.__name__;
+        __0.m3.__name__ = $b.str("m3");
+        return __0;
     }()));
     _.bar.__module__ = _.__name__;
     _.myfb = Class('myfb', [_.foo, _.bar], (function(){
-        var __1 = {};
-        __1.m4 = $def(function $_m4(self) { // 32
+        var __0 = {};
+        __0.m4 = $def(function $_m4(self) { // 32
             $b.print($b.str('myfb.m4'));//, true
         });
-        __1.m4.__module__ = _.__name__;
-        __1.m4.__name__ = $b.str("m4");
-        return __1;
+        __0.m4.__module__ = _.__name__;
+        __0.m4.__name__ = $b.str("m4");
+        return __0;
     }()));
     _.myfb.__module__ = _.__name__;
-    _.x = _.myfb();
-    _.x.m1();
-    _.x.m2();
-    _.x.m3();
-    _.x.m4();
+    _.x = _.myfb(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False} 
+    _.x.m1(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
+    _.x.m2(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
+    _.x.m3(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
+    _.x.m4(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
 });
 
 __builtins__.__import__('sys').argv = __builtins__.list(arguments);

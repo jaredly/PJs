@@ -28,7 +28,7 @@ def importfrom(conv, node, scope):
     subs_name = '.'.join(node.module.split('.')[1:])
     if subs_name:
         subs_name += '.'
-    prefix = local_prefix(scope)
+    prefix = utils.local_prefix(scope)
     for alias in node.names:
         if alias.name == '*':
             text += IMPORT_TEMPLATE % (prefix, prefix)
@@ -36,8 +36,8 @@ def importfrom(conv, node, scope):
         asname = alias.asname or alias.name
         left = utils.lhand_assign(asname, scope)
         text += '%s = __pjs_tmp_module.%s;\n' % (left, subs_name + alias.name)
-    conv.to_import.append(node.module)
-    return template
+    conv.add_import(node.module)
+    return text
 
 @converts(ast.Import)
 def _import(conv, node, scope):
@@ -50,7 +50,7 @@ def _import(conv, node, scope):
             asname = name.asname
         asname = utils.lhand_assign(asname, scope)
         text += tpl % (asname, name.name)
-        conv.to_import.append(name.name)
+        conv.add_import(name.name)
     return text
 
 # vim: et sw=4 sts=4

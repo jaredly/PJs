@@ -2,47 +2,35 @@ import ast
 from converter import register as converts, PJsNotImplemented
 import utils
 
-def deepleft(conv, node, at, scope, name='__pjs_tmp'):
-    if isinstance(node, ast.Tuple):
-        text = ''
-        for i,n in enumerate(node.elts):
-            text += deepleft(conv, n, at + [i], scope, name)
-        return text
-    else:
-        right = name + ''.join('.__getitem__(%d)' % n for n in at)
-        if isinstance(node, ast.Subscript):
-            left = conv.get_converter(node)(node, scope, True)
-            if left.endswith(' '):
-                return left + right + ');\n'
-        else:
-            left = utils.lhand_assign(node.id, scope)
-        return '%s = %s;\n' % (left, right)
-
 @converts(ast.Assign)
 def assign(conv, node, scope):
     rest = ''
     target = node.targets[0]
     if isinstance(target, ast.Tuple):
         left = 'var __pjs_tmp'
-        rest = deepleft(conv, target, [], scope)
+        rest = utils.deepleft(conv, target, [], scope)
     elif isinstance(target, ast.Subscript):
-        left = conv.get_converter(target)(target, scope, True)
+        left = conv.get_converter(target)(conv, target, scope, True)
         if left.endswith(' '):
             return left + conv.convert_node(node.value, scope) + ');\n'
-    else:
+    elif isinstance(target, ast.Name):
         left = utils.lhand_assign(target.id, scope)
+    else:
+        left = conv.convert_node(target, scope)
 
     for targ in node.targets[1:]:
         var = left
         if var.startswith('var '):
             var = var[len('var '):]
         if isinstance(targ, ast.Tuple):
-            rest += deepleft(conv, targ, [], scope, var)
-        else:
+            rest += utils.deepleft(conv, targ, [], scope, var)
+        elif isinstance(targ, ast.Name):
             mr = utils.lhand_assign(targ.id, scope)
             rest += mr + ' = ' + var + ';\n'
+        else:
+            rest += '%s = %s;\n' % (conv.convert_node(targ, scope), var)
     js = conv.convert_node(node.value, scope)
-    line = '%s = %s;\n' % (left, js)
+    line = '%s = %s; // %s \n' % (left, js, str(vars(scope)))
     return line + rest
 
 @converts(ast.AugAssign)
@@ -52,11 +40,13 @@ def _augassign(conv, node, scope):
     ljs = conv.convert_node(node.target, scope)
     rjs = conv.convert_node(node.value, scope)
     if isinstance(node.target, ast.Subscript):
-        left = conv.get_converter(node.target)(node.target, scope, True)
+        left = conv.get_converter(node.target)(conv, node.target, scope, True)
         if left.endswith(' '):
             return left + conv.convert_node(node.value, scope) + ');\n'
-    else:
+    elif isinstance(node.target, ast.Name):
         left = utils.lhand_assign(node.target.id, scope)
+    else:
+        left = conv.convert_node(node.target, scope)
     return tpl % (left, op, ljs, rjs)
 
 @converts(ast.AugLoad)

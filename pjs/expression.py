@@ -3,7 +3,7 @@ from converter import register as converts, PJsNotImplemented
 
 @converts(ast.Expr)
 def expr(conv, node, scope):
-    return conv.convert_node(node.value, scope) + ';\n'
+    return conv.convert_node(node.value, scope) + '; // %s\n' % str(vars(scope))
 
 @converts(ast.BoolOp)
 def boolop(conv, node, scope):
@@ -49,7 +49,7 @@ def compare(conv, node, scope):
     return '$b.do_ops(%s)' % (', '.join(items))
 
 @converts(ast.UnaryOp)
-def unaryop(conv.node, scope):
+def unaryop(conv, node, scope):
     subs = {
         ast.Not:'!$b.bool(%s)',
         ast.UAdd:'+%s',

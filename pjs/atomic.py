@@ -3,15 +3,17 @@ from converter import register as converts, PJsNotImplemented
 import utils
 
 def atomic(fn):
-    def meta(conv, node, scope):
+    def meta(conv, node, scope, *args, **kwargs):
         aflag = False
         if not scope.atomic:
             aflag = True
-            scope = scope.copy()
+            # scope = scope.copy()
             scope.atomic = True
-        text = fn(conv, node, scope)
-        if aflag and text.startswith('js.'):
-            text = text[3:]
+        text = fn(conv, node, scope, *args, **kwargs)
+        if aflag:
+            scope.atomic = False
+            if text.startswith('js.'):
+                text = text[3:]
         return text
     return meta
 
@@ -31,9 +33,9 @@ def call(conv, node, scope):
     if isinstance(node.func, ast.Name) and node.func.id == 'new':
         if node.starargs or node.kwargs or node.keywords or len(node.args) != 1:
             raise SyntaxError('the "new" function is reserved, and takes one argument')
-        return 'new ' + convert_node(node.args[0], scope)
+        return 'new ' + conv.convert_node(node.args[0], scope)
 
-    left = convert_node(node.func, scope)
+    left = conv.convert_node(node.func, scope)
     raw_js = left.startswith('js.') or left.startswith('window.')
 
     if left == 'js': # e.g. js(some_tuff)
@@ -50,7 +52,7 @@ def call(conv, node, scope):
 def call_args(conv, node, scope, raw_js=False):
     args = []
     for n in node.args:
-        js = convert_node(n, scope)
+        js = conv.convert_node(n, scope)
         if raw_js:
             ## in a javascript call
             js = '$b.js(%s)' % js
@@ -82,7 +84,7 @@ def call_pythonic_keywords(conv, node, scope):
     if node.keywords:
         kargs = []
         for kw in node.keywords:
-            kargs.append("'%s': %s" % (kw.arg, convert_node(kw.value, scope)))
+            kargs.append("'%s': %s" % (kw.arg, conv.convert_node(kw.value, scope)))
         kwds = '{%s}' % ', '.join(kargs)
         if node.kwargs:
             ## duplicates get overridden by kwargs
@@ -90,7 +92,7 @@ def call_pythonic_keywords(conv, node, scope):
         return kwds
 
     elif node.kwargs:
-        return convert_node(node.kwargs, scope)
+        return conv.convert_node(node.kwargs, scope)
 
     else:
         return '{}'
@@ -105,10 +107,10 @@ def subscript(conv, node, scope, onleft=False):
         if raw_js:
             if onleft:
                 raise SyntaxError('Javascript doesn\'t support slice assignment')
-            return slice_js_nostep(conv, node, scope)
+            return slice_js_nostep(conv, left, node, scope)
         
         if node.slice.upper is not None:
-            return slice_nostep(conv, node, scope, onleft)
+            return slice_nostep(conv, left, node, scope, onleft)
 
     idex = conv.convert_node(node.slice, scope)
 
@@ -124,7 +126,7 @@ def subscript(conv, node, scope, onleft=False):
         return '%s.__setitem__(%s, ' % (left, idex)
     return '%s.__getitem__(%s)' % (left, idex)
 
-def slice_js_nostep(conv, node, scope):
+def slice_js_nostep(conv, left, node, scope):
     if node.slice.lower:
         lower = conv.convert_node(node.slice.lower, scope)
     else:
@@ -135,7 +137,7 @@ def slice_js_nostep(conv, node, scope):
         upper = conv.convert_node(node.slice.upper, scope)
         return '%s.slice(%s, %s)' % (left, lower, upper)
 
-def slice_nostep(conv, node, scope, onleft):
+def slice_nostep(conv, left, node, scope, onleft):
     upper = conv.convert_node(node.slice.upper, scope)
     if node.slice.lower:
         lower = conv.convert_node(node.slice.lower, scope)

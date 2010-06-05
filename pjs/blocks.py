@@ -1,5 +1,6 @@
 import ast
 from converter import register as converts, PJsNotImplemented
+import utils
 
 WHILE_TPL = '''\
 while ($b.bool(%s) === true) {
@@ -31,9 +32,9 @@ def _for(conv, node, scope):
         targ = utils.lhand_assign(node.target.id, scope)
         assign = '%s = %s.value;\n' % (targ, temp_iter)
     else:
-        assign = utils.deepleft(node.target, [], scope, '%s.value' % temp_iter).replace('\n', '\n    ')
+        assign = utils.deepleft(conv, node.target, [], scope, '%s.value' % temp_iter).replace('\n', '\n    ')
 
-    body = convert_block(node.body, scope)
+    body = conv.convert_block(node.body, scope)
 
     conv.kill_temp('iter')
     return FOR_TPL % (temp_iter, ible, temp_iter, assign, body)
@@ -70,7 +71,6 @@ TRY_TPL = '''try {
 
 @converts(ast.TryExcept)
 def _tryexcept(conv, node, scope):
-    imports = []
     single = '''%s{
     %s
     }'''
@@ -92,7 +92,45 @@ def _tryexcept(conv, node, scope):
             top = ''
 
         subs.append(single % (top, eb))
-    text = TRY_TPL % (body, ' else '.join(subs))
+    text = TRY_TPL % (body, temp, ' else '.join(subs))
+    conv.kill_temp('err')
     return text
+
+TRY_FINALLY = '''%(final_temp)s = false;
+try {
+%(body)s
+} catch (%(err_temp)s) {
+    try {
+        %(excepts)s
+    } catch (%(err2_temp)s) {
+        %(finally)s
+        throw %(err2_temp)s;
+    }
+    %(final_temp)s = true;
+    %(finally)s
+}
+if (!%(final_temp)s) {
+    %(finally)s
+}
+'''
+
+TRY_FINALLY = '''\
+try {
+%(body)s
+} catch (%(err_temp)s) {
+%(finally)s
+throw %(err_temp)s;
+}
+%(finally)s
+'''
+
+@converts(ast.TryFinally)
+def tryfinally(conv, node, scope):
+    dct = {}
+    dct['body'] = conv.convert_block(node.body, scope)
+    dct['err_temp'] = temp = conv.get_temp('err')
+    dct['finally'] = conv.convert_block(node.finalbody, scope)
+    conv.kill_temp('err')
+    return TRY_FINALLY % dct
 
 # vim: et sw=4 sts=4
