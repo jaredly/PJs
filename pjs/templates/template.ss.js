@@ -4,7 +4,8 @@
 
 load("%(lib)s");
 var console = {log:function(){print.apply(this, arguments);}};
+var window  = this;
 %(text)s
 __builtins__.__import__('sys').argv = __builtins__.list(arguments);
-__builtins__.run_main('%(file)s', %(path)s);
+var pjs_main = __builtins__.run_main('%(file)s', %(path)s);
 

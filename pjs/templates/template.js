@@ -3,5 +3,5 @@
 // from source file %(file)s
 
 %(text)s
-__builtins__.run_main('%(file)s', %(path)s);
+var pjs_main =__builtins__.run_main('%(file)s', %(path)s);
 

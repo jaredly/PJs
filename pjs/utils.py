@@ -26,7 +26,7 @@ def fix_undef(text, scope, modlevel=False):
         text = re.sub('{:undef:' + name + ':[^:]*:}', prefix + name, text)
 
     if modlevel:
-        text = re.sub('{:undef:(\w+):([^:]*):}', '$b.assertdefined(\\2\\1)', text)
+        text = re.sub('{:undef:(\w+):([^:]*):}', '$b.assertdefined(\\2\\1, "\\1")', text)
         text = text.replace('&coln;', ':').replace('&amp;', '&')
     return text
 
