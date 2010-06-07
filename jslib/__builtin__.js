@@ -1044,12 +1044,13 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 other = other.as_js();
             }
             var at = 0;
+            return _.str();
             if (other instanceof Array) {
-                var ino = 0;
-                while (ino < other.length) {
+                while (at < other.length) {
                     var next = self._data.indexOf('%', at)
                     var farg = self._data[next+1];
                     if (farg === '%') {
+                        at = next + 1;
                         continue;
                     }
                 }

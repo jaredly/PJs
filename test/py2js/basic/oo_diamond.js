@@ -4,6 +4,7 @@
 
 load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
+var window  = this;
 module('/home/jared/clone/pjs/test/py2js/basic/oo_diamond.py', function (_) {
     _.__doc__ = "";
     _.foobar = Class('foobar', [$b.object], (function(){
@@ -66,13 +67,13 @@ module('/home/jared/clone/pjs/test/py2js/basic/oo_diamond.py', function (_) {
         return __0;
     }()));
     _.myfb.__module__ = _.__name__;
-    _.x = _.myfb(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False} 
-    _.x.m1(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
-    _.x.m2(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
-    _.x.m3(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
-    _.x.m4(); // {'num_iters': 0, 'explicit_locals': 0, 'explicit_globals': [], 'globals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'locals': ['', '', '', '', '__name__', '__doc__', '__file__', 'foobar', 'foo', 'bar', 'myfb', 'x'], 'parent_locals': (), 'atomic': False}
+    _.x = _.myfb();
+    _.x.m1();
+    _.x.m2();
+    _.x.m3();
+    _.x.m4();
 });
 
 __builtins__.__import__('sys').argv = __builtins__.list(arguments);
-__builtins__.run_main('/home/jared/clone/pjs/test/py2js/basic/oo_diamond.py', ['/home/jared/clone/pjs', '/home/jared/clone/pjs', '/home/jared/python', '/usr/lib/python2.6', '/usr/lib/python2.6/plat-linux2', '/usr/lib/python2.6/lib-tk', '/usr/lib/python2.6/lib-old', '/usr/lib/python2.6/lib-dynload', '/usr/lib/python2.6/dist-packages', '/usr/lib/python2.6/dist-packages/PIL', '/usr/lib/python2.6/dist-packages/gst-0.10', '/usr/lib/pymodules/python2.6', '/usr/lib/python2.6/dist-packages/gtk-2.0', '/usr/lib/pymodules/python2.6/gtk-2.0', '/usr/local/lib/python2.6/dist-packages']);
+var pjs_main = __builtins__.run_main('/home/jared/clone/pjs/test/py2js/basic/oo_diamond.py', ['/home/jared/clone/pjs', '/home/jared/clone/pjs', '/home/jared/python', '/usr/lib/python2.6', '/usr/lib/python2.6/plat-linux2', '/usr/lib/python2.6/lib-tk', '/usr/lib/python2.6/lib-old', '/usr/lib/python2.6/lib-dynload', '/usr/lib/python2.6/dist-packages', '/usr/lib/python2.6/dist-packages/PIL', '/usr/lib/python2.6/dist-packages/gst-0.10', '/usr/lib/pymodules/python2.6', '/usr/lib/python2.6/dist-packages/gtk-2.0', '/usr/lib/pymodules/python2.6/gtk-2.0', '/usr/local/lib/python2.6/dist-packages']);
 

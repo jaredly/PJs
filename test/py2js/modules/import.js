@@ -4,6 +4,7 @@
 
 load("build/pjslib.js");
 var console = {log:function(){print.apply(this, arguments);}};
+var window  = this;
 module('/home/jared/clone/pjs/test/py2js/modules/import.py', function (_) {
     _.__doc__ = "";
     var __pjs_tmp_module = $b.__import__("imported.modulea", _.__name__, _.__file__);
@@ -25,9 +26,9 @@ module('/home/jared/clone/pjs/test/py2js/modules/import.py', function (_) {
         delete __pjs_k;
     }
     _.imported = $b.__import__("imported.moduleb", _.__name__, _.__file__);
-    $b.assertdefined(_.modulea_fn)();
+    $b.assertdefined(_.modulea_fn, "modulea_fn")();
     _.imported.moduleb.moduleb_fn();
-    _.ma = $b.assertdefined(_.modulea_class)();
+    _.ma = $b.assertdefined(_.modulea_class, "modulea_class")();
     $b.print(_.ma.msg(1));//, true
     _.mb = _.imported.moduleb.moduleb_class();
     $b.print(_.mb.msg(2));//, true
@@ -92,5 +93,5 @@ module('/home/jared/clone/pjs/test/py2js/modules/imported/moduleb.py', function 
 });
 
 __builtins__.__import__('sys').argv = __builtins__.list(arguments);
-__builtins__.run_main('/home/jared/clone/pjs/test/py2js/modules/import.py', ['/home/jared/clone/pjs', '/home/jared/clone/pjs', '/home/jared/python', '/usr/lib/python2.6', '/usr/lib/python2.6/plat-linux2', '/usr/lib/python2.6/lib-tk', '/usr/lib/python2.6/lib-old', '/usr/lib/python2.6/lib-dynload', '/usr/lib/python2.6/dist-packages', '/usr/lib/python2.6/dist-packages/PIL', '/usr/lib/python2.6/dist-packages/gst-0.10', '/usr/lib/pymodules/python2.6', '/usr/lib/python2.6/dist-packages/gtk-2.0', '/usr/lib/pymodules/python2.6/gtk-2.0', '/usr/local/lib/python2.6/dist-packages']);
+var pjs_main = __builtins__.run_main('/home/jared/clone/pjs/test/py2js/modules/import.py', ['/home/jared/clone/pjs', '/home/jared/clone/pjs', '/home/jared/python', '/usr/lib/python2.6', '/usr/lib/python2.6/plat-linux2', '/usr/lib/python2.6/lib-tk', '/usr/lib/python2.6/lib-old', '/usr/lib/python2.6/lib-dynload', '/usr/lib/python2.6/dist-packages', '/usr/lib/python2.6/dist-packages/PIL', '/usr/lib/python2.6/dist-packages/gst-0.10', '/usr/lib/pymodules/python2.6', '/usr/lib/python2.6/dist-packages/gtk-2.0', '/usr/lib/pymodules/python2.6/gtk-2.0', '/usr/local/lib/python2.6/dist-packages']);
 
