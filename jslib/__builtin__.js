@@ -657,8 +657,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         if (what === null) {
             return false;
         }
-        if (defined(what.__bool__))
-            return what.__bool__();
+        if (defined(what.__nonzero__))
+            return what.__nonzero__();
         else if (defined(what.__len__))
             return _.len(what) !== 0;
         if (what)
@@ -692,7 +692,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
                 _.raise(_.ValueError('can\'t coerce to float'));
             }
         }),
-        __bool__: $def(function(self){
+        __nonzero__: $def(function(self){
             return self._data !== 0.0;
         }),
         as_js: $def(function(self){
@@ -1390,11 +1390,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             var i = self.index(val);
             self.__delitem__(i);
         }),
-        reverse: $def(function(self, val) {
+        reverse: $def(function(self) {
             var ol = self._list;
             self._list = [];
-            for (var i=ol.length-1;i>=0;i--)
+            for (var i=ol.length-1;i>=0;i--) {
                 self._list.push(ol[i]);
+            }
         }),
         sort: $def({'cmp':null}, function(self, cmp) {
             if (cmp !== null)
@@ -1550,11 +1551,35 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.cmp = __not_implemented__("cmp");
     _.set = __not_implemented__("set");
     _.bytes = __not_implemented__("bytes");
-    _.reduce = __not_implemented__("reduce");
+    _.reduce = $def({}, true, function reduce(func, seq, more) {
+        var ml = more.as_js().length;
+        if (ml > 1) {
+            _.raise(_.TypeError('built-in function reduce takes a max of 3 arguments (' + (2 + ml) + ' given)'));
+        }
+        var running;
+        var iter = _.foriter(seq);
+        if (ml == 1) {
+            running = more.__getitem__(0);
+        } else if (iter.trynext()) {
+            running = iter.value;
+        } else {
+            _.raise(_.TypeError('reduce() of empty sequence with no initial value'));
+        }
+        while (iter.trynext()) {
+            running = func(running, iter.value);
+        }
+        return running;
+    });
+    _.sum = $def({'start':0}, function (seq, start) {
+        var iter = _.foriter(seq);
+        while (iter.trynext()) {
+            start = _.add(start, iter.value);
+        }
+        return start;
+    });
     _.intern = __not_implemented__("intern");
     _.Ellipsis = __not_implemented__("Ellipsis");
     _.locals = __not_implemented__("locals");
-    _.sum = __not_implemented__("sum");
     _.getattr = __not_implemented__("getattr");
     _.abs = __not_implemented__("abs");
     _.exit = __not_implemented__("exit");
@@ -1595,8 +1620,28 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     // _.super = __not_implemented__("super");
     _.license = __not_implemented__("license");
     _.KeyboardInterrupt = __not_implemented__("KeyboardInterrupt");
-    _.filter = __not_implemented__("filter");
-    _.range = $def({'end':null, 'step':1}, function(start, end, step) {
+    _.filter = $def(function filter(func, seq) {
+        if (func === _.None) {
+            func = _.bool;
+        }
+        var itype = _.type(seq);
+        var res = [];
+        var iter = _.foriter(seq);
+        while (iter.trynext()) {
+            if (func(iter.value)) {
+                res.push(iter.value);
+            }
+        }
+        if (itype === _.str) {
+            return _.str('').join(_.list(res));
+        } else if (itype === _.tuple) {
+            return _.tuple(res);
+        } else {
+            return _.list(res);
+        }
+    });
+            
+    _.range = $def({'end':null, 'step':1}, function range(start, end, step) {
         if (end === null) {
             end = start;
             start = 0;
@@ -1616,7 +1661,31 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.apply = __not_implemented__("apply");
     _.open = __not_implemented__("open");
     _.quit = __not_implemented__("quit");
-    _.zip = __not_implemented__("zip");
+    _.zip = $def({}, true, function (first, more) {
+        var sequences = [first].concat(more.as_js());
+        var iters = [];
+        for (var i = 0; i < sequences.length; i++) {
+            iters.push(_.foriter(sequences[i]));
+        }
+        var result = [];
+        while (true) {
+            var done = false;
+            var val = [];
+            for (var i=0; i < iters.length; i++) {
+                if (iters[i].trynext()) {
+                    val.push(iters[i].value);
+                } else {
+                    done = true;
+                    break;
+                }
+            }
+            if (done) {
+                break;
+            }
+            result.push(val);
+        }
+        return _.list(result);
+    });
     _.hex = __not_implemented__("hex");
     _.next = __not_implemented__("next");
     _.chr = __not_implemented__("chr");
@@ -1666,7 +1735,34 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.NotImplemented = (Class('NotImplementedType', [], {
         __str__:$def(function(self){return _.str('NotImplemented');})
     })());
-    _.map = __not_implemented__("map");
+    _.map = $def({}, true, function map(func, sequences) {
+        if (func === null) {
+            _.raise(_.NotImplementedError('Not yet implemented -- map(None, ...)'));
+        }
+        sequences = sequences.as_js();
+        var iters = [];
+        for (var i = 0; i < sequences.length; i++) {
+            iters.push(_.foriter(sequences[i]));
+        }
+        var result = [];
+        while (true) {
+            var done = true;
+            var val = [];
+            for (var i=0; i < iters.length; i++) {
+                if (iters[i].trynext()) {
+                    val.push(iters[i].value);
+                    done = false;
+                } else {
+                    val.push(null);
+                }
+            }
+            if (done) {
+                break;
+            }
+            result.push(func.args(_.list(val), _.dict()));
+        }
+        return _.list(result);
+    });
     _.buffer = __not_implemented__("buffer");
     _.max = $def({}, true, function(args) {
         if (_.len(args) === 1)
@@ -1742,7 +1838,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.BytesWarning = Class('BytesWarning', [_.Warning], {});
 
     _.assertdefined = function assertdefined(x, name) {
-        if (x === undefined)
+        if (x === undefined || x == window[name])
             _.raise(_.NameError('undefined variable "' + name + '"'));
         return x;
     };
@@ -1774,7 +1870,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         var sys = _.__import__('sys');
         sys.path = _.py(path);
         try {
-            __module_cache[filename].load('__main__');
+            return __module_cache[filename].load('__main__');
         } catch (e) {
             var stack = __builtins__._debug_stack;
             _.output_exception(e, stack);

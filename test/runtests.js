@@ -1,3 +1,4 @@
+var window = {};
 load("build/pjslib.js");
 
 load('test/js/jasmine/lib/jasmine-0.10.3.js');
