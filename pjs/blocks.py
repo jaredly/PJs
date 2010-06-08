@@ -40,15 +40,21 @@ def _for(conv, node, scope):
     return FOR_TPL % (temp_iter, ible, temp_iter, assign, body)
 
 LCOMP_TMP = '''\
-$b.listcomp(%(iters)s, function (%(names)s) {return %(elt)s;}, %(ifs)s)'''
+$b.%(ctype)scomp(%(iters)s, function (%(names)s) {return %(elt)s;}, %(ifs)s)'''
 
-# _.lcomp(range(10), function (a) {return a+1;}, function (a) { return a > 10; });
 @converts(ast.ListComp)
 def listComp(conv, node, scope):
+    return do_comp(conv, node, scope, 'list')
+
+@converts(ast.GeneratorExp)
+def genComp(conv, node, scope):
+    return do_comp(conv, node, scope, 'gen')
+
+def do_comp(conv, node, scope, ctype):
     iters = []
     names = []
     ifs = []
-    dct = {}
+    dct = {'ctype': ctype}
 
     for gen in node.generators:
         if len(gen.ifs) > 1:

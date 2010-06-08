@@ -1461,6 +1461,8 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         while (at >= 0) {
             if (!iters[at].trynext()) {
                 at -= 1;
+            } else if (ifs[at] && !ifs[at](iters[at].value)) {
+                continue;
             } else if (at < idexes.length-1) {
                 at++;
                 iters[at] = _.foriter(ibles[at]);
@@ -1473,6 +1475,52 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             }
         }
         return _.list(ret);
+    });
+
+    _.gencomp = Class('genexpr', [], {
+        __init__: $def(function __init__(self, ibles, func, ifs) {
+            self.idexes = [];
+            self.ibles = ibles;
+            self.func = func;
+            self.ifs = ifs;
+
+            if (self.ibles.as_js) self.ibles = self.ibles.as_js();
+            self.iters = [];
+            for (var i = 0; i < self.ibles.length; i++) {
+                self.iters.push(null);
+            }
+            if (self.ifs.as_js) self.ifs = self.ifs.as_js();
+            for (var i = 0; i < self.iters.length; i++) {
+                self.idexes.push(0);
+            }
+            self.ret = [];
+            self.at = 0;
+            self.iters[0] = _.foriter(self.ibles[0]);
+        }),
+        __iter__: $def(function __iter__(self) {
+            return self;
+        }),
+        next: $def(function next(self) {
+            while (self.at >= 0) {
+                if (!self.iters[self.at].trynext()) {
+                    self.at -= 1;
+                } else if (self.ifs[self.at] && !self.ifs[self.at](self.iters[self.at].value)) {
+                    continue;
+                } else if (self.at < self.idexes.length-1) {
+                    self.at++;
+                    self.iters[self.at] = _.foriter(self.ibles[self.at]);
+                } else {
+                    var args = [];
+                    for (var i = 0; i < self.iters.length; i++) {
+                        args.push(self.iters[i].value);
+                    }
+                    return self.func.apply(null, args);
+                }
+            }
+            _.raise(_.StopIteration);
+        }),
+        send: __not_implemented__('genexpr.send'),
+        throw_: __not_implemented__('genexpr.throw_')
     });
     _.iter = $def({'sentinel':null}, function iter(ible, sentinel) {
         if (sentinel)

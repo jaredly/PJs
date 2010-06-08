@@ -39,14 +39,14 @@ def pjstest(fname='test/pjs/*.py'):
         justjs(fname)
 
 @build.target(depends='@lib', always=True, completion=glob.glob('test/py/*.py'))
-def pytest(one=None):
+def pytest(one=None, keep=False):
     print 'Python Tests'
     if one is not None:
         files = [one]
     else:
         files = glob.glob('test/py/*.py')
     for fname in files:
-        compare(fname)
+        compare(fname, keep=keep)
 
 py2js_files = glob.glob('test/py2js/*.py') + glob.glob('test/py2js/*/*.py') + glob.glob('test/py2js/*/*/*.py')
 
@@ -83,7 +83,7 @@ def justjs(fname):
     print 'PASSED %s' % fname
     os.unlink(jsname)
 
-def compare(fname, full=False):
+def compare(fname, full=False, keep=False):
     jsname = fname.replace('.py', '.js')
     o,e = cmd('python', os.path.basename(fname), cwd = os.path.dirname(fname))
     if e:
@@ -117,7 +117,8 @@ def compare(fname, full=False):
         print diff(o, jo)
         return
     print 'PASSED %s' % fname
-    os.unlink(jsname)
+    if not keep:
+        os.unlink(jsname)
 
 @build.target(depends=('@jstest', '@pytest', '@pjstest'), always=True)
 def test():
