@@ -114,19 +114,24 @@ var type = $def(function type(name, bases, namespace) {
         if (val && val.__type__ === 'function' ||
                 (val && !val.__type__ && typeof(val)==='function')) {
             cls[key] = instancemethod(cls, val);
+            cls[key]._depth = 1;
         } else if (val && val.__type__ === classmethod) {
             cls[key] = val.__get__(cls);
         } else if (val && val.__type__ === staticmethod) {
             cls[key] = val.__get__(cls);
         } else if (val && val.__type__ === instancemethod) {
             cls[key] = instancemethod(cls, val.im_func);
+            cls[key]._depth = val._depth + 1;
         } else
             cls[key] = val;
     });
-    for (var i=0;i<bases.length;i++) {
+    for (var i = bases.length - 1; i >= 0; i--) {
         for (var key in bases[i]) {
             if (key === 'prototype') continue;
             var val = bases[i][key];
+            if (cls[key] && cls[key]._depth && val._depth && cls[key]._depth < val._depth + 1) {
+                continue;
+            }
             __setattr__(key, val);
         }
     }

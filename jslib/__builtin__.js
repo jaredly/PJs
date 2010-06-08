@@ -674,8 +674,10 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             }
             return parseInt(what);
         } else if (typeof(what) === 'number'){
+            if (what < 0) return Math.ceil(what);
             return Math.floor(what);
         } else if (what && what.__class__ == _._float) {
+            if (what._data < 0) return Math.ceil(what._data);
             return Math.floor(what._data);
         } else
             _.raise(_.ValueError('can\'t coerce to int'));

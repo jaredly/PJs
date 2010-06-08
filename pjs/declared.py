@@ -16,7 +16,7 @@ def _list(conv, node, scope):
 @converts(ast.Num)
 def _num(conv, node, scope):
     if type(node.n) == float:
-        return '$b._float(%g)' % node.n
+        return '$b._float(%s)' % node.n
     return str(node.n)
 
 @converts(ast.Str)

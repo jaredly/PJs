@@ -116,7 +116,7 @@ def compare(fname, full=False):
             print '-'*20
         print diff(o, jo)
         return
-    #print 'PASSED %s' % fname
+    print 'PASSED %s' % fname
     os.unlink(jsname)
 
 @build.target(depends=('@jstest', '@pytest', '@pjstest'), always=True)
