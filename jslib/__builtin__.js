@@ -257,7 +257,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
       function __import__(name, from, file) {
         name = $b.js(name);
         if (defined(sys.modules[$b.py(name)]))
-            return sys.modules[$b.py(name)];
+            return sys.modules[$b.py(name).split('.').__getitem__(0)];
         var parent_mod = null;
         if (name.split('.').length > 1) {
             parent_mod = _.__import__(name.split('.').slice(0, -1).join('.'), from, file);

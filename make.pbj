@@ -51,7 +51,7 @@ def pytest(one=None, keep=False):
 py2js_files = glob.glob('test/py2js/*.py') + glob.glob('test/py2js/*/*.py') + glob.glob('test/py2js/*/*/*.py')
 
 @build.target(depends='@lib', always=True, completion=py2js_files)
-def py2jstest(one=None, full=False):
+def py2jstest(one=None, full=True):
     if one is not None:
         if os.path.isdir(one):
             files = glob.glob(os.path.join(one, '*.py'))
