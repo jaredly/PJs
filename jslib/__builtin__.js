@@ -401,7 +401,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
             if (typeof(a) === typeof(b) && typeof(a) === 'number')
                 return a >= b;
             else
-                _.raise(_.TypeError('unsupported operand type(s) for >='));
+                _.raise(_.TypeError('unsupported operand type(s) for >=', _.type(a), _.type(b)));
         } else
             return val;
     });
@@ -1444,6 +1444,36 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
 
     _.tupleiterator = Class('tupleiterator', [_.listiterator], {});
 
+    _.listcomp = $def(function listcomp(ibles, func, ifs) {
+        var idexes = [];
+        if (ibles.as_js) iters = ibles.as_js();
+        var iters = [];
+        for (var i=0;i<ibles.length;i++) {
+            iters.push(null);
+        }
+        if (ifs.as_js) ifs = ifs.as_js();
+        for (var i=0;i<iters.length;i++) {
+            idexes.push(0);
+        }
+        var ret = [];
+        var at = 0;
+        iters[0] = _.foriter(ibles[0]);
+        while (at >= 0) {
+            if (!iters[at].trynext()) {
+                at -= 1;
+            } else if (at < idexes.length-1) {
+                at++;
+                iters[at] = _.foriter(ibles[at]);
+            } else {
+                var args = [];
+                for (var i = 0; i < iters.length; i++) {
+                    args.push(iters[i].value);
+                }
+                ret.push(func.apply(null, args));
+            }
+        }
+        return _.list(ret);
+    });
     _.iter = $def({'sentinel':null}, function iter(ible, sentinel) {
         if (sentinel)
             return callable_iterator(ible, sentinel);
@@ -1498,6 +1528,9 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     /** inheritence **/
 
     _.type = $def(function (what) {
+        if (what === null) {
+            return null;
+        }
         if (typeof(what) === 'number')
             return _._int;
         if (what.__class__ !== undefined)
@@ -1693,8 +1726,41 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
     _.next = __not_implemented__("next");
     _.chr = __not_implemented__("chr");
     // dirty hack
-    _.xrange = $def({'end':null, 'step':1}, function xrange(start, end, step) {
-        return _.iter(_.range(start, end, step));
+    _.xrange = Class('xrange', [], {
+        __init__: $def({'end':null, 'step':1}, function __init__(self, start, end, step) {
+            if (end === null) {
+                end = start;
+                start = 0;
+            }
+            self.start = start;
+            self.end = end;
+            self.step = step;
+        }),
+        __iter__: $def(function __iter__(self) {
+            return _.rangeiterator(self);
+        })
+    });
+    _.rangeiterator = Class('rangeiterator', [], {
+        __init__: $def(function __init__(self, range) {
+            self.range = range;
+            self.at = range.start;
+            self.started = false;
+        }),
+        __iter__: $def(function __iter__(self) {
+            return self;
+        }),
+        next: $def(function next(self) {
+            if (!self.started) {
+                self.started = true;
+                return self.at;
+            } else {
+                self.at += self.range.step
+                if (self.at >= self.range.end) {
+                    _.raise(_.StopIteration);
+                }
+                return self.at;
+            }
+        })
     });
 
     _.reversed = __not_implemented__("reversed");

@@ -39,6 +39,41 @@ def _for(conv, node, scope):
     conv.kill_temp('iter')
     return FOR_TPL % (temp_iter, ible, temp_iter, assign, body)
 
+LCOMP_TMP = '''\
+$b.listcomp(%(iters)s, function (%(names)s) {return %(elt)s;}, %(ifs)s)'''
+
+# _.lcomp(range(10), function (a) {return a+1;}, function (a) { return a > 10; });
+@converts(ast.ListComp)
+def listComp(conv, node, scope):
+    iters = []
+    names = []
+    ifs = []
+    dct = {}
+
+    for gen in node.generators:
+        if len(gen.ifs) > 1:
+            raise PJsNotImplemented('Why would a ListComp generator have multiple ifs? please report this...')
+        if not isinstance(gen.target, ast.Name):
+            raise PJsNotImplemented('Tuple listcomp targets not supported')
+        name = gen.target.id
+        if not gen.ifs:
+            ifs.append('null')
+        else:
+            fn_scope = scope.copy()
+            fn_scope.locals.append(name)
+            ifs.append('function (%s) { return %s; }' % (name, conv.convert_node(gen.ifs[0], fn_scope)))
+        iters.append(conv.convert_node(gen.iter, scope))
+        names.append(name)
+
+    elt_scope = scope.copy()
+    elt_scope.locals += names
+    dct['elt'] = conv.convert_node(node.elt, elt_scope)
+
+    dct['iters'] = '[%s]' % ', '.join(iters)
+    dct['names'] = ', '.join(names)
+    dct['ifs'] = '[%s]' % ', '.join(ifs)
+    return LCOMP_TMP % dct
+
 IF_TPL = '''\
 if ($b.bool(%(test)s) === true) {
 %(contents)s
