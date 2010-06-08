@@ -7,12 +7,12 @@ var console = {log:function(){print.apply(this, arguments);}};
 var window  = this;
 module('/home/jared/clone/pjs/test/py2js/strings/string_format_efg.py', function (_) {
     _.__doc__ = "";
-    _.a = $b._float(1.12346);
+    _.a = $b._float(1.123456);
     _.b = $b._float(3.24324e-10);
-    _.c = $b._float(1.83479e+07);
-    _.d = $b._float(0);
-    _.e = $b._float(-1.32432e+06);
-    _.f = $b._float(-1.98921e-11);
+    _.c = $b._float(18347894.2131);
+    _.d = $b._float(0.0);
+    _.e = $b._float(-1324323.456);
+    _.f = $b._float(-1.9892122e-11);
     _.vars = $b.list([_.a, _.b, _.c, _.d, _.e, _.f]);
     _.codes = $b.list([$b.str('e'), $b.str('E'), $b.str('f'), $b.str('F'), $b.str('g'), $b.str('G')]);
     _.fmts = $b.list([$b.str('a=%e'), $b.str('a=%10.5e'), $b.str('a=%+10.5e'), $b.str('a=%#e')]);

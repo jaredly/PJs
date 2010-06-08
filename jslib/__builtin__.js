@@ -1130,7 +1130,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         replace: __not_implemented__('str.replace'),
         rfind: __not_implemented__('str.rfind'),
         rindex: __not_implemented__('str.rindex'),
-        split: $def({'count':-1}, function split(self, sub, count) {
+        split: $def({'sub':' ', 'count':-1}, function split(self, sub, count) {
             var res = _.list();
             if (typeof(sub) === 'string') sub = _.str(sub);
             if (!_.isinstance(sub, _.str))
