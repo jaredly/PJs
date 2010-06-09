@@ -5,10 +5,10 @@ class wrapper:
         self.fn = fn
 
     def __call__(self,*args):
-        return "("+apply(self.fn,args)+")"
+        return "("+self.fn(*args)+")"
 
 def mydecorator(x):
-    print "decorating " + str(x) 
+    print "decorating func"
     return wrapper(x)
 
 class myclass:

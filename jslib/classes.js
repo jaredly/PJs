@@ -87,7 +87,13 @@ function _set_name(fn, name) {
 
 var type = $def(function type(name, bases, namespace) {
     var cls = function $_type() {
-        var self = {};
+        var self = function () {
+            if (self.__call__) {
+                return self.__call__.apply(this, arguments);
+            } else {
+                $b.raise($b.TypeError($b.str(self).as_js() + ' has no attribute __call__'));
+            }
+        };
         self.__init__ = instancemethod(cls, function(){}).__get__(self);
         self.__class__ = cls;
         self.__type__ = 'instance';
