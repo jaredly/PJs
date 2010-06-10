@@ -224,12 +224,12 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
           }
           return obj;
         }
-        if (typeof(what) === 'object') {
-          if (defined(what.as_js))
+        if (typeof(what) === 'function') {
+          if (defined(what.as_js)) {
               return what.as_js();
-          else if (what.__class__ || what.__type__)
+          } else if ((what.__class__ && undefined === what.__call__) || what.__type__ !== 'function') {
               _.raise(_.TypeError('cannot coerce to javascript'));
-        } else if (typeof(what) === 'function') {
+          }
           var wrapper = function $_function_wrapper() {
             _._debug_stack.push(['wrapper', '[from javascript call]']);
             try {
