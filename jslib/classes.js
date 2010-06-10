@@ -46,8 +46,8 @@ function instancemethod(cls, fn) {
     meta.im_class = cls;
     meta.im_func = fn;
     meta.im_self = null;
-    meta.__get__ = function $_get(self, cls) {
-        cls = cls||self.__class__;
+    meta.__get__ = function $_get(self, ncls) {
+        ncls = ncls||self.__class__;
         /*
         if (!__builtins__.isinstance(self, cls))
             throw new Error('idk what just happened... invalid self while binding instancemethod');
@@ -56,14 +56,13 @@ function instancemethod(cls, fn) {
             return fn.apply(this, [self].concat(to_array(arguments)));
         };
         m2.__name__ = meta.__name__;
-        m2.__class__ = cls;
         m2.__type__ = instancemethod;
         m2.__wraps__ = fn;
         fn.__wraper__ = fn;
         m2.__str__ = function(){
-            return '<bound method '+cls.__name__+'.'+meta.__name__+' of '+self.__str__()+'>';
+            return $b.str('<bound method '+ncls.__name__+'.'+meta.__name__+' of '+$b.str(self)+'>');
         };
-        m2.im_class = cls;
+        m2.im_class = ncls;
         m2.im_func = fn;
         m2.im_self = self;
         m2.args = function $_args(pos, kwd) {

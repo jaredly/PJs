@@ -227,9 +227,11 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         if (typeof(what) === 'function') {
           if (defined(what.as_js)) {
               return what.as_js();
-          } else if ((what.__class__ && undefined === what.__call__) || what.__type__ !== 'function') {
-              _.raise(_.TypeError('cannot coerce to javascript'));
-          }
+          } else if (what.__class__ !== undefined && undefined === what.__call__) {
+              _.raise(_.TypeError('Cannot convert object ' + _.str(what).as_js() + ' of type ' + _.str(_.type(what)) + ' to javascript (no __call__ method or as_js)'));
+          }/* else if (what.__type__ !== 'function') {
+              _.raise(_.TypeError('Cannot coerce to javascript'));
+          }*/
           var wrapper = function $_function_wrapper() {
             _._debug_stack.push(['wrapper', '[from javascript call]']);
             try {
@@ -244,6 +246,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
           };
           wrapper.__name__ = what.__name__ || what.name;
           wrapper.__class__ = what.__class__;
+          wrapper.__type__ = what.__type__;
           wrapper.__wraps__ = what;
           what.__wrapped__ = wrapper;
           return wrapper;
@@ -920,15 +923,15 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         __init__: $def({'item':''}, function __init__(self, item) {
             if (item === null)
                 self._data = 'None';
-              else if (typeof(item) === 'string')
+            else if (typeof(item) === 'string')
                 self._data = item;
             else if (typeof(item) === 'number')
                 self._data = '' + item;
             else if (typeof(item) === 'boolean')
                 self._data = _.str('' + item).title()._data;
-            else if (defined(item.__str__) && item.__str__.im_self)
-                self._data = item.__str__()._data;
-            else if (item.__type__ === 'type')
+            else if (defined(item.__str__) && (item.__str__.im_self || !item.__str__.__type__)) {
+                self._data = _.js(item.__str__());
+            } else if (item.__type__ === 'type')
                 self._data = "<class '" + item.__module__ + '.' + item.__name__ + "'>";
             else if (item.__type__ === 'module')
                 self._data = "<module '" + item.__name__ + "' from '" + item.__file__ + "'>";
@@ -1584,7 +1587,7 @@ module('<builtin>/__builtin__.py', function builting_module(_) {
         if (what.__class__ !== undefined)
             return what.__class__;
         if (what.__type__ !== undefined)
-            return that.__type__;
+            return what.__type__;
         return _.str(typeof(what));
     });
     _.classmethod = classmethod;
