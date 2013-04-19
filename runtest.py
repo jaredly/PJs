@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import glob
 import os
 from subprocess import Popen, PIPE
@@ -7,8 +8,6 @@ def execute(cmd):
     out = p.stdout.read()
     err = p.stderr.read()
     return out, err
-
-
 
 if __name__ == '__main__':
     import sys

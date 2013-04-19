@@ -15,7 +15,7 @@ module('/home/jared/clone/pjs/test/py2js/functions/floatdiv.py', function (_) {
     $b.print(_.c);//, true
 });
 
-module('/usr/lib/python2.6/__future__.py', function (_) {
+module('/usr/lib/python2.7/__future__.py', function (_) {
     _.__doc__ = 'Record of phased-in incompatible language changes.\n' +
 '\n' +
 'Each line is of the form:\n' +
@@ -159,12 +159,12 @@ module('/usr/lib/python2.6/__future__.py', function (_) {
     _.nested_scopes = _._Feature($b.tuple([2, 1, 0, $b.str('beta'), 1]), $b.tuple([2, 2, 0, $b.str('alpha'), 0]), _.CO_NESTED);
     _.generators = _._Feature($b.tuple([2, 2, 0, $b.str('alpha'), 1]), $b.tuple([2, 3, 0, $b.str('final'), 0]), _.CO_GENERATOR_ALLOWED);
     _.division = _._Feature($b.tuple([2, 2, 0, $b.str('alpha'), 2]), $b.tuple([3, 0, 0, $b.str('alpha'), 0]), _.CO_FUTURE_DIVISION);
-    _.absolute_import = _._Feature($b.tuple([2, 5, 0, $b.str('alpha'), 1]), $b.tuple([2, 7, 0, $b.str('alpha'), 0]), _.CO_FUTURE_ABSOLUTE_IMPORT);
+    _.absolute_import = _._Feature($b.tuple([2, 5, 0, $b.str('alpha'), 1]), $b.tuple([3, 0, 0, $b.str('alpha'), 0]), _.CO_FUTURE_ABSOLUTE_IMPORT);
     _.with_statement = _._Feature($b.tuple([2, 5, 0, $b.str('alpha'), 1]), $b.tuple([2, 6, 0, $b.str('alpha'), 0]), _.CO_FUTURE_WITH_STATEMENT);
     _.print_function = _._Feature($b.tuple([2, 6, 0, $b.str('alpha'), 2]), $b.tuple([3, 0, 0, $b.str('alpha'), 0]), _.CO_FUTURE_PRINT_FUNCTION);
     _.unicode_literals = _._Feature($b.tuple([2, 6, 0, $b.str('alpha'), 2]), $b.tuple([3, 0, 0, $b.str('alpha'), 0]), _.CO_FUTURE_UNICODE_LITERALS);
 });
 
 __builtins__.__import__('sys').argv = __builtins__.list(arguments);
-var pjs_main = __builtins__.run_main('/home/jared/clone/pjs/test/py2js/functions/floatdiv.py', ['/home/jared/clone/pjs', '/home/jared/clone/pjs', '/home/jared/python', '/usr/lib/python2.6', '/usr/lib/python2.6/plat-linux2', '/usr/lib/python2.6/lib-tk', '/usr/lib/python2.6/lib-old', '/usr/lib/python2.6/lib-dynload', '/usr/lib/python2.6/dist-packages', '/usr/lib/python2.6/dist-packages/PIL', '/usr/lib/python2.6/dist-packages/gst-0.10', '/usr/lib/pymodules/python2.6', '/usr/lib/python2.6/dist-packages/gtk-2.0', '/usr/lib/pymodules/python2.6/gtk-2.0', '/usr/local/lib/python2.6/dist-packages']);
+var pjs_main = __builtins__.run_main('/home/jared/clone/pjs/test/py2js/functions/floatdiv.py', ['/home/jared/clone/pjs', '/home/jared/clone/pjs', '/home/jared/python', '/usr/lib/python2.7', '/usr/lib/python2.7/plat-linux2', '/usr/lib/python2.7/lib-tk', '/usr/lib/python2.7/lib-old', '/usr/lib/python2.7/lib-dynload', '/home/jared/.local/lib/python2.7/site-packages', '/usr/local/lib/python2.7/dist-packages', '/usr/lib/python2.7/dist-packages', '/usr/lib/python2.7/dist-packages/PIL', '/usr/lib/python2.7/dist-packages/gst-0.10', '/usr/lib/python2.7/dist-packages/gtk-2.0', '/usr/lib/pymodules/python2.7', '/usr/lib/python2.7/dist-packages/ubuntu-sso-client', '/usr/lib/python2.7/dist-packages/ubuntuone-client', '/usr/lib/python2.7/dist-packages/ubuntuone-control-panel', '/usr/lib/python2.7/dist-packages/ubuntuone-couch', '/usr/lib/python2.7/dist-packages/ubuntuone-storage-protocol']);
 
