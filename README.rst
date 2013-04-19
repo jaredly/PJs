@@ -10,6 +10,21 @@ javascript's lazyness regarding undefined variables.
 PJs has the goal of generating readable, usable *robust* javascript code from
 python code, and of providing some libraries to make web development easier.
 
+Installation
+------------
+
+I don't yet have a dist on pypi, so just clone the repo.
+
+If you want to run the tests, ``pjs`` depends on ``pbj`` so you first need to
+``pip install pbj``. Pbj is a build tool that I wrote, and you can invoke it
+(once installed) with ``./make.pbj`` in the ``pjs`` directory. 
+
+Usage
+-----
+
+The ``convert.py`` should work pretty well for playing around with pjs.
+
+
 Recent Addtions
 ---------------
 
