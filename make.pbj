@@ -17,17 +17,15 @@ def get_lineno(text):
         return match.group()[:-1] + ' // %d :builtin:\n' % lno
     return meta
 
-@build.file('build/pjslib.js', depends='jslib/*.js')
+@build.file('pjs/data/pjslib.js', depends='pjs/jslib/*.js')
 def lib():
     print 'Javascript  Tests'
-    files = ('jslib/functions.js', 'jslib/classes.js', 'jslib/modules.js', 'jslib/__builtin__.js')
+    files = ('pjs/jslib/functions.js', 'pjs/jslib/classes.js', 'pjs/jslib/modules.js', 'pjs/jslib/__builtin__.js')
     text = '\n'.join(open(fname).read() for fname in files)
     text = re.sub('function(\s+[$\w-]+)?\s*\(([$\w_]+,\s*)*[$\w_]*\s*\)\s*{\s*\n', get_lineno(text), text)
-    if not os.path.exists('build'):
-        os.mkdir('build')
-    open('build/pjslib.js', 'w').write(text)
+    open('pjs/data/pjslib.js', 'w').write(text)
 
-build.cmd('jstest', ('js', 'test/runtests.js'), depends='@lib', always=True)
+build.cmd('jstest', ('rhino', 'test/runtests.js'), depends='@lib', always=True)
 
 build.clean('build', 'test/py/*.js')
 
@@ -66,7 +64,7 @@ def justjs(fname):
     jsname = fname.replace('.py', '.js')
 
     try:
-        open(jsname, 'w').write(pjs.compile(fname, 'js', lib_dir='build', rhino=True))
+        open(jsname, 'w').write(pjs.compile(fname, 'js', lib_dir='pjs/data', rhino=True))
     except PJsNotImplemented, e:
         print 'XFAIL %s :: %s' % (fname, e)
         return
@@ -90,7 +88,7 @@ def compare(fname, full=False, keep=False):
         print 'FAILED %s :: python error:\n%s' % (fname, e)
         return
     try:
-        open(jsname, 'w').write(pjs.compile(fname, 'js', lib_dir='build', rhino=True))
+        open(jsname, 'w').write(pjs.compile(fname, 'js', lib_dir='pjs/data', rhino=True))
     except (PJsNotImplemented, SyntaxError), e:
         print 'XFAIL %s :: %s' % (fname, e)
         return

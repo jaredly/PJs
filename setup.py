@@ -10,5 +10,6 @@ setup(name='PJs',
       url='http://jaredforsyth.com/projects/pjs/',
       packages=['pjs'],
       install_requires=['pbj'],
+      include_package_data=True,
       classifiers=['Programming Language :: Python :: 2.7']
      )
