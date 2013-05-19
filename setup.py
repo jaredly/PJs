@@ -3,7 +3,7 @@ from distutils.core import setup
 import setuptools
 
 setup(name='PJs',
-      version='0.0.1',
+      version='0.0.2',
       description='kinda like pyjamas, but quicker, cleaner, and easier. has the goal of generating readable, usable *robust* javascript code from python code',
       author='Jared Forsyth',
       author_email='jared@jaredforsyth.com',
