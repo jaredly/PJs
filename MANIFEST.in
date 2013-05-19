@@ -1,0 +1,3 @@
+include pjs/data/*.txt
+include pjs/templates/*
+include jslib/*.js
