@@ -1,1 +1,1 @@
-{"test":"./make.pbj py2jstest"}
+{"test":"./venv/bin/python make.pbj pytest"}
