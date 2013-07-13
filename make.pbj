@@ -73,7 +73,7 @@ def justjs(fname):
         print traceback.format_exc()
         return
 
-    jo, je = cmd('rhino', jsname, shell=True)
+    jo, je = cmd('rhino %s' % jsname, shell=True)
     if je:
         print 'FAILED %s :: javascript error:\n%s' % (fname, je)
         print jo
@@ -97,7 +97,7 @@ def compare(fname, full=False, keep=False):
         print traceback.format_exc()
         return
 
-    jo, je = cmd('rhino', jsname, shell=True)
+    jo, je = cmd('rhino %s' % jsname, shell=True)
     if je:
         if 'NotImplementedError' in je:
             print 'XFAIL :: not implemented :: ', je
